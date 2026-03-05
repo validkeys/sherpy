@@ -7,15 +7,15 @@ This guide explains how to use Sherpy skills in your AI-assisted development wor
 ### Install All Skills
 
 ```bash
-npx skills add kydavis/sherpy
+npx skills add validkeys/sherpy
 ```
 
 ### Install Individual Skills
 
 ```bash
-npx skills add kydavis/sherpy@business-requirements-interview
-npx skills add kydavis/sherpy@technical-requirements-interview
-npx skills add kydavis/sherpy@implementation-planner
+npx skills add validkeys/sherpy@business-requirements-interview
+npx skills add validkeys/sherpy@technical-requirements-interview
+npx skills add validkeys/sherpy@implementation-planner
 ```
 
 ## Complete Workflow
@@ -359,7 +359,7 @@ quality_gates:
 
 - Check that you're in the correct directory
 - Ensure the skill is installed: `npx skills list`
-- Try reinstalling: `npx skills add kydavis/sherpy --force`
+- Try reinstalling: `npx skills add validkeys/sherpy --force`
 
 ### Can't resume interview
 

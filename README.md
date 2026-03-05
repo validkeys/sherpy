@@ -15,15 +15,15 @@ Sherpy provides three complementary skills:
 Install all Sherpy skills with a single command:
 
 ```bash
-npx skills add kydavis/sherpy
+npx skills add validkeys/sherpy
 ```
 
 Or install individual skills:
 
 ```bash
-npx skills add kydavis/sherpy@business-requirements-interview
-npx skills add kydavis/sherpy@technical-requirements-interview
-npx skills add kydavis/sherpy@implementation-planner
+npx skills add validkeys/sherpy@business-requirements-interview
+npx skills add validkeys/sherpy@technical-requirements-interview
+npx skills add validkeys/sherpy@implementation-planner
 ```
 
 ## Quick Start
