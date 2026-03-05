@@ -192,6 +192,72 @@ tasks:
     dependencies: [m1-001]
 ```
 
+## Automatic Gap Analysis
+
+After each phase, the skills automatically perform a **gap analysis** to ensure quality and completeness:
+
+### What Gets Checked
+
+**After Business Requirements:**
+
+- ✅ Problem statement clarity
+- ✅ Persona completeness
+- ✅ Requirement testability
+- ✅ Success criteria measurability
+- ✅ Undocumented assumptions
+- ✅ Scope realism
+
+**After Technical Requirements:**
+
+- ✅ Business alignment
+- ✅ Architecture completeness
+- ✅ Trade-off documentation
+- ✅ Security considerations
+- ✅ Testing strategy
+- ✅ Open questions blocking
+
+**After Implementation Planning:**
+
+- ✅ Task sizing (30m - 2.5h rule)
+- ✅ Requirement coverage
+- ✅ Dependency correctness
+- ✅ Missing task types (tests, docs, integration)
+- ✅ Parallel execution opportunities
+
+### Gap Analysis Output
+
+Each phase generates a report like:
+
+```yaml
+gap_analysis:
+  completeness_score: 8/10
+  consistency_score: 9/10
+
+  gaps_found:
+    - category: Personas
+      issue: "Missing admin user persona"
+      severity: medium
+      recommendation: "Add admin persona for user management features"
+
+  strong_areas:
+    - "Clear problem definition"
+    - "Well-defined success criteria"
+
+  ready_for_next_phase: yes
+```
+
+### Addressing Gaps
+
+If critical gaps are found, you'll be asked:
+
+> "I've identified some gaps. Would you like to:
+>
+> 1. Address them now (I'll ask follow-up questions)
+> 2. Proceed to next phase (address later)
+> 3. Review and decide"
+
+**Best Practice:** Address critical gaps (severity: high) before moving to the next phase. Minor gaps can be addressed later.
+
 ## Resuming Interviews
 
 If you need to stop and resume later, the interview progress is saved.

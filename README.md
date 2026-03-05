@@ -78,13 +78,46 @@ The skill will:
 
 ```
 Business Interview → Business Requirements YAML
-                                ↓
+         ↓                       ↓
+    Gap Analysis          Review & Address Gaps
+                                 ↓
 Technical Interview → Technical Requirements YAML
-                                ↓
+         ↓                       ↓
+    Gap Analysis          Review & Address Gaps
+                                 ↓
 Implementation Planner → Milestones + Task Files
-                                ↓
-                        Ready for Development
+         ↓                       ↓
+    Gap Analysis          Review & Address Gaps
+                                 ↓
+                         Ready for Development
 ```
+
+## Automatic Quality Assurance
+
+Each phase includes automatic **gap analysis** to ensure completeness:
+
+### Business Requirements Review
+
+- ✓ Checks for missing personas, unclear scope, vague success criteria
+- ✓ Identifies undocumented assumptions
+- ✓ Scores completeness (1-10) and provides recommendations
+- ✓ Asks if you want to address gaps before proceeding
+
+### Technical Requirements Review
+
+- ✓ Verifies alignment with business needs
+- ✓ Checks architecture completeness and consistency
+- ✓ Reviews trade-offs and open questions
+- ✓ Identifies missing error handling, security, monitoring
+
+### Implementation Plan Review
+
+- ✓ Validates task sizing (30m - 2.5h rule)
+- ✓ Checks requirement coverage (nothing missed)
+- ✓ Analyzes dependency graph for optimization
+- ✓ Identifies missing test/docs/integration tasks
+
+**Result:** Each phase outputs a gap analysis report with actionable recommendations before moving to the next phase.
 
 ## Key Features
 
