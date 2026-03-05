@@ -1,0 +1,177 @@
+version: "1.0.0"
+project: task-automation-cli
+generated: "2025-01-27T14:00:00Z"
+
+business_requirements: ../business-requirements.yaml
+technical_requirements: ../technical-requirements.yaml
+
+milestones:
+  - id: m0
+    name: Foundation & Project Setup
+    description: |
+      Establish project foundation including build system, testing infrastructure,
+      core abstractions, and development tooling. This milestone creates the
+      scaffolding upon which all future features will be built.
+    dependencies: []
+    estimated_duration: 1 week
+    tasks_file: milestone-m0.tasks.yaml
+    success_criteria:
+      - Project compiles successfully with TypeScript strict mode
+      - Test infrastructure operational (vitest configured)
+      - Linting and formatting configured and passing
+      - Basic CLI can be invoked and shows help
+      - All quality gates passing in CI
+    deliverables:
+      - Working development environment
+      - CI/CD pipeline
+      - Core type definitions
+      - Basic CLI structure
+
+  - id: m1
+    name: Workflow Definition & Loading
+    description: |
+      Implement workflow definition schema and loading system. Users can define
+      workflows in YAML format with tasks, dependencies, and configuration.
+      The system validates workflow files and loads them into executable structures.
+    dependencies: [m0]
+    estimated_duration: 2 weeks
+    tasks_file: milestone-m1.tasks.yaml
+    success_criteria:
+      - YAML workflow files can be parsed and validated
+      - Schema validation catches invalid workflows with clear error messages
+      - Workflow definitions can specify tasks and dependencies
+      - Configuration merging works correctly (global + local)
+      - All workflow loading code tested with >80% coverage
+    deliverables:
+      - Workflow schema definition
+      - YAML parser and validator
+      - Configuration management system
+      - Workflow loading tests
+
+  - id: m2
+    name: Task Execution Engine
+    description: |
+      Build the core task execution engine. The engine executes tasks in
+      dependency order, tracks progress, handles errors, and manages state.
+      This is the heart of the automation system.
+    dependencies: [m1]
+    estimated_duration: 2 weeks
+    tasks_file: milestone-m2.tasks.yaml
+    success_criteria:
+      - Tasks execute in correct dependency order
+      - Progress tracking works for long-running workflows
+      - Error handling stops execution and provides clear messages
+      - State is persisted and can be inspected
+      - Engine handles workflow interruption gracefully
+    deliverables:
+      - Task execution engine
+      - State management system
+      - Error handling and recovery
+      - Progress tracking and logging
+
+  - id: m3
+    name: Built-in Task Library
+    description: |
+      Implement built-in task types for common operations: shell commands,
+      file operations, git operations, and HTTP requests. These tasks form
+      the foundation that users can compose into workflows.
+    dependencies: [m2]
+    estimated_duration: 2 weeks
+    tasks_file: milestone-m3.tasks.yaml
+    success_criteria:
+      - Shell task executes commands and captures output
+      - File tasks can read, write, copy, and delete files
+      - Git tasks can perform common git operations
+      - HTTP task can make requests and handle responses
+      - All tasks have comprehensive test coverage
+    deliverables:
+      - Shell task implementation
+      - File operation tasks
+      - Git operation tasks
+      - HTTP request task
+      - Task documentation
+
+  - id: m4
+    name: CLI Interface & User Experience
+    description: |
+      Build the command-line interface with intuitive commands, helpful
+      error messages, and progress visualization. Make the tool pleasant
+      to use with good defaults and clear feedback.
+    dependencies: [m3]
+    estimated_duration: 1.5 weeks
+    tasks_file: milestone-m4.tasks.yaml
+    success_criteria:
+      - CLI commands are intuitive and well-documented
+      - Help text is comprehensive with examples
+      - Progress visualization shows task status clearly
+      - Error messages are actionable and helpful
+      - Tab completion works for major shells
+    deliverables:
+      - Complete CLI command set
+      - Help documentation
+      - Progress visualization
+      - Error message formatting
+      - Shell completion scripts
+
+  - id: m5
+    name: Documentation & Examples
+    description: |
+      Create comprehensive documentation including a getting started guide,
+      workflow examples, API reference, and troubleshooting guide. Provide
+      example workflows for common use cases.
+    dependencies: [m4]
+    estimated_duration: 1 week
+    tasks_file: milestone-m5.tasks.yaml
+    success_criteria:
+      - Getting started guide walks through first workflow
+      - Example workflows cover common use cases
+      - API reference documents all task types
+      - Troubleshooting guide addresses common issues
+      - README is clear and inviting
+    deliverables:
+      - Getting started guide
+      - Workflow examples (5-10 examples)
+      - API reference documentation
+      - Troubleshooting guide
+      - Updated README
+
+  - id: m6
+    name: Testing & Quality Assurance
+    description: |
+      Comprehensive testing including integration tests for complete workflows,
+      end-to-end tests for CLI commands, and performance testing. Ensure
+      the tool is reliable and performant.
+    dependencies: [m5]
+    estimated_duration: 1 week
+    tasks_file: milestone-m6.tasks.yaml
+    success_criteria:
+      - Integration tests cover all major workflows
+      - E2E tests validate CLI commands
+      - Performance tests verify < 100ms task overhead
+      - All tests passing consistently
+      - Test coverage > 80%
+    deliverables:
+      - Integration test suite
+      - E2E test suite
+      - Performance benchmarks
+      - Test coverage report
+
+  - id: m7
+    name: Release & Distribution
+    description: |
+      Prepare for first release: final polish, version tagging, npm publishing,
+      and release documentation. Create release notes and announcement.
+    dependencies: [m6]
+    estimated_duration: 0.5 weeks
+    tasks_file: milestone-m7.tasks.yaml
+    success_criteria:
+      - Package published to npm
+      - Release notes published
+      - GitHub release created with assets
+      - Installation tested on macOS, Linux, and Windows
+      - First users can install and run workflows successfully
+    deliverables:
+      - Published npm package
+      - GitHub release
+      - Release notes
+      - Installation verification

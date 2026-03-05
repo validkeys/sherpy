@@ -1,0 +1,254 @@
+project: task-automation-cli
+version: "1.0.0"
+generated: "2025-01-27T11:30:00Z"
+business_requirements_ref: ./business-requirements.yaml
+
+architecture:
+  pattern: Monolithic CLI application
+  description: |
+    Single executable CLI tool with a core engine and pluggable task system.
+    The application follows a layered architecture:
+    - CLI layer: Command parsing and user interaction
+    - Engine layer: Workflow execution and state management
+    - Task layer: Built-in and custom task implementations
+    - Storage layer: File-based configuration and state persistence
+  components:
+    - name: CLI Interface
+      responsibility: Parse commands, display progress, handle user interaction
+    - name: Workflow Engine
+      responsibility: Load workflow definitions, execute tasks in order, manage state
+    - name: Task Registry
+      responsibility: Register and dispatch task implementations
+    - name: Configuration Manager
+      responsibility: Load and merge configuration from multiple sources
+    - name: Logger
+      responsibility: Record execution details, handle file rotation
+
+technology_stack:
+  language: TypeScript
+  runtime: Node.js 18+
+  frameworks:
+    - Effect-TS (functional programming and error handling)
+    - Commander.js (CLI framework)
+  libraries:
+    core:
+      - yaml (workflow definition parsing)
+      - chalk (colored output)
+      - ora (progress spinners)
+      - glob (file pattern matching)
+    development:
+      - vitest (testing)
+      - "@effect/vitest (Effect-TS testing utilities)"
+      - typescript (type checking)
+      - prettier (code formatting)
+      - eslint (linting)
+  package_manager: npm
+
+project_structure:
+  type: single-repo
+  layout: |
+    task-automation-cli/
+    ├── src/
+    │   ├── cli/           # CLI commands and parsing
+    │   ├── engine/        # Workflow execution engine
+    │   ├── tasks/         # Built-in task implementations
+    │   ├── config/        # Configuration management
+    │   ├── storage/       # File system operations
+    │   └── utils/         # Shared utilities
+    ├── test/
+    │   ├── unit/
+    │   ├── integration/
+    │   └── e2e/
+    ├── docs/
+    │   └── examples/
+    ├── package.json
+    └── tsconfig.json
+  key_directories:
+    - path: src/engine
+      purpose: Core workflow execution logic
+    - path: src/tasks
+      purpose: Built-in task implementations (shell, file, git, etc.)
+    - path: test
+      purpose: All test files co-located by type
+
+data_model:
+  strategy: File-based YAML and JSON
+  database: None
+  schema_approach: |
+    - Workflow definitions: YAML files with TypeScript interfaces
+    - Configuration: YAML with environment variable substitution
+    - Execution state: JSON files for runtime state
+    - Logs: JSONL format for structured logging
+  migrations: Not applicable (no database)
+
+api:
+  style: CLI
+  framework: Commander.js
+  versioning: Semantic versioning for CLI commands
+  documentation: |
+    - Inline help via --help flags
+    - README with examples
+    - Separate docs/ directory for detailed guides
+
+security:
+  authentication:
+    method: None (local tool)
+    implementation: N/A
+  authorization:
+    model: None (single user)
+    implementation: N/A
+  secrets:
+    storage: Environment variables
+    rotation: Manual, user-managed
+  data_validation:
+    input: Schema validation using Effect-TS Schema
+    output: Type-safe return values with no runtime assertions
+
+testing:
+  strategy: TDD (Test-Driven Development)
+  types:
+    unit:
+      framework: vitest + @effect/vitest
+      coverage_target: 80%
+    integration:
+      framework: vitest
+      approach: Test task execution with real file system operations
+    e2e:
+      framework: vitest
+      approach: Test complete workflow execution scenarios
+  mocking:
+    strategy: Mock external services, use real file system
+    tools: vi.mock() for external dependencies
+
+development:
+  workflow: |
+    1. Write failing test
+    2. Implement minimum code to pass
+    3. Refactor while keeping tests green
+    4. Commit per feature/task
+  code_quality:
+    linter: eslint with TypeScript rules
+    formatter: prettier
+    type_checker: typescript strict mode
+  pre_commit_hooks:
+    - npm test (run all tests)
+    - npm run lint (check code style)
+    - npm run typecheck (verify types)
+
+ci_cd:
+  platform: GitHub Actions
+  pipeline:
+    - stage: Test
+      actions:
+        - Checkout code
+        - Install dependencies
+        - Run linter
+        - Run type checker
+        - Run unit tests
+        - Run integration tests
+        - Upload coverage report
+    - stage: Build
+      actions:
+        - Build TypeScript
+        - Create distributable package
+    - stage: Release
+      actions:
+        - Create git tag
+        - Publish to npm
+        - Create GitHub release
+
+deployment:
+  target: Local developer machines
+  packaging:
+    format: npm package
+    distribution: |
+      - Publish to npm registry
+      - Install globally via npm install -g
+      - Binary distribution via pkg (optional future)
+  environments:
+    - name: development
+      config: Local .env file, local config files
+    - name: production
+      config: User's global config, project-level config
+  release_process:
+    strategy: Semantic versioning (major.minor.patch)
+    automation: Automated via GitHub Actions on version tags
+
+monitoring:
+  logging:
+    format: Structured JSONL
+    destination: |
+      - Console output for user-facing messages
+      - .workflow/logs/ directory for execution logs
+      - Verbose mode for debugging
+  metrics:
+    collection: None (local tool)
+    visualization: None
+  alerts:
+    strategy: None (local tool)
+    channels: None
+
+performance:
+  targets:
+    response_time: < 100ms for command parsing
+    throughput: Handle workflows with 100+ tasks without degradation
+  optimization:
+    strategy: |
+      - Lazy loading of task implementations
+      - Parallel execution of independent tasks
+      - Minimal memory footprint for long-running workflows
+    monitoring: Timing logs in execution traces
+
+scalability:
+  approach: Vertical (single machine)
+  limits:
+    concurrent_users: 1 (single user)
+    data_volume: Limited by local disk and memory
+  bottlenecks:
+    - Disk I/O for file-intensive workflows
+    - Memory for very large workflow definitions
+
+constraints:
+  technical:
+    - Must run on macOS, Linux, and Windows
+    - No external service dependencies (must work offline)
+    - Node.js 18+ required
+  operational:
+    - Open source project with limited resources
+    - Community contributions welcome
+    - No paid support infrastructure
+
+trade_offs:
+  - decision: File-based storage instead of database
+    rationale: Simplicity, portability, no external dependencies
+    alternative: SQLite for better querying
+    consequence: Limited querying capabilities, but acceptable for single-user CLI tool
+
+  - decision: TypeScript instead of Go or Rust
+    rationale: Better ecosystem for CLI tools, easier contribution for JS developers
+    alternative: Go for single binary distribution
+    consequence: Requires Node.js runtime, but better developer experience
+
+  - decision: Monolithic architecture instead of microservices
+    rationale: Simpler deployment and development for single-user tool
+    alternative: Plugin-based microservices
+    consequence: Less flexible, but appropriate for scope
+
+  - decision: Effect-TS for core logic
+    rationale: Excellent error handling, type safety, functional patterns
+    alternative: Plain TypeScript with promises
+    consequence: Steeper learning curve, but more robust code
+
+open_questions:
+  - question: Should we support workflow sharing via git repositories?
+    options:
+      - Yes, clone workflows from git URLs
+      - No, keep workflows local only
+      - Future consideration, not V1
+    impact: Would enable workflow marketplace but adds complexity
+  - question: Should we build a web UI for workflow visualization?
+    options:
+      - Yes, local web UI
+      - No, CLI only
+      - Future consideration
+    impact: Better visualization but significant development effort
