@@ -462,6 +462,220 @@ project/
 └── milestone-m3.tasks.yaml  # Polish & release
 ```
 
+## Review & Gap Analysis
+
+After generating milestones and task files, automatically perform a gap analysis:
+
+### Completeness Check
+
+**Milestone Structure:**
+
+- [ ] All milestones have clear deliverables
+- [ ] Dependencies are correctly ordered
+- [ ] No circular dependencies
+- [ ] Timeline is realistic
+- [ ] Success criteria are testable
+
+**Task Breakdown:**
+
+- [ ] All requirements covered by tasks
+- [ ] Task sizing follows 30-150 minute rule
+- [ ] Dependencies between tasks are explicit
+- [ ] File scopes are clearly defined
+- [ ] Each task has validation criteria
+
+**Task Quality:**
+
+- [ ] Instructions are clear and actionable
+- [ ] Constraints are explicit
+- [ ] TDD checklist included for code tasks
+- [ ] Validation commands specified
+- [ ] Drift policy stated
+
+### Alignment Check
+
+**Business Requirements:**
+
+- [ ] All functional requirements mapped to tasks
+- [ ] Priority aligns with business priorities
+- [ ] MVP scope clearly defined
+- [ ] Success criteria can be verified
+
+**Technical Requirements:**
+
+- [ ] Architecture decisions reflected in structure
+- [ ] Technology choices enforced in constraints
+- [ ] Testing strategy implemented
+- [ ] Security requirements addressed
+
+### Task Sizing Analysis
+
+**Check for violations:**
+
+- Tasks < 30 minutes - merge or document rationale
+- Tasks > 150 minutes - split into smaller tasks
+- Critical path has appropriate task sizes
+
+**Generate sizing report:**
+
+```yaml
+task_sizing_analysis:
+  total_tasks: [count]
+  average_duration: [minutes]
+
+  too_small:
+    - task_id: [id]
+      estimate: [minutes]
+      rationale: [why it's small]
+      recommendation: [merge with X or accept]
+
+  too_large:
+    - task_id: [id]
+      estimate: [minutes]
+      recommendation: [split into X, Y, Z]
+
+  optimal_range:
+    count: [number]
+    percentage: [%]
+```
+
+### Dependency Analysis
+
+**Critical Path:**
+
+- [ ] Identify critical path through milestones
+- [ ] Check for parallel execution opportunities
+- [ ] Verify no unnecessary dependencies
+- [ ] Ensure dependencies are minimal but sufficient
+
+**Dependency graph validation:**
+
+```yaml
+dependency_analysis:
+  critical_path: [m0 → m1 → m3 → m5]
+  critical_path_duration: [time]
+
+  parallel_opportunities:
+    - [m2 and m3 can run in parallel]
+    - [m4 can start after m1]
+
+  dependency_issues:
+    - task: [id]
+      issue: [unnecessary dependency / missing dependency]
+      recommendation: [fix]
+```
+
+### Gap Identification
+
+**Common Gaps to Check:**
+
+- Missing infrastructure tasks (setup, tooling)
+- Missing test tasks
+- Missing documentation tasks
+- Missing error handling tasks
+- Missing configuration tasks
+- Missing deployment/release tasks
+- Undocumented assumptions in tasks
+- Missing style anchors for new patterns
+- Tasks without clear file boundaries
+- Missing integration tasks between components
+
+### Coverage Analysis
+
+**Requirement Coverage Matrix:**
+
+```yaml
+requirement_coverage:
+  functional_requirements:
+    FR-1: [m1-001, m1-002] # Tasks covering this requirement
+    FR-2: [m1-003]
+    FR-3: [gap] # Not covered!
+
+  non_functional_requirements:
+    performance: [m2-001, m2-002]
+    security: [m1-005]
+    usability: [gap] # Not covered!
+```
+
+### Style Anchor Validation
+
+- [ ] Style anchors reference existing files (if provided)
+- [ ] Style anchors demonstrate correct patterns
+- [ ] Line numbers are accurate
+- [ ] Descriptions are helpful
+
+### Review Output
+
+Generate a comprehensive gap analysis report:
+
+```yaml
+gap_analysis:
+  completeness_score: [1-10]
+  alignment_score: [1-10]
+  feasibility_score: [1-10]
+
+  critical_gaps:
+    - category: [category]
+      issue: [description]
+      impact: [high/medium/low]
+      affected_requirements: [FR-1, FR-2, etc]
+      recommendation: [how to fix]
+
+  missing_coverage:
+    requirements:
+      - [FR-X not covered]
+      - [NFR-Y not covered]
+
+    task_types:
+      - [Missing: integration tests]
+      - [Missing: documentation]
+
+  sizing_issues:
+    too_small_count: [n]
+    too_large_count: [n]
+    recommendations: [list]
+
+  dependency_issues:
+    - [description]
+
+  strong_areas:
+    - [what's well-planned]
+
+  optimization_opportunities:
+    - [parallel execution: m2 and m3]
+    - [combine tasks: m1-002 and m1-003]
+
+  suggestions:
+    - [improvement suggestions]
+
+  ready_for_development: [yes/no/with-modifications]
+
+  estimated_timeline:
+    optimistic: [time]
+    realistic: [time]
+    pessimistic: [time]
+```
+
+If critical gaps found, ask:
+
+> "I've identified some gaps in the implementation plan:
+>
+> **Critical Issues:**
+>
+> - [Issue 1]
+> - [Issue 2]
+>
+> **Missing Coverage:**
+>
+> - [Requirement FR-X not covered]
+> - [No integration tests planned]
+>
+> Would you like to:
+>
+> 1. Add missing tasks now (I'll generate them)
+> 2. Review and manually adjust the plan
+> 3. Proceed with development (address gaps as needed)"
+
 ## Integration with Development
 
 ### Starting a Milestone

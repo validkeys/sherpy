@@ -356,13 +356,162 @@ Each technical decision should include:
 4. **Plan for change** - Make reversible decisions where possible
 5. **Document rationale** - Future you will thank present you
 
+## Review & Gap Analysis
+
+After generating `technical-requirements.yaml`, automatically perform a gap analysis:
+
+### Alignment Check
+
+**Business Alignment:**
+
+- [ ] Architecture supports all functional requirements
+- [ ] Technology choices align with business constraints
+- [ ] Timeline is realistic for technical scope
+- [ ] Budget constraints respected in tool/service choices
+
+**Completeness Check:**
+
+**Architecture:**
+
+- [ ] Architecture pattern is clearly defined
+- [ ] Components and responsibilities documented
+- [ ] Data flow is clear
+- [ ] Integration points identified
+
+**Technology Stack:**
+
+- [ ] Language and runtime specified
+- [ ] Frameworks and libraries listed
+- [ ] Versions specified where critical
+- [ ] Alternatives considered and documented
+
+**Data Model:**
+
+- [ ] Storage strategy defined
+- [ ] Schema approach documented
+- [ ] Migration strategy if using database
+- [ ] Data validation approach specified
+
+**API:**
+
+- [ ] API style chosen (REST/GraphQL/RPC)
+- [ ] Framework selected
+- [ ] Versioning strategy defined
+- [ ] Documentation approach specified
+
+**Security:**
+
+- [ ] Authentication method defined
+- [ ] Authorization model specified
+- [ ] Secrets management approach
+- [ ] Input/output validation strategy
+
+**Testing:**
+
+- [ ] Testing strategy defined (TDD/BDD/etc)
+- [ ] Test types specified (unit/integration/e2e)
+- [ ] Frameworks selected
+- [ ] Coverage targets set
+
+**Deployment:**
+
+- [ ] Deployment target identified
+- [ ] Packaging format chosen
+- [ ] CI/CD approach defined
+- [ ] Release process documented
+
+### Consistency Check
+
+- [ ] No contradictions between technical decisions
+- [ ] Technology choices compatible with each other
+- [ ] Performance targets achievable with chosen stack
+- [ ] Security approach matches data sensitivity
+
+### Trade-off Analysis
+
+Review documented trade-offs:
+
+- [ ] Each trade-off has clear rationale
+- [ ] Alternatives were seriously considered
+- [ ] Consequences understood and acceptable
+- [ ] Reversibility assessed
+
+### Gap Identification
+
+**Common Gaps to Check:**
+
+- Missing error handling strategy
+- Undocumented edge cases
+- Unaddressed scalability concerns
+- Missing monitoring/observability plan
+- Unclear data migration path
+- Missing security threat model
+- Undocumented performance budgets
+- Missing disaster recovery plan
+- Unclear dependency versioning strategy
+- Missing code quality tooling
+
+### Open Questions Review
+
+Check if open questions are:
+
+- [ ] Clearly stated
+- [ ] Have identified options
+- [ ] Impact is understood
+- [ ] Decision timeline defined
+
+### Review Output
+
+Generate a gap analysis report with:
+
+```yaml
+gap_analysis:
+  business_alignment_score: [1-10]
+  completeness_score: [1-10]
+  consistency_score: [1-10]
+
+  gaps_found:
+    - category: [category]
+      issue: [description]
+      severity: [high/medium/low]
+      recommendation: [how to address]
+      business_impact: [what business requirement this affects]
+
+  strong_areas:
+    - [what's well-defined]
+
+  trade_offs_review:
+    - decision: [decision]
+      assessment: [well-reasoned/needs-review/concerning]
+      notes: [additional context]
+
+  open_questions_assessment:
+    - question: [question]
+      blocking: [yes/no]
+      recommendation: [resolve now/later/accept uncertainty]
+
+  suggestions:
+    - [improvement suggestions]
+
+  ready_for_implementation: [yes/no/with-modifications]
+```
+
+If critical gaps found (severity: high or blocking open questions), ask:
+
+> "I've identified some gaps in the technical requirements that could impact implementation. Would you like to:
+>
+> 1. Address them now (I'll ask follow-up questions)
+> 2. Proceed to implementation planning (address during development)
+> 3. Review the gaps and decide"
+
 ## Next Steps
 
-After completing the technical requirements interview:
+After completing the technical requirements interview and gap analysis:
 
-1. Review `technical-requirements.yaml` for completeness
-2. Validate technical choices against business constraints
-3. Use `/implementation-planner` to generate implementation plans
+1. Review gap analysis report
+2. Address any critical gaps or blocking questions
+3. Validate technical choices are realistic
+4. Use `/implementation-planner` to generate implementation plans
 
 ## Examples
 

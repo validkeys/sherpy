@@ -244,13 +244,118 @@ The skill will automatically:
 4. **Document assumptions** - Make implicit assumptions explicit
 5. **Consider constraints** - Be realistic about technical and business limitations
 
+## Review & Gap Analysis
+
+After generating `business-requirements.yaml`, automatically perform a gap analysis:
+
+### Completeness Check
+
+**Overview Section:**
+
+- [ ] Problem statement is clear and specific
+- [ ] Value proposition explains the "why"
+- [ ] Scope clearly defines in/out of scope items
+- [ ] Scope is realistic for the timeline
+
+**Personas:**
+
+- [ ] All user types are represented
+- [ ] Each persona has clear goals
+- [ ] Pain points are specific, not generic
+- [ ] Personas are distinct (not overlapping)
+
+**Requirements:**
+
+- [ ] Functional requirements are testable
+- [ ] Priority is assigned to each requirement
+- [ ] Rationale explains why each requirement exists
+- [ ] No duplicate or conflicting requirements
+
+**Non-Functional Requirements:**
+
+- [ ] Performance targets are measurable
+- [ ] Security requirements address key risks
+- [ ] Usability requirements are specific
+- [ ] Reliability requirements are realistic
+
+**Success Criteria:**
+
+- [ ] Each criterion has a metric
+- [ ] Targets are achievable and measurable
+- [ ] Criteria align with business goals
+
+**Constraints:**
+
+- [ ] Technical constraints are realistic
+- [ ] Business constraints are acknowledged
+- [ ] Timeline is feasible
+- [ ] Budget constraints are explicit
+
+**Dependencies:**
+
+- [ ] Internal dependencies identified
+- [ ] External dependencies documented
+- [ ] Critical path dependencies noted
+
+### Consistency Check
+
+- [ ] No contradictions between requirements
+- [ ] Priorities align with scope
+- [ ] Timeline aligns with requirements complexity
+- [ ] Success criteria align with scope
+
+### Gap Identification
+
+**Common Gaps to Check:**
+
+- Missing edge cases in requirements
+- Unstated assumptions about users
+- Implicit constraints not documented
+- Missing error handling scenarios
+- Unclear success/failure criteria
+- Missing integration points
+- Undocumented business rules
+
+### Review Output
+
+Generate a gap analysis report with:
+
+```yaml
+gap_analysis:
+  completeness_score: [1-10]
+  consistency_score: [1-10]
+
+  gaps_found:
+    - category: [category]
+      issue: [description]
+      severity: [high/medium/low]
+      recommendation: [how to address]
+
+  strong_areas:
+    - [what's well-defined]
+
+  suggestions:
+    - [improvement suggestions]
+
+  ready_for_next_phase: [yes/no/with-modifications]
+```
+
+If critical gaps found (severity: high), ask:
+
+> "I've identified some gaps in the business requirements. Would you like to:
+>
+> 1. Address them now (I'll ask follow-up questions)
+> 2. Proceed to technical requirements (address later)
+> 3. Review the gaps and decide"
+
 ## Next Steps
 
-After completing the business requirements interview:
+After completing the business requirements interview and gap analysis:
 
-1. Review `business-requirements.yaml` for accuracy
-2. Use `/technical-requirements-interview` to derive technical specifications
-3. Use `/implementation-planner` to generate implementation plans
+1. Review gap analysis report
+2. Address any critical gaps
+3. Use `/technical-requirements-interview` to derive technical specifications
+4. Use `/implementation-planner` to generate implementation plans
 
 ## Examples
 
