@@ -4,11 +4,13 @@ Sherpy is a collection of Claude Code skills that bring structured software deve
 
 ## Overview
 
-Sherpy provides three complementary skills:
+Sherpy provides complementary skills:
 
-1. **Business Requirements Interview** - Conduct structured interviews to gather comprehensive business requirements
-2. **Technical Requirements Interview** - Derive technical specifications from business requirements through guided interviews
-3. **Implementation Planner** - Generate detailed implementation plans with milestones, tasks, and best practices
+1. **Gap Analysis Worksheet** - Analyze initial requirements for gaps and generate a structured worksheet for a business analyst to complete
+2. **Business Requirements Interview** - Conduct structured interviews to gather comprehensive business requirements
+3. **Technical Requirements Interview** - Derive technical specifications from business requirements through guided interviews
+4. **Implementation Planner** - Generate detailed implementation plans with milestones, tasks, and best practices
+5. **Delivery Timeline** - Generate a day-by-day delivery timeline from milestones, including post-development PR, QA, and signoff phases
 
 ## Installation
 
@@ -21,9 +23,11 @@ npx skills add validkeys/sherpy
 Or install individual skills:
 
 ```bash
+npx skills add validkeys/sherpy@gap-analysis-worksheet
 npx skills add validkeys/sherpy@business-requirements-interview
 npx skills add validkeys/sherpy@technical-requirements-interview
 npx skills add validkeys/sherpy@implementation-planner
+npx skills add validkeys/sherpy@delivery-timeline
 ```
 
 ## Quick Start
@@ -77,6 +81,12 @@ The skill will:
 ## Workflow
 
 ```
+Initial Requirements (any format)
+         ↓
+Gap Analysis Worksheet → gap-analysis-worksheet.md
+         ↓
+  BA Completes Worksheet
+         ↓
 Business Interview → Business Requirements YAML
          ↓                       ↓
     Gap Analysis          Review & Address Gaps
@@ -88,6 +98,8 @@ Technical Interview → Technical Requirements YAML
 Implementation Planner → Milestones + Task Files
          ↓                       ↓
     Gap Analysis          Review & Address Gaps
+                                 ↓
+Delivery Timeline → timeline.yaml (Day 0 → Signoff)
                                  ↓
                          Ready for Development
 ```
@@ -144,9 +156,11 @@ Each phase includes automatic **gap analysis** to ensure completeness:
 
 ## Skills Documentation
 
+- [Gap Analysis Worksheet](./skills/gap-analysis-worksheet/) - Surface gaps in initial requirements before formal gathering
 - [Business Requirements Interview](./skills/business-requirements-interview/) - Gather business requirements
 - [Technical Requirements Interview](./skills/technical-requirements-interview/) - Define technical specifications
 - [Implementation Planner](./skills/implementation-planner/) - Generate implementation plans
+- [Delivery Timeline](./skills/delivery-timeline/) - Generate delivery timeline with PR, QA, and signoff phases
 
 ## Documentation
 

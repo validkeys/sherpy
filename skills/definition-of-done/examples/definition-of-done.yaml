@@ -1,0 +1,122 @@
+version: "1.0.0"
+project: task-automation-cli
+generated: "2026-03-26T10:00:00Z"
+sources:
+  milestones: milestones.yaml
+  business_requirements: business-requirements.yaml
+  technical_requirements: technical-requirements.yaml
+
+milestones:
+  # ── m0: Foundation & Project Setup ────────────────────────────────────────
+
+  - id: m0
+    name: Foundation & Project Setup
+    acceptance_criteria:
+      functional:
+        - criterion: "Running `npm install && npm run build` on a clean checkout produces a working CLI binary with no errors"
+        - criterion: "Running `sherpy --version` prints the current package version and exits 0"
+        - criterion: "CI pipeline runs on every push and reports pass/fail within 3 minutes"
+
+      non_functional:
+        - criterion: "Build completes in under 2 minutes on CI"
+          requirement_ref: TR-PERF-002
+        - criterion: "No lint errors or TypeScript compiler errors at baseline"
+
+      testing:
+        unit: "Test runner is configured and a passing baseline test exists (even if trivial)"
+        integration: "N/A — no service boundaries crossed in this milestone"
+        e2e: "N/A — no user-facing flows delivered yet"
+        regression: "All existing tests pass"
+
+      documentation:
+        - "README includes: prerequisites, install steps, and `npm run build` instructions"
+        - "CONTRIBUTING.md describes how to run the test suite locally"
+
+    exit_checklist:
+      - "[ ] `npm install && npm run build` succeeds on clean checkout"
+      - "[ ] `sherpy --version` works"
+      - "[ ] CI pipeline is green"
+      - "[ ] README setup instructions are accurate"
+      - "[ ] PR approved by at least one reviewer"
+      - "[ ] No open blocking issues"
+
+  # ── m1: Workflow Definition & Loading ─────────────────────────────────────
+
+  - id: m1
+    name: Workflow Definition & Loading
+    acceptance_criteria:
+      functional:
+        - criterion: "A valid workflow.yaml is loaded without errors and its task graph is printed to stdout"
+          requirement_ref: BR-001
+        - criterion: "A workflow.yaml with a missing required field (`name`, `tasks`) produces a descriptive validation error naming the missing field"
+          requirement_ref: BR-002
+        - criterion: "A workflow referencing an unknown task type produces an error with the line number of the offending entry"
+          requirement_ref: BR-002
+        - criterion: "Circular task dependencies are detected and reported with the cycle path"
+          requirement_ref: BR-002
+
+      non_functional:
+        - criterion: "A workflow file with 100 tasks loads and validates in under 200ms"
+          requirement_ref: TR-PERF-001
+
+      testing:
+        unit: "Unit tests cover: valid load, missing required field, unknown task type, circular dependency detection"
+        integration: "N/A"
+        e2e: "N/A"
+        regression: "All m0 tests continue to pass"
+
+      documentation:
+        - "docs/workflow-schema.md documents every supported field with examples"
+        - "An example valid workflow.yaml is added to examples/"
+
+    exit_checklist:
+      - "[ ] Valid workflow loads and prints task graph"
+      - "[ ] Invalid workflows produce clear, actionable error messages"
+      - "[ ] Circular dependency detection works"
+      - "[ ] Unit tests pass (all new test cases green)"
+      - "[ ] workflow-schema.md is accurate and complete"
+      - "[ ] PR approved by at least one reviewer"
+      - "[ ] No open blocking issues"
+
+  # ── m2: Task Execution Engine ──────────────────────────────────────────────
+
+  - id: m2
+    name: Task Execution Engine
+    acceptance_criteria:
+      functional:
+        - criterion: "Sequential tasks execute in dependency order; logs confirm ordering"
+          requirement_ref: BR-003
+        - criterion: "Tasks with no shared dependency execute in parallel; wall-clock time is less than the sum of individual task durations"
+          requirement_ref: BR-003
+        - criterion: "When a task fails and `on_failure: stop` is set, no downstream tasks execute and the process exits non-zero"
+          requirement_ref: BR-004
+        - criterion: "When a task fails and `on_failure: continue` is set, independent downstream tasks still execute"
+          requirement_ref: BR-004
+        - criterion: "Each task's stdout and stderr are captured and written to a per-task log file in `.sherpy/logs/`"
+
+      non_functional:
+        - criterion: "Execution overhead per task (scheduling, logging) is under 10ms"
+          requirement_ref: TR-PERF-001
+        - criterion: "Shell tasks cannot read environment variables not declared in the workflow's `env` block"
+          requirement_ref: TR-SEC-001
+
+      cross_milestone_notes:
+        - "Environment variable isolation (TR-SEC-001) begins here but full audit coverage is verified at m3 (Built-in Task Library)"
+
+      testing:
+        unit: "Unit tests cover: sequential ordering, parallel execution, stop-on-failure, continue-on-failure, log capture"
+        integration: "Integration test: run a real 3-task workflow end-to-end and assert ordering and exit codes"
+        e2e: "N/A"
+        regression: "All m0–m1 tests continue to pass"
+
+      documentation:
+        - "README execution section updated with `on_failure` options and log file location"
+
+    exit_checklist:
+      - "[ ] Sequential and parallel execution work correctly"
+      - "[ ] `on_failure: stop` and `on_failure: continue` behave as specified"
+      - "[ ] Logs written to `.sherpy/logs/`"
+      - "[ ] Env variable isolation verified"
+      - "[ ] Integration test passes"
+      - "[ ] PR approved by at least one reviewer"
+      - "[ ] No open blocking issues"
