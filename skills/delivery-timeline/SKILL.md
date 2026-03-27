@@ -23,6 +23,12 @@ Generates a delivery timeline from a completed `milestones.yaml`. Asks for deliv
 
 Read `milestones.yaml` and extract each milestone's `id`, `name`, `dependencies`, and `estimated_duration`.
 
+Also read `meta.ordering_strategy` if present. Store as `ordering_strategy`. If absent, default to `foundation-first`.
+
+The `ordering_strategy` value drives structural differences in Steps 6 and 7:
+- `multi-pr`: PR/review/merge cycles are inserted after each milestone in the development timeline; the fixed pre-QA PR block in Step 7 is omitted.
+- All other strategies (`single-feature-branch`, `value-first`, `risk-first`, `vertical-slice`, `foundation-first`): standard single-PR post-development flow (no change to current behavior).
+
 ### Step 2: Gather Delivery Parameters
 
 Ask the user the following three questions. You may present them together in a single message:
@@ -102,15 +108,49 @@ m2: completion_day = completion_day(m1) + estimated_days(m2)
 
 For parallel milestones (same dependency), they share the same `start_day` but their `completion_day` is calculated independently.
 
+#### Standard strategies (all except `multi-pr`)
+
 `last_milestone_day` = the highest `completion_day` among all milestones.
+
+#### `multi-pr` strategy
+
+After each milestone, insert four PR cycle phases before the next milestone may start. Use the milestone id as a prefix (e.g. for `m0`: `m0-pr-creation`, `m0-pr-review`, `m0-review-feedback`, `m0-merge`).
+
+| id pattern              | name pattern                   | estimated_days | notes                                    |
+|-------------------------|-------------------------------|----------------|------------------------------------------|
+| [milestone-id]-pr-creation     | [Milestone Name] PR Creation  | 0              | Opened on milestone completion_day       |
+| [milestone-id]-pr-review       | [Milestone Name] PR Review    | 2              |                                          |
+| [milestone-id]-review-feedback | [Milestone Name] Review Feedback Implementation | 2 |                               |
+| [milestone-id]-merge           | [Milestone Name] Merge        | 0              | Same day as review-feedback completion   |
+
+The PR cycle adds **4 calendar days** of overhead after each milestone. The next milestone's `start_day` = `completion_day` of its predecessor's `merge` phase (not the raw milestone `completion_day`).
+
+For sequential milestones under `multi-pr`:
+
+```
+m0: start_day=0, completion_day=estimated_days(m0)
+m0-pr-creation: start_day=completion_day(m0), completion_day=completion_day(m0)          # 0 days
+m0-pr-review: start_day=completion_day(m0), completion_day=completion_day(m0)+2
+m0-review-feedback: start_day=completion_day(m0)+2, completion_day=completion_day(m0)+4
+m0-merge: start_day=completion_day(m0)+4, completion_day=completion_day(m0)+4            # 0 days
+
+m1: start_day=completion_day(m0-merge), completion_day=completion_day(m0-merge)+estimated_days(m1)
+# ... repeat for each milestone
+```
+
+For parallel milestones under `multi-pr`, each branch gets its own PR cycle. A milestone depending on multiple parallel predecessors starts after the latest `merge` completion_day among them.
+
+`last_milestone_day` = the highest `completion_day` of the final `[milestone-id]-merge` phase across all milestones.
 
 ### Step 7: Append Post-Development Timeline
 
 Add delivery phase items starting from `last_milestone_day`. Each item has a `start_day` (day the work begins) and `completion_day` (day the work is done). Items with `estimated_days: 0` complete on the same day they start.
 
-Use `qa_rounds` and `qa_days_per_round` from Step 2 to drive the QA section. The PR/merge/deployment phases before QA are fixed regardless of project size.
+Use `qa_rounds` and `qa_days_per_round` from Step 2 to drive the QA section.
 
-#### Fixed Pre-QA Phases (all projects)
+#### Fixed Pre-QA Phases
+
+**Standard strategies (all except `multi-pr`):** Include the full PR/merge/deployment block below. This represents the single end-of-project PR.
 
 | id                   | name                            | estimated_days | notes                              |
 |----------------------|---------------------------------|----------------|------------------------------------|
@@ -119,6 +159,12 @@ Use `qa_rounds` and `qa_days_per_round` from Step 2 to drive the QA section. The
 | post-review-feedback | Review Feedback Implementation  | 2              |                                    |
 | post-merge           | Merge                           | 0              | Same day as feedback impl          |
 | post-deployment      | Deployment                      | 1              |                                    |
+
+**`multi-pr` strategy:** Omit `post-pr-creation`, `post-pr-review`, `post-review-feedback`, and `post-merge` — those cycles already occurred per-milestone in Step 6. Start directly with `post-deployment`.
+
+| id              | name        | estimated_days | notes                                    |
+|-----------------|-------------|----------------|------------------------------------------|
+| post-deployment | Deployment  | 1              | Final deployment after all milestones merged |
 
 #### QA Phases (repeated for each round 1..qa_rounds)
 
@@ -180,6 +226,7 @@ summary:
   qa_rounds: [n]                      # from user input
   qa_days_per_round: [n]              # from user input
   production_deploy_date: "[YYYY-MM-DD]"
+  delivery_model: [ordering_strategy value from milestones.yaml meta, e.g. multi-pr]
 
 timeline:
   # Development milestones
@@ -254,6 +301,12 @@ After generating `timeline.yaml`, perform a gap analysis and report findings inl
 - [ ] QA rounds in `timeline.yaml` match user-provided `qa_rounds`
 - [ ] QA Deadline phases each use `qa_days_per_round` days
 
+**Delivery Model**
+- [ ] `ordering_strategy` was read from `milestones.yaml` (or defaulted to `foundation-first`)
+- [ ] `delivery_model` in `timeline.yaml` summary matches the resolved strategy
+- [ ] For `multi-pr`: each milestone has a corresponding `[milestone-id]-pr-creation / pr-review / review-feedback / merge` block in the timeline; `post-pr-creation` through `post-merge` are absent from post-development phases
+- [ ] For all other strategies: `post-pr-creation` through `post-merge` are present in post-development phases; no per-milestone PR blocks exist
+
 **Timeline Integrity**
 - [ ] `completion_day` values are strictly increasing for sequential milestones
 - [ ] Parallel milestones have correct independent `completion_day` values
@@ -275,6 +328,7 @@ After generating files, output a brief inline report:
 ## Timeline Gap Analysis
 
 **Project:** [name]
+**Delivery Model:** [ordering_strategy]
 **Total Development Days:** [n] ([n] weeks)
 **Total Delivery Days:** [n] (including post-dev phases)
 **Project Size:** [Small / Large] ([reason if large])

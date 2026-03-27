@@ -15,6 +15,36 @@ This skill generates comprehensive implementation plans with milestones, tasks, 
 
 ## Planning Process
 
+### Phase 0: Ordering Strategy Selection
+
+Before analyzing requirements or generating milestones, ask the user which ordering strategy they want to use. Present this prompt verbatim:
+
+---
+
+Before I generate your implementation plan, I need to understand how you want milestones ordered. Choose a strategy:
+
+1. **Multi-PR / Trunk-Based** — Each milestone is independently PR-able and merged to `develop`/`main` continuously. Milestones must each be shippable on their own. Best for teams using trunk-based development.
+2. **Single Feature Branch** — All milestones live on one long-lived branch with a single PR at the end. Ordering is purely by technical dependency. Best for isolated features that must not touch main until complete.
+3. **Value-First (Demo-Driven)** — Milestones reordered to surface user-visible features as early as possible, even at the cost of deferring some infrastructure. Best for projects needing early stakeholder demos or feedback.
+4. **Risk-First** — Highest-uncertainty or most technically unknown milestones come first to surface blockers early. Best for projects with significant unknowns.
+5. **Vertical Slice / Walking Skeleton** — First milestone delivers a thin end-to-end slice spanning all architectural layers. Subsequent milestones flesh out each area. Best for validating architecture early.
+6. **Foundation-First (Sequential)** — Infrastructure and tooling first, then features, then polish. Strict sequential ordering. Best for greenfield builds with clear requirements.
+
+Or say **"recommend one"** and I'll choose based on your requirements.
+
+---
+
+Record the user's selection as `ordering_strategy`. If the user says "recommend one", analyze the requirements and select the most appropriate strategy, explaining your reasoning. Apply the corresponding ordering rules throughout Phase 2 (Milestone Identification).
+
+**Ordering rules per strategy:**
+
+- **Multi-PR / Trunk-Based**: Each milestone must have a "shippable" success criterion and must not depend on any other in-progress (unmerged) milestone. Milestones are sequenced so each can be independently reviewed and merged.
+- **Single Feature Branch**: Order purely by technical dependency. No shippability constraint per milestone.
+- **Value-First**: Sort milestones by user-facing impact descending. Bundle required foundation work into the first milestone as a prerequisite setup block.
+- **Risk-First**: Sort milestones by uncertainty/risk score descending. High-risk milestones are m0 or m1; de-risk early.
+- **Vertical Slice**: First milestone spans all architectural layers for one thin feature (e.g., one API endpoint + UI + persistence). Remaining milestones group by feature area.
+- **Foundation-First**: Current default ordering. Infrastructure → core features → advanced features → polish/release.
+
 ### Input Analysis
 
 1. **Load Requirements**
@@ -26,6 +56,7 @@ This skill generates comprehensive implementation plans with milestones, tasks, 
 2. **Identify Milestones**
 
    - Group related features into logical milestones
+   - Apply the ordering rules for the chosen `ordering_strategy` when sequencing milestones and setting `dependencies`
    - Establish dependency order
    - Define milestone deliverables
 
@@ -116,6 +147,10 @@ generated: [timestamp]
 
 business_requirements: [path/to/business-requirements.yaml]
 technical_requirements: [path/to/technical-requirements.yaml]
+
+meta:
+  ordering_strategy: [multi-pr|single-feature-branch|value-first|risk-first|vertical-slice|foundation-first]
+  ordering_rationale: "[One sentence explaining why this strategy was chosen]"
 
 milestones:
   - id: m0
@@ -393,9 +428,10 @@ With style anchors:
 
 The skill will:
 
-1. Load and analyze both requirement documents
-2. Identify logical milestones based on functionality
-3. Create dependency-ordered milestone breakdown
+1. Ask user to choose a milestone ordering strategy (Phase 0)
+2. Load and analyze both requirement documents
+3. Identify logical milestones based on functionality, sequenced by the chosen strategy
+4. Create dependency-ordered milestone breakdown
 4. For each milestone:
    - Generate detailed task breakdown
    - Add style anchor references
