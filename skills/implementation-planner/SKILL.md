@@ -66,12 +66,14 @@ Record the user's selection as `ordering_strategy`. If the user says "recommend 
    - Apply task sizing rules (30m - 2.5h)
    - Define task dependencies
    - Add style anchors and constraints
+   - Add final code review task for each milestone
 
 4. **Apply Best Practices**
    - TDD requirements
    - Style anchor references
    - Quality constraints
    - Drift prevention rules
+   - Comprehensive code reviews
 
 ## Best Practices (Embedded)
 
@@ -340,6 +342,199 @@ tasks:
   dependencies: [m1-004]
 ```
 
+## Code Review Task Requirement
+
+### Final Milestone Task
+
+**IMPORTANT**: Every milestone MUST include a final code review task as its last task. This task ensures quality control and alignment with style anchors before moving to the next milestone.
+
+### Code Review Task Template
+
+```yaml
+- id: [milestone]-[last-number]
+  name: Comprehensive code review for [milestone-name]
+  description: |
+    Conduct a thorough code review of all work completed in this milestone.
+    Review against style anchors, architectural decisions, and best practices.
+    Document findings and create actionable recommendations.
+  estimate_minutes: 60
+  type: code-review
+  dependencies: [all other tasks in this milestone]
+  files:
+    create:
+      - code-reviews/[yyyy-mm-dd]-{n}-code-review.yaml
+    modify: []
+    touch_only: [all files created/modified in this milestone]
+  instructions: |
+    **Objective:**
+    Review all code, tests, and documentation created or modified during this milestone
+    for quality, consistency, and alignment with project standards.
+
+    **Review Checklist:**
+    1. **Style Anchor Compliance:**
+       - [ ] Code follows patterns defined in style anchors
+       - [ ] Naming conventions are consistent
+       - [ ] File structure matches established patterns
+       - [ ] Import organization follows standards
+
+    2. **Code Quality:**
+       - [ ] No code duplication or unnecessary complexity
+       - [ ] Clear, meaningful variable and function names
+       - [ ] Appropriate use of types (no any, proper generics)
+       - [ ] Error handling is comprehensive and consistent
+       - [ ] No magic numbers or hardcoded values
+
+    3. **Testing:**
+       - [ ] All new code has corresponding tests
+       - [ ] Tests follow TDD patterns from style anchors
+       - [ ] Edge cases are covered
+       - [ ] Test names are descriptive
+
+    4. **Architecture:**
+       - [ ] Follows technical requirements decisions
+       - [ ] Service patterns are consistent
+       - [ ] Dependencies are properly injected
+       - [ ] No circular dependencies
+
+    5. **Documentation:**
+       - [ ] JSDoc comments for public APIs
+       - [ ] Complex logic is explained
+       - [ ] README updated if needed
+       - [ ] Examples are accurate
+
+    **Review Process:**
+    1. Review each file modified in this milestone
+    2. Compare against referenced style anchors
+    3. Run all quality gates (lint, typecheck, tests)
+    4. Document problems with specific file:line references
+    5. Provide recommended solutions with code examples
+    6. Create code-reviews/[yyyy-mm-dd]-{n}-code-review.yaml
+
+    **Output Format:**
+    ```yaml
+    milestone: [milestone-id]
+    milestone_name: [milestone-name]
+    review_date: [yyyy-mm-dd]
+    reviewer: claude-code
+
+    summary:
+      files_reviewed: [count]
+      issues_found: [count]
+      critical_issues: [count]
+      overall_quality: [excellent|good|fair|needs-improvement]
+
+    style_anchor_compliance:
+      - anchor: [path/to/anchor:lines]
+        status: [compliant|partial|non-compliant]
+        notes: |
+          [Specific observations]
+
+    issues:
+      - severity: [critical|major|minor]
+        category: [style|architecture|testing|documentation|security]
+        file: [path:line]
+        description: |
+          [Clear description of the problem]
+        recommendation: |
+          [Specific solution with code example if applicable]
+        related_anchor: [path/to/anchor:lines]
+
+      - severity: major
+        category: testing
+        file: src/example.ts:45
+        description: |
+          Missing error case test for invalid input scenario
+        recommendation: |
+          Add test case:
+          ```typescript
+          it.effect("should reject invalid input", () =>
+            Effect.gen(function* () {
+              const result = yield* service.process({ invalid: true })
+              expect(result).toMatchError(ValidationError)
+            })
+          )
+          ```
+        related_anchor: test/example.test.ts:20-35
+
+    strengths:
+      - [What was done well]
+      - [Good patterns observed]
+
+    recommendations:
+      - priority: [high|medium|low]
+        action: |
+          [Specific action to take]
+        impact: |
+          [Why this matters]
+
+    sign_off:
+      ready_for_next_milestone: [yes|no|with-fixes]
+      blocking_issues: [list of critical issues that must be fixed]
+      notes: |
+        [Additional context or observations]
+    ```
+
+    **Constraints:**
+    - ONLY review code from this milestone
+    - Reference specific style anchors when citing issues
+    - Provide actionable, specific recommendations
+    - Include code examples in recommendations when possible
+
+    **Validation:**
+    ```bash
+    # Ensure all quality gates pass
+    npm run lint
+    npm run typecheck
+    npm test
+
+    # Verify review file is created
+    ls code-reviews/[yyyy-mm-dd]-*.yaml
+    ```
+    Expected: All quality gates pass, review file exists with complete analysis
+
+    **Drift Policy:**
+    If critical issues are found that violate style anchors or architectural
+    decisions, mark as blocking and recommend fixes before proceeding to next milestone.
+
+  validation:
+    commands:
+      - npm run lint
+      - npm run typecheck
+      - npm test
+    expected_output: All quality gates pass
+    on_failure: Document failures in review and mark milestone as needing fixes
+```
+
+### Code Review Naming Convention
+
+Code review files should be named with:
+- Date: YYYY-MM-DD format of when the review was conducted
+- Sequence number: Incrementing number for multiple reviews on same date
+- Format: `code-reviews/YYYY-MM-DD-{n}-code-review.yaml`
+
+Examples:
+- `code-reviews/2025-01-27-1-code-review.yaml` (first review on Jan 27)
+- `code-reviews/2025-01-27-2-code-review.yaml` (second review same day)
+- `code-reviews/2025-01-28-1-code-review.yaml` (first review next day)
+
+### Integration with Milestone Flow
+
+1. **During Milestone Planning:**
+   - Count total tasks planned for milestone
+   - Add code review task as final task
+   - Set all other tasks as dependencies
+
+2. **During Development:**
+   - Complete all implementation tasks
+   - Run final code review task
+   - Address any blocking issues found
+   - Sign off on milestone completion
+
+3. **Before Next Milestone:**
+   - Verify code review sign-off is "yes" or "with-fixes"
+   - If "with-fixes", address blocking issues first
+   - Only proceed when quality standards are met
+
 ## Style Anchor Integration
 
 ### What Makes a Good Style Anchor
@@ -432,12 +627,13 @@ The skill will:
 2. Load and analyze both requirement documents
 3. Identify logical milestones based on functionality, sequenced by the chosen strategy
 4. Create dependency-ordered milestone breakdown
-4. For each milestone:
+5. For each milestone:
    - Generate detailed task breakdown
    - Add style anchor references
    - Apply task sizing rules
    - Add TDD and quality constraints
-5. Output `milestones.yaml` and `milestone-m*.tasks.yaml` files
+   - Add final code review task as last task
+6. Output `milestones.yaml` and `milestone-m*.tasks.yaml` files
 
 ## Planning Best Practices
 

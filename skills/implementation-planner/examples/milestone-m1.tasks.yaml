@@ -394,3 +394,175 @@ tasks:
       npm run docs:build
       ```
       Expected: All examples valid, docs build successfully
+
+  - id: m1-007
+    name: Comprehensive code review for Workflow Definition & Loading
+    description: |
+      Conduct a thorough code review of all work completed in this milestone.
+      Review against style anchors, architectural decisions, and best practices.
+      Document findings and create actionable recommendations.
+    estimate_minutes: 60
+    type: code-review
+    dependencies: [m1-001, m1-002, m1-003, m1-004, m1-005, m1-006]
+    files:
+      create:
+        - code-reviews/2025-01-27-1-code-review.yaml
+      modify: []
+      touch_only:
+        - src/workflow/types.ts
+        - src/workflow/types.test.ts
+        - src/workflow/parser.ts
+        - src/workflow/parser.test.ts
+        - src/config/loader.ts
+        - src/config/loader.test.ts
+        - src/config/types.ts
+        - src/workflow/validator.ts
+        - src/workflow/validator.test.ts
+        - src/workflow/loader.ts
+        - src/workflow/loader.test.ts
+        - docs/workflow-format.md
+        - examples/basic-workflow.yaml
+        - examples/advanced-workflow.yaml
+        - README.md
+    instructions: |
+      **Objective:**
+      Review all code, tests, and documentation created or modified during this milestone
+      for quality, consistency, and alignment with project standards.
+
+      **Review Checklist:**
+      1. **Style Anchor Compliance:**
+         - [ ] Code follows patterns defined in style anchors
+         - [ ] Schema.Class pattern used consistently in types.ts
+         - [ ] Effect.Service pattern used in all services
+         - [ ] Testing follows @effect/vitest patterns from anchors
+         - [ ] File structure matches established patterns
+
+      2. **Code Quality:**
+         - [ ] No type assertions (as) on external data
+         - [ ] All service methods return Effect types
+         - [ ] Proper error handling with Data.TaggedError
+         - [ ] No any types used
+         - [ ] Clear, meaningful names
+
+      3. **Testing:**
+         - [ ] All services have corresponding tests
+         - [ ] Tests use it.effect pattern
+         - [ ] Success and error cases covered
+         - [ ] Test fixtures are appropriate
+
+      4. **Architecture:**
+         - [ ] Effect.Service used for dependency injection
+         - [ ] Proper separation of concerns
+         - [ ] No circular dependencies
+         - [ ] Configuration loading follows layered approach
+
+      5. **Documentation:**
+         - [ ] JSDoc comments for public APIs
+         - [ ] Workflow format is clearly documented
+         - [ ] Examples are valid and helpful
+         - [ ] README is updated
+
+      **Review Process:**
+      1. Review each file created/modified in this milestone
+      2. Compare against style anchors:
+         - examples/workflow-schema.ts:1-50
+         - examples/config-loader.ts:10-60
+         - test/workflow-loader.test.ts:1-40
+      3. Run all quality gates:
+         ```bash
+         npm run lint
+         npm run typecheck
+         npm test
+         ```
+      4. Document problems with specific file:line references
+      5. Provide recommended solutions with code examples
+
+      **Output Format:**
+      Create code-reviews/2025-01-27-1-code-review.yaml with:
+      ```yaml
+      milestone: m1
+      milestone_name: Workflow Definition & Loading
+      review_date: 2025-01-27
+      reviewer: claude-code
+
+      summary:
+        files_reviewed: 14
+        issues_found: [count]
+        critical_issues: [count]
+        overall_quality: [excellent|good|fair|needs-improvement]
+
+      style_anchor_compliance:
+        - anchor: examples/workflow-schema.ts:1-50
+          status: [compliant|partial|non-compliant]
+          notes: |
+            [Check if Schema.Class pattern is followed correctly]
+
+        - anchor: examples/config-loader.ts:10-60
+          status: [compliant|partial|non-compliant]
+          notes: |
+            [Check if Effect patterns are consistent]
+
+        - anchor: test/workflow-loader.test.ts:1-40
+          status: [compliant|partial|non-compliant]
+          notes: |
+            [Check if test patterns match]
+
+      issues:
+        # Example issue format:
+        - severity: major
+          category: architecture
+          file: src/workflow/parser.ts:42
+          description: |
+            Using async/await instead of Effect.tryPromise pattern
+          recommendation: |
+            Change to Effect pattern:
+            ```typescript
+            // Current (incorrect):
+            async parse(path: string) {
+              const content = await fs.readFile(path)
+            }
+
+            // Should be:
+            parse: (path: string) => Effect.gen(function* () {
+              const content = yield* Effect.tryPromise(() => fs.readFile(path))
+            })
+            ```
+          related_anchor: examples/config-loader.ts:15-20
+
+      strengths:
+        - Schema.Class pattern consistently applied in types.ts
+        - Comprehensive test coverage for all services
+        - Clear documentation with good examples
+
+      recommendations:
+        - priority: high
+          action: |
+            Ensure all async operations use Effect.tryPromise pattern
+          impact: |
+            Maintains consistency with Effect-based architecture
+
+      sign_off:
+        ready_for_next_milestone: [yes|no|with-fixes]
+        blocking_issues: []
+        notes: |
+          [Overall assessment and next steps]
+      ```
+
+      **Constraints:**
+      - ONLY review code from this milestone (m1 tasks)
+      - Reference specific style anchors when citing issues
+      - Provide actionable, specific recommendations
+      - Include code examples in recommendations
+
+      **Validation:**
+      ```bash
+      npm run lint
+      npm run typecheck
+      npm test
+      ls code-reviews/2025-01-27-*.yaml
+      ```
+      Expected: All quality gates pass, review file exists
+
+      **Drift Policy:**
+      If critical issues are found that violate style anchors or architectural
+      decisions, mark as blocking and recommend fixes before proceeding to milestone m2.
