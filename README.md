@@ -10,7 +10,14 @@ Sherpy provides complementary skills:
 2. **Business Requirements Interview** - Conduct structured interviews to gather comprehensive business requirements
 3. **Technical Requirements Interview** - Derive technical specifications from business requirements through guided interviews
 4. **Implementation Planner** - Generate detailed implementation plans with milestones, tasks, and best practices
-5. **Delivery Timeline** - Generate a day-by-day delivery timeline from milestones, including post-development PR, QA, and signoff phases
+5. **Implementation Plan Review** - Review generated plans against best practices and identify gaps
+6. **Definition of Done** - Generate per-milestone acceptance criteria
+7. **Architecture Decision Records** - Extract and formalize architectural decisions as ADRs
+8. **Delivery Timeline** - Generate a day-by-day delivery timeline from milestones, including post-development PR, QA, and signoff phases
+9. **QA Test Plan** - Generate comprehensive test plans from requirements
+10. **Developer Summary** - Generate concise developer-focused project summaries
+11. **Executive Summary** - Generate stakeholder-friendly executive summaries
+12. **Sherpy Flow** - Orchestrate the complete workflow from start to finish with automatic file organization
 
 ## Installation
 
@@ -32,7 +39,25 @@ npx skills add validkeys/sherpy@delivery-timeline
 
 ## Quick Start
 
-### 1. Business Requirements Interview
+### Recommended: Use Sherpy Flow
+
+The easiest way to use Sherpy is with the complete workflow orchestrator:
+
+```
+/sherpy-flow
+```
+
+This will:
+- Guide you through all planning steps in sequence
+- Automatically organize files into the `docs/` folder structure
+- Resume from where you left off if interrupted
+- Generate both developer and executive summaries at the end
+
+### Or Use Individual Skills
+
+You can also run each skill independently:
+
+#### 1. Business Requirements Interview
 
 Start by gathering business requirements:
 
@@ -46,7 +71,7 @@ The skill will:
 - Track your progress in a JSONL file
 - Generate `business-requirements.yaml` when complete
 
-### 2. Technical Requirements Interview
+#### 2. Technical Requirements Interview
 
 Once you have business requirements, gather technical requirements:
 
@@ -60,7 +85,7 @@ The skill will:
 - Ask targeted technical questions
 - Generate `technical-requirements.yaml` when complete
 
-### 3. Implementation Planner
+#### 3. Implementation Planner
 
 Generate a detailed implementation plan:
 
@@ -77,6 +102,60 @@ The skill will:
   - Style anchors and code examples
   - TDD requirements
   - Quality constraints
+
+#### 4. Generate Summaries
+
+After planning is complete, generate summaries:
+
+```
+/developer-summary
+/executive-summary
+```
+
+These auto-discover your planning artifacts and generate focused summaries for developers and stakeholders.
+
+## Folder Structure
+
+Sherpy automatically organizes all planning artifacts into a structured folder hierarchy:
+
+```
+project/
+├── docs/
+│   ├── planning/
+│   │   ├── business-requirements.yaml
+│   │   ├── technical-requirements.yaml
+│   │   └── gap-analysis-worksheet.md
+│   ├── implementation/
+│   │   ├── milestones.yaml
+│   │   └── tasks/
+│   │       ├── milestone-m0.tasks.yaml
+│   │       ├── milestone-m1.tasks.yaml
+│   │       └── ...
+│   ├── delivery/
+│   │   ├── timeline.yaml
+│   │   ├── qa-test-plan.yaml
+│   │   └── definition-of-done.yaml
+│   ├── architecture/
+│   │   └── adrs/
+│   │       ├── INDEX.md
+│   │       ├── ADR-001-*.md
+│   │       └── ...
+│   ├── artifacts/
+│   │   ├── implementation-plan-review.yaml
+│   │   ├── business-interview.jsonl
+│   │   └── technical-interview.jsonl
+│   └── summaries/
+│       ├── developer-summary.md
+│       └── executive-summary.md
+```
+
+**When using `/sherpy-flow`**, all files are automatically organized into this structure after each skill completes. Individual skills still output to the project root, but sherpy-flow moves them to the appropriate locations.
+
+**Benefits of the folder structure:**
+- **Organized** - All related documents grouped together
+- **Scannable** - Easy to find what you need
+- **Gitignore-friendly** - Can exclude `docs/artifacts/` for interview transcripts
+- **Professional** - Ready for team collaboration and stakeholder review
 
 ## Workflow
 
@@ -97,9 +176,11 @@ Technical Interview → Technical Requirements YAML
                                  ↓
 Implementation Planner → Milestones + Task Files
          ↓                       ↓
-    Gap Analysis          Review & Address Gaps
+Plan Review             Address Critical Issues
                                  ↓
-Delivery Timeline → timeline.yaml (Day 0 → Signoff)
+Definition of Done + ADRs + Timeline + QA Plan
+                                 ↓
+Generate Developer & Executive Summaries
                                  ↓
                          Ready for Development
 ```
@@ -156,11 +237,27 @@ Each phase includes automatic **gap analysis** to ensure completeness:
 
 ## Skills Documentation
 
+### Planning & Requirements
 - [Gap Analysis Worksheet](./skills/gap-analysis-worksheet/) - Surface gaps in initial requirements before formal gathering
 - [Business Requirements Interview](./skills/business-requirements-interview/) - Gather business requirements
 - [Technical Requirements Interview](./skills/technical-requirements-interview/) - Define technical specifications
+
+### Implementation Planning
 - [Implementation Planner](./skills/implementation-planner/) - Generate implementation plans
+- [Implementation Plan Review](./skills/implementation-plan-review/) - Review plans against best practices
+
+### Architecture & Quality
+- [Architecture Decision Records](./skills/architecture-decision-record/) - Formalize architectural decisions as ADRs
+- [Definition of Done](./skills/definition-of-done/) - Generate per-milestone acceptance criteria
+- [QA Test Plan](./skills/qa-test-plan/) - Generate comprehensive test plans
+
+### Delivery & Summaries
 - [Delivery Timeline](./skills/delivery-timeline/) - Generate delivery timeline with PR, QA, and signoff phases
+- [Developer Summary](./skills/developer-summary/) - Generate developer-focused project summaries
+- [Executive Summary](./skills/executive-summary/) - Generate stakeholder-friendly executive summaries
+
+### Workflow Orchestration
+- [Sherpy Flow](./skills/sherpy-flow/) - Complete end-to-end workflow with automatic file organization
 
 ## Documentation
 

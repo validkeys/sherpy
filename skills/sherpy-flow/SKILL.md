@@ -1,6 +1,6 @@
 ---
 name: sherpy-flow
-description: Orchestrates the full Sherpy planning workflow from requirements to QA-ready delivery plan. Detects which artifacts already exist, shows a visual pipeline status, and guides through each skill in sequence — gap analysis, business interview, technical interview, implementation planning, plan review, definition of done, architecture decisions, delivery timeline, and QA test plan.
+description: Orchestrates the full Sherpy planning workflow from requirements to QA-ready delivery plan. Detects which artifacts already exist, shows a visual pipeline status, and guides through each skill in sequence — gap analysis, business interview, technical interview, implementation planning, plan review, definition of done, architecture decisions, delivery timeline, QA test plan, and summary generation. Automatically organizes all artifacts into a structured docs/ folder.
 ---
 
 # Sherpy Flow
@@ -27,25 +27,60 @@ Step 6   Definition of Done             → definition-of-done.yaml
 Step 7   Architecture Decision Records  → adrs/INDEX.md + adrs/ADR-*.md
 Step 8   Delivery Timeline              → timeline.yaml
 Step 9   QA Test Plan                   → qa-test-plan.yaml
+Step 10  Generate Summaries             → developer-summary.md + executive-summary.md
+```
+
+All artifacts are automatically organized into:
+```
+docs/
+├── planning/           (requirements, gap analysis)
+├── implementation/     (milestones, tasks)
+├── delivery/           (timeline, QA, definition of done)
+├── architecture/       (ADRs)
+├── artifacts/          (reviews, interview transcripts)
+└── summaries/          (developer & executive summaries)
 ```
 
 ## Process
 
+### Step 0: Initialize Folder Structure
+
+Before scanning for artifacts, ensure the folder structure exists. Create if missing:
+
+```bash
+mkdir -p docs/planning
+mkdir -p docs/implementation/tasks
+mkdir -p docs/delivery
+mkdir -p docs/architecture/adrs
+mkdir -p docs/artifacts
+mkdir -p docs/summaries
+```
+
+This ensures all generated files have a consistent home.
+
 ### Step 1: Scan for Existing Artifacts
 
-Check the project directory for these files to determine which steps are already complete:
+Check both root directory and docs/ folder structure for existing files. Artifacts may exist in either location (root = legacy, docs/ = organized):
 
-| Artifact | Indicates step complete |
-|----------|------------------------|
-| `gap-analysis-worksheet.md` | Step 1 |
-| `business-requirements.yaml` | Step 2 |
-| `technical-requirements.yaml` | Step 3 |
-| `milestones.yaml` | Step 4 |
-| `implementation-plan-review.yaml` | Step 5 |
-| `definition-of-done.yaml` | Step 6 |
-| `adrs/INDEX.md` | Step 7 |
-| `timeline.yaml` | Step 8 |
-| `qa-test-plan.yaml` | Step 9 |
+| Artifact | Organized Location | Legacy Location | Indicates step complete |
+|----------|-------------------|-----------------|------------------------|
+| `gap-analysis-worksheet.md` | `docs/planning/` | root | Step 1 |
+| `business-requirements.yaml` | `docs/planning/` | root | Step 2 |
+| `technical-requirements.yaml` | `docs/planning/` | root | Step 3 |
+| `milestones.yaml` | `docs/implementation/` | root | Step 4 |
+| `milestone-m*.tasks.yaml` | `docs/implementation/tasks/` | root | Step 4 |
+| `implementation-plan-review.yaml` | `docs/artifacts/` | root | Step 5 |
+| `definition-of-done.yaml` | `docs/delivery/` | root | Step 6 |
+| `adrs/INDEX.md` | `docs/architecture/adrs/` | `adrs/` | Step 7 |
+| `timeline.yaml` | `docs/delivery/` | root | Step 8 |
+| `qa-test-plan.yaml` | `docs/delivery/` | root | Step 9 |
+| `developer-summary.md` | `docs/summaries/` | n/a | Step 10 |
+| `executive-summary.md` | `docs/summaries/` | n/a | Step 10 |
+
+**Artifact Detection Logic:**
+- Check organized location first (`docs/`)
+- Fall back to legacy location (root) if not found
+- If found in legacy location, mark for organization after skill completes
 
 ### Step 2: Show Pipeline Status
 
@@ -63,6 +98,7 @@ Display a visual status of the pipeline before doing any work:
  ○  Step 7   Architecture Decision Records
  ○  Step 8   Delivery Timeline
  ○  Step 9   QA Test Plan
+ ○  Step 10  Generate Summaries
 
 Resuming from Step 3. Type "start over" to restart from Step 1,
 or specify a step number to jump to a specific point.
@@ -79,6 +115,40 @@ Wait for confirmation before proceeding.
 ### Step 3: Execute Each Step
 
 For each pending step, follow the referenced skill's full process as if it were invoked directly. The behavior at each step is identical to invoking the skill standalone — sherpy-flow is a sequencer, not a replacement.
+
+**After each skill completes**, organize generated files into the standard folder structure:
+
+#### File Organization Rules
+
+When a skill completes, move generated files to their organized locations:
+
+**Planning Documents:**
+- `gap-analysis-worksheet.md` → `docs/planning/`
+- `business-requirements.yaml` → `docs/planning/`
+- `technical-requirements.yaml` → `docs/planning/`
+
+**Implementation Documents:**
+- `milestones.yaml` → `docs/implementation/`
+- `milestone-m*.tasks.yaml` → `docs/implementation/tasks/`
+
+**Delivery Documents:**
+- `timeline.yaml` → `docs/delivery/`
+- `qa-test-plan.yaml` → `docs/delivery/`
+- `definition-of-done.yaml` → `docs/delivery/`
+
+**Architecture Documents:**
+- `adrs/` (entire directory) → `docs/architecture/adrs/`
+
+**Artifact/Review Documents:**
+- `business-interview.jsonl` → `docs/artifacts/`
+- `technical-interview.jsonl` → `docs/artifacts/`
+- `implementation-plan-review.yaml` → `docs/artifacts/`
+
+**Summary Documents:**
+- `developer-summary.md` → `docs/summaries/`
+- `executive-summary.md` → `docs/summaries/`
+
+Use `mv` commands to move files after skill completion. If a file already exists in the destination, skip the move (don't overwrite organized files).
 
 **Step 1 — Gap Analysis Worksheet (`/gap-analysis-worksheet`)**
 - Skip this step if no initial requirements document is present in the project directory.
@@ -129,7 +199,14 @@ For each pending step, follow the referenced skill's full process as if it were 
 **Step 9 — QA Test Plan (`/qa-test-plan`)**
 - Requires `business-requirements.yaml` + `technical-requirements.yaml`.
 - Generate `qa-test-plan.yaml`.
-- After completion, display coverage summary.
+- After completion, display coverage summary and ask: "QA test plan generated. Continue to Generate Summaries?"
+
+**Step 10 — Generate Summaries (`/developer-summary` + `/executive-summary`)**
+- Requires: `business-requirements.yaml`, `technical-requirements.yaml`, `milestones.yaml`, `timeline.yaml`.
+- Run `/developer-summary` first to generate the developer-focused summary.
+- Then run `/executive-summary` to generate the executive/stakeholder summary.
+- Both skills auto-discover required files from the docs/ folder structure.
+- After both summaries are generated, display confirmation and proceed to final summary.
 
 ### Step 4: Final Summary
 
@@ -141,24 +218,44 @@ After all steps are complete, display a final summary:
 **Project:** [name]
 **Directory:** [path]
 
-Generated Artifacts:
-  gap-analysis-worksheet.md       [if generated]
-  business-requirements.yaml
-  technical-requirements.yaml
-  milestones.yaml
-  milestone-m*.tasks.yaml         ([n] files)
-  implementation-plan-review.yaml
-  definition-of-done.yaml
-  adrs/                           ([n] ADR files)
-  timeline.yaml
-  qa-test-plan.yaml
+All artifacts organized in: docs/
+
+📋 Planning
+  ✓ gap-analysis-worksheet.md       [if generated]
+  ✓ business-requirements.yaml
+  ✓ technical-requirements.yaml
+
+🔨 Implementation
+  ✓ milestones.yaml
+  ✓ tasks/milestone-m*.tasks.yaml   ([n] task files)
+
+🚀 Delivery
+  ✓ timeline.yaml
+  ✓ qa-test-plan.yaml
+  ✓ definition-of-done.yaml
+
+🏛️ Architecture
+  ✓ adrs/INDEX.md + ADR-*.md        ([n] decision records)
+
+📊 Summaries
+  ✓ developer-summary.md
+  ✓ executive-summary.md
+
+📁 Artifacts
+  ✓ implementation-plan-review.yaml
+  ✓ business-interview.jsonl
+  ✓ technical-interview.jsonl
 
 Timeline: [project start date] → [production deploy date]
 Total Delivery Days: [n] business days
 QA Rounds: [n] × [n] days each
 
-Your project is ready for development. Use /create-continuation-prompt
-if you need to hand off context to a new session.
+Your project is fully planned and ready for development!
+
+Next Steps:
+- Review docs/summaries/ for project overview
+- Start development with docs/implementation/milestones.yaml
+- Use /create-continuation-prompt to hand off context to a new session
 ```
 
 ## Transition Rules
