@@ -9,19 +9,32 @@ Generates a delivery timeline from a completed `milestones.yaml`. Asks for deliv
 
 ## Prerequisites
 
-- Completed `milestones.yaml` (output from `/implementation-planner`)
+- Completed `{base_directory}/implementation/milestones.yaml` (output from `/implementation-planner`)
 
 ## Usage
 
 ```
-/delivery-timeline path/to/milestones.yaml
+/delivery-timeline [base-directory]
 ```
+
+If no directory is provided, auto-detect by looking for `implementation/milestones.yaml` in the current directory.
+
+If not found, prompt the user: "Where are your planning artifacts located?"
+
+Wait for the user to provide a path before proceeding. Store as `base_directory`.
 
 ## Process
 
-### Step 1: Load & Parse Milestones
+### Step 1: Determine Base Directory and Load Milestones
 
-Read `milestones.yaml` and extract each milestone's `id`, `name`, `dependencies`, and `estimated_duration`.
+If no directory parameter was provided, check if `implementation/milestones.yaml` exists in the current directory.
+
+- If found, use current directory as `base_directory`
+- If not found, prompt: "Where are your planning artifacts located?" and wait for user response
+
+Once `base_directory` is determined:
+
+Read `{base_directory}/implementation/milestones.yaml` and extract each milestone's `id`, `name`, `dependencies`, and `estimated_duration`.
 
 Also read `meta.ordering_strategy` if present. Store as `ordering_strategy`. If absent, default to `foundation-first`.
 
@@ -66,7 +79,7 @@ For durations expressed in days already (e.g., `5 days`), use the number as-is.
 
 ### Step 4: Update milestones.yaml
 
-Add `estimated_days` to every milestone entry in `milestones.yaml`. Do not modify any other fields.
+Add `estimated_days` to every milestone entry in `{base_directory}/implementation/milestones.yaml`. Do not modify any other fields.
 
 Example — before:
 ```yaml
@@ -202,7 +215,12 @@ Include all items from `timeline` in the same order. Also append a final entry f
 
 ### Step 9: Generate timeline.yaml
 
-Write `timeline.yaml` in the same directory as `milestones.yaml`.
+Write `{base_directory}/delivery/timeline.yaml`.
+
+Create directory if it doesn't exist:
+```bash
+mkdir -p {base_directory}/delivery
+```
 
 ## Output Format
 

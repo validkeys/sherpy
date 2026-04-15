@@ -13,9 +13,9 @@ This skill guides you through a structured interview process to gather comprehen
 
 1. **One question at a time** - Never ask multiple questions in a single turn
 2. **Provide options** - Each question includes 2-5 recommended options plus free-form input
-3. **Track progress** - All Q&A pairs are immediately appended to `business-interview.jsonl`
+3. **Track progress** - All Q&A pairs are immediately appended to `{base_directory}/artifacts/business-interview.jsonl`
 4. **Resume capability** - If JSONL exists, continue from last question
-5. **Structured output** - Generate `business-requirements.yaml` upon completion
+5. **Structured output** - Generate `business-requirements.yaml` in `{base_directory}/requirements/` upon completion
 
 ### Interview Categories
 
@@ -114,7 +114,7 @@ Each question follows this structure:
 
 ## JSONL Format
 
-Track all questions and answers in `business-interview.jsonl`:
+Track all questions and answers in `{base_directory}/artifacts/business-interview.jsonl`:
 
 ```json
 {"id":1,"category":"Problem Definition","question":"What is the primary problem your project aims to solve?","answer":"Automate manual workflow - Replace time-consuming manual processes with automated workflows","timestamp":"2025-01-27T10:00:00Z"}
@@ -123,7 +123,13 @@ Track all questions and answers in `business-interview.jsonl`:
 
 ## Output Format
 
-Generate `business-requirements.yaml` with this structure:
+Generate `{base_directory}/requirements/business-requirements.yaml` with this structure:
+
+Create directory if it doesn't exist:
+```bash
+mkdir -p {base_directory}/requirements
+mkdir -p {base_directory}/artifacts
+```
 
 ```yaml
 project: [project-name]
@@ -220,21 +226,22 @@ risks:
 To start a new interview:
 
 ```
-/business-requirements-interview
+/business-requirements-interview [base-directory]
 ```
 
-To resume an existing interview (if `business-interview.jsonl` exists):
+If no directory is provided, auto-detect by looking for `requirements/business-requirements.yaml` in the current directory.
 
-```
-/business-requirements-interview
-```
+If not found, prompt the user: "Where should I create the requirements documents?"
+
+Wait for the user to provide a path before proceeding. Store as `base_directory`.
 
 The skill will automatically:
 
-1. Check for existing `business-interview.jsonl`
+1. Check for existing `{base_directory}/artifacts/business-interview.jsonl`
 2. Resume from the last question if found
 3. Continue asking questions until complete
-4. Generate `business-requirements.yaml` when finished
+4. Generate `business-requirements.yaml` in `{base_directory}/requirements/` when finished
+5. Save interview transcript to `{base_directory}/artifacts/business-interview.jsonl`
 
 ## Best Practices
 

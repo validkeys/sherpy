@@ -9,19 +9,30 @@ Extracts key architectural decisions from `technical-requirements.yaml` and form
 
 ## Prerequisites
 
-- `technical-requirements.yaml` (output from `/technical-requirements-interview`)
+- `{base_directory}/requirements/technical-requirements.yaml` (output from `/technical-requirements-interview`)
 
 ## Usage
 
 ```
-/architecture-decision-record path/to/technical-requirements.yaml
+/architecture-decision-record [base-directory]
 ```
+
+If no directory is provided, auto-detect by looking for `requirements/technical-requirements.yaml` in the current directory.
+
+If not found, prompt the user: "Where are your requirements documents located?"
+
+Wait for the user to provide a path before proceeding. Store as `base_directory`.
 
 ## Process
 
-### Step 1: Load Technical Requirements
+### Step 1: Determine Base Directory and Load Technical Requirements
 
-Read `technical-requirements.yaml` and identify every decision point. Look in these sections:
+If no directory parameter was provided, check if `requirements/technical-requirements.yaml` exists in the current directory.
+
+- If found, use current directory as `base_directory`
+- If not found, prompt: "Where are your requirements documents located?" and wait for user response
+
+Once `base_directory` is determined, read `{base_directory}/requirements/technical-requirements.yaml` and identify every decision point. Look in these sections:
 
 - `architecture` — patterns, frameworks, structural choices
 - `technology_stack` — language, runtime, major libraries, databases
@@ -56,9 +67,12 @@ Group related decisions logically (e.g., all auth decisions before all deploymen
 
 ### Step 4: Write ADR Files
 
-Create an `adrs/` directory in the same location as `technical-requirements.yaml`.
+Create the directory structure:
+```bash
+mkdir -p {base_directory}/architecture/adrs
+```
 
-Write one file per ADR: `adrs/ADR-NNN-kebab-case-title.md`
+Write one file per ADR: `{base_directory}/architecture/adrs/ADR-NNN-kebab-case-title.md`
 
 Each file follows this format:
 
@@ -102,9 +116,9 @@ Start with "We will..." or "The system will..."]
 - [risk 1, if any]
 ```
 
-### Step 5: Write adrs/INDEX.md
+### Step 5: Write INDEX.md
 
-Create `adrs/INDEX.md` as a summary table:
+Create `{base_directory}/architecture/adrs/INDEX.md` as a summary table:
 
 ```markdown
 # Architecture Decision Records
@@ -144,7 +158,7 @@ formalized as Accepted ADRs — these are candidates for future ADRs.]
 ## Output Format
 
 ```
-adrs/
+{base_directory}/architecture/adrs/
   INDEX.md
   ADR-001-[title].md
   ADR-002-[title].md

@@ -27,8 +27,14 @@ This skill surfaces those gaps as targeted questions, ensuring the formal requir
 ## Usage
 
 ```
-/gap-analysis-worksheet path/to/requirements
+/gap-analysis-worksheet path/to/requirements [base-directory]
 ```
+
+If no base directory is provided, auto-detect by looking for `requirements/` folder in the current directory.
+
+If not found, prompt the user: "Where should I create the gap analysis worksheet?"
+
+Wait for the user to provide a path before proceeding. Store as `base_directory`.
 
 ## Process
 
@@ -63,7 +69,12 @@ Skip any category that has **no gaps** — do not include empty sections in the 
 
 ### Step 3: Write gap-analysis-worksheet.md
 
-Write `gap-analysis-worksheet.md` in the same directory as the input requirements document.
+Write `{base_directory}/requirements/gap-analysis-worksheet.md`.
+
+Create directory if it doesn't exist:
+```bash
+mkdir -p {base_directory}/requirements
+```
 
 ## Output Format
 

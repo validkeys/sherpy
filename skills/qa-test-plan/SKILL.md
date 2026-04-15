@@ -9,20 +9,31 @@ Generates a structured QA test plan from completed requirements artifacts. Produ
 
 ## Prerequisites
 
-- `business-requirements.yaml` (output from `/business-requirements-interview`)
-- `technical-requirements.yaml` (output from `/technical-requirements-interview`)
+- `{base_directory}/requirements/business-requirements.yaml` (output from `/business-requirements-interview`)
+- `{base_directory}/requirements/technical-requirements.yaml` (output from `/technical-requirements-interview`)
 
 ## Usage
 
 ```
-/qa-test-plan path/to/business-requirements.yaml path/to/technical-requirements.yaml
+/qa-test-plan [base-directory]
 ```
+
+If no directory is provided, auto-detect by looking for `requirements/business-requirements.yaml` in the current directory.
+
+If not found, prompt the user: "Where are your requirements documents located?"
+
+Wait for the user to provide a path before proceeding. Store as `base_directory`.
 
 ## Process
 
-### Step 1: Load Requirements
+### Step 1: Determine Base Directory and Load Requirements
 
-Read both requirements files. Extract:
+If no directory parameter was provided, check if `requirements/business-requirements.yaml` exists in the current directory.
+
+- If found, use current directory as `base_directory`
+- If not found, prompt: "Where are your requirements documents located?" and wait for user response
+
+Once `base_directory` is determined, read both requirements files from `{base_directory}/requirements/`. Extract:
 
 **From `business-requirements.yaml`:**
 - Functional requirements and user stories
@@ -91,7 +102,12 @@ Flag any functional requirement with **no test case** as a coverage gap.
 
 ### Step 5: Generate qa-test-plan.yaml
 
-Write `qa-test-plan.yaml` in the same directory as the input files.
+Write `{base_directory}/delivery/qa-test-plan.yaml`.
+
+Create directory if it doesn't exist:
+```bash
+mkdir -p {base_directory}/delivery
+```
 
 ### Step 6: Gap Analysis
 

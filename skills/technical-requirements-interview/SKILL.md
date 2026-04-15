@@ -9,7 +9,7 @@ This skill guides you through a structured interview to derive technical require
 
 ## Prerequisites
 
-- Completed `business-requirements.yaml` file
+- Completed `{base_directory}/requirements/business-requirements.yaml` file
 - Clear understanding of the problem domain
 
 ## Interview Process
@@ -19,9 +19,9 @@ This skill guides you through a structured interview to derive technical require
 1. **One question at a time** - Never ask multiple questions in a single turn
 2. **Business context first** - Load and understand business requirements before asking technical questions
 3. **Provide options** - Each question includes 2-5 recommended options plus free-form input
-4. **Track progress** - All Q&A pairs are immediately appended to `technical-interview.jsonl`
+4. **Track progress** - All Q&A pairs are immediately appended to `{base_directory}/artifacts/technical-interview.jsonl`
 5. **Resume capability** - If JSONL exists, continue from last question
-6. **Structured output** - Generate `technical-requirements.yaml` upon completion
+6. **Structured output** - Generate `technical-requirements.yaml` in `{base_directory}/requirements/` upon completion
 
 ### Interview Categories
 
@@ -140,7 +140,7 @@ Each question follows this structure:
 
 ## JSONL Format
 
-Track all questions and answers in `technical-interview.jsonl`:
+Track all questions and answers in `{base_directory}/artifacts/technical-interview.jsonl`:
 
 ```json
 {"id":1,"category":"Architecture & Patterns","question":"What architecture pattern best fits this project?","answer":"Monolithic application - Single deployable unit, simpler to develop and deploy initially","question_number":"Q1","timestamp":"2025-01-27T11:00:00Z"}
@@ -149,7 +149,13 @@ Track all questions and answers in `technical-interview.jsonl`:
 
 ## Output Format
 
-Generate `technical-requirements.yaml` with this structure:
+Generate `{base_directory}/requirements/technical-requirements.yaml` with this structure:
+
+Create directory if it doesn't exist:
+```bash
+mkdir -p {base_directory}/requirements
+mkdir -p {base_directory}/artifacts
+```
 
 ```yaml
 project: [project-name]
@@ -321,22 +327,23 @@ open_questions:
 To start a new technical interview:
 
 ```
-/technical-requirements-interview path/to/business-requirements.yaml
+/technical-requirements-interview [base-directory]
 ```
 
-To resume an existing interview:
+If no directory is provided, auto-detect by looking for `requirements/business-requirements.yaml` in the current directory.
 
-```
-/technical-requirements-interview path/to/business-requirements.yaml
-```
+If not found, prompt the user: "Where are your requirements documents located?"
+
+Wait for the user to provide a path before proceeding. Store as `base_directory`.
 
 The skill will automatically:
 
-1. Load business requirements as context
-2. Check for existing `technical-interview.jsonl`
+1. Load business requirements from `{base_directory}/requirements/business-requirements.yaml` as context
+2. Check for existing `{base_directory}/artifacts/technical-interview.jsonl`
 3. Resume from last question if found
 4. Ask targeted technical questions
-5. Generate `technical-requirements.yaml` when complete
+5. Generate `technical-requirements.yaml` in `{base_directory}/requirements/` when complete
+6. Save interview transcript to `{base_directory}/artifacts/technical-interview.jsonl`
 
 ## Decision Tracking
 

@@ -612,19 +612,19 @@ quality_gates:
 Generate implementation plan:
 
 ```
-/implementation-planner path/to/business-requirements.yaml path/to/technical-requirements.yaml
+/implementation-planner [base-directory]
 ```
 
-With style anchors:
+If no directory is provided, auto-detect by looking for `requirements/business-requirements.yaml` in the current directory.
 
-```
-/implementation-planner path/to/business-requirements.yaml path/to/technical-requirements.yaml --style-anchors ./examples
-```
+If not found, prompt the user: "Where are your requirements documents located?"
+
+Wait for the user to provide a path before proceeding. Store as `base_directory`.
 
 The skill will:
 
 1. Ask user to choose a milestone ordering strategy (Phase 0)
-2. Load and analyze both requirement documents
+2. Load and analyze both requirement documents from `{base_directory}/requirements/`
 3. Identify logical milestones based on functionality, sequenced by the chosen strategy
 4. Create dependency-ordered milestone breakdown
 5. For each milestone:
@@ -633,7 +633,9 @@ The skill will:
    - Apply task sizing rules
    - Add TDD and quality constraints
    - Add final code review task as last task
-6. Output `milestones.yaml` and `milestone-m*.tasks.yaml` files
+6. Output `milestones.yaml` to `{base_directory}/implementation/`
+7. Output `milestone-m*.tasks.yaml` files to `{base_directory}/implementation/tasks/`
+8. If generated, output `FEATURE_FLAGS.md` and `UPDATES.md` to `{base_directory}/artifacts/`
 
 ## Planning Best Practices
 
@@ -685,13 +687,26 @@ project/
 
 ### Output Files
 
+Create directories if they don't exist:
+```bash
+mkdir -p {base_directory}/implementation/tasks
+mkdir -p {base_directory}/artifacts
 ```
-project/
-├── milestones.yaml
-├── milestone-m0.tasks.yaml  # Foundation
-├── milestone-m1.tasks.yaml  # Core features
-├── milestone-m2.tasks.yaml  # Advanced features
-└── milestone-m3.tasks.yaml  # Polish & release
+
+Output structure:
+```
+{base_directory}/
+├── implementation/
+│   ├── milestones.yaml
+│   └── tasks/
+│       ├── milestone-m0.tasks.yaml  # Foundation
+│       ├── milestone-m1.tasks.yaml  # Core features
+│       ├── milestone-m2.tasks.yaml  # Advanced features
+│       └── milestone-m3.tasks.yaml  # Polish & release
+└── artifacts/
+    ├── FEATURE_FLAGS.md     # If generated
+    ├── UPDATES.md          # If generated
+    └── style-anchor-references.yaml  # If generated
 ```
 
 ## Review & Gap Analysis

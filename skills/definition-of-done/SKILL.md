@@ -9,25 +9,38 @@ Generates explicit, verifiable acceptance criteria for every milestone in `miles
 
 ## Prerequisites
 
-- `milestones.yaml` (output from `/implementation-planner`, with `estimated_days` added by `/delivery-timeline`)
-- `business-requirements.yaml` (output from `/business-requirements-interview`)
-- Optional: `technical-requirements.yaml` for NFR-derived gates
+- `{base_directory}/implementation/milestones.yaml` (output from `/implementation-planner`, with `estimated_days` added by `/delivery-timeline`)
+- `{base_directory}/requirements/business-requirements.yaml` (output from `/business-requirements-interview`)
+- Optional: `{base_directory}/requirements/technical-requirements.yaml` for NFR-derived gates
 
 ## Usage
 
 ```
-/definition-of-done path/to/milestones.yaml path/to/business-requirements.yaml
+/definition-of-done [base-directory]
 ```
+
+If no directory is provided, auto-detect by looking for `implementation/milestones.yaml` in the current directory.
+
+If not found, prompt the user: "Where are your planning artifacts located?"
+
+Wait for the user to provide a path before proceeding. Store as `base_directory`.
 
 ## Process
 
-### Step 1: Load Artifacts
+### Step 1: Determine Base Directory and Load Artifacts
 
-Read `milestones.yaml` and extract each milestone's `id`, `name`, `description`, and any `deliverables` or `tasks` references.
+If no directory parameter was provided, check if `implementation/milestones.yaml` exists in the current directory.
 
-Read `business-requirements.yaml` and map each functional requirement to the milestone(s) most likely to deliver it. Use the milestone name and description to make this determination — do not guess at task-level details.
+- If found, use current directory as `base_directory`
+- If not found, prompt: "Where are your planning artifacts located?" and wait for user response
 
-If `technical-requirements.yaml` exists in the same directory, read it to extract non-functional requirements (performance targets, security requirements, test coverage thresholds).
+Once `base_directory` is determined:
+
+Read `{base_directory}/implementation/milestones.yaml` and extract each milestone's `id`, `name`, `description`, and any `deliverables` or `tasks` references.
+
+Read `{base_directory}/requirements/business-requirements.yaml` and map each functional requirement to the milestone(s) most likely to deliver it. Use the milestone name and description to make this determination — do not guess at task-level details.
+
+If `{base_directory}/requirements/technical-requirements.yaml` exists, read it to extract non-functional requirements (performance targets, security requirements, test coverage thresholds).
 
 ### Step 2: Derive Acceptance Criteria per Milestone
 
@@ -65,7 +78,12 @@ If any requirement spans multiple milestones (e.g., "end-to-end encryption" requ
 
 ### Step 4: Generate definition-of-done.yaml
 
-Write `definition-of-done.yaml` in the same directory as `milestones.yaml`.
+Write `{base_directory}/delivery/definition-of-done.yaml`.
+
+Create directory if it doesn't exist:
+```bash
+mkdir -p {base_directory}/delivery
+```
 
 ### Step 5: Gap Analysis
 

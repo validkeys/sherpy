@@ -10,10 +10,14 @@ Generates a developer-focused summary document from Sherpy planning artifacts. P
 ## Usage
 
 ```
-/developer-summary [project-directory]
+/developer-summary [base-directory]
 ```
 
-If no directory is given, use the current working directory.
+If no directory is provided, auto-detect by looking for `requirements/business-requirements.yaml` in the current directory.
+
+If not found, prompt the user: "Where are your planning artifacts located?"
+
+Wait for the user to provide a path before proceeding.
 
 ## Required Artifacts
 
@@ -21,26 +25,31 @@ The skill auto-discovers these files from the standard Sherpy folder structure:
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `business-requirements.yaml` | `docs/planning/` | Project overview and deliverables |
-| `technical-requirements.yaml` | `docs/planning/` | Technical context and architecture |
-| `milestones.yaml` | `docs/implementation/` | Milestone sequence and estimates |
-| `timeline.yaml` | `docs/delivery/` | Timeline estimates and dates |
+| `business-requirements.yaml` | `requirements/` | Project overview and deliverables |
+| `technical-requirements.yaml` | `requirements/` | Technical context and architecture |
+| `milestones.yaml` | `implementation/` | Milestone sequence and estimates |
+| `timeline.yaml` | `delivery/` | Timeline estimates and dates |
 
 ## Process
 
-### Step 1: Scan for Required Artifacts
+### Step 1: Determine Base Directory and Scan for Required Artifacts
 
-Check the project directory for required files in standard locations. Display status:
+If no directory parameter was provided, check if `requirements/business-requirements.yaml` exists in the current directory.
+
+- If found, use current directory as `base_directory`
+- If not found, prompt: "Where are your planning artifacts located?" and wait for user response
+
+Once `base_directory` is determined, scan for required files in standard locations. Display status:
 
 ```
 ## Developer Summary — Dependency Check
 
 Scanning for required artifacts...
 
- ✓  docs/planning/business-requirements.yaml
- ✓  docs/planning/technical-requirements.yaml
- ✓  docs/implementation/milestones.yaml
- ✗  docs/delivery/timeline.yaml
+ ✓  requirements/business-requirements.yaml
+ ✓  requirements/technical-requirements.yaml
+ ✓  implementation/milestones.yaml
+ ✗  delivery/timeline.yaml
 
 3 of 4 required files found.
 ```
@@ -90,7 +99,7 @@ Read all available files and extract:
 
 ### Step 4: Generate Developer Summary
 
-Create `docs/summaries/developer-summary.md` with this structure:
+Create `summaries/developer-summary.md` with this structure:
 
 ```markdown
 # Developer Summary
@@ -152,8 +161,8 @@ Create `docs/summaries/developer-summary.md` with this structure:
 
 ---
 
-*For detailed implementation tasks, see `docs/implementation/milestones.yaml` and task files in `docs/implementation/tasks/`.*
-*For delivery timeline and QA plan, see `docs/delivery/`.*
+*For detailed implementation tasks, see `implementation/milestones.yaml` and task files in `implementation/tasks/`.*
+*For delivery timeline and QA plan, see `delivery/`.*
 ```
 
 ### Step 5: Handle Missing Data Gracefully
@@ -183,7 +192,7 @@ After generating the summary, display:
 ```
 ## Developer Summary Generated ✓
 
-**Location:** docs/summaries/developer-summary.md
+**Location:** summaries/developer-summary.md
 **Size:** [file size]
 
 Summary includes:
@@ -343,18 +352,18 @@ If a file is missing expected fields:
 
 ## Output Location
 
-Always output to: `docs/summaries/developer-summary.md`
+Always output to: `{base_directory}/summaries/developer-summary.md`
 
-If the directories don't exist, create them:
+If the directory doesn't exist, create it:
 ```bash
-mkdir -p docs/summaries
+mkdir -p {base_directory}/summaries
 ```
 
 ## Integration with Sherpy Flow
 
-This skill is designed to be called as **Step 10** in `/sherpy-flow`. It should:
+This skill is designed to be called as **Step 10** in `/sherpy-flow`. When invoked by sherpy-flow, it receives `base_directory` as a parameter. It should:
 - Run after all planning artifacts are complete
-- Auto-discover files from the organized folder structure
+- Auto-discover files from the organized folder structure within `base_directory`
 - Not fail if optional files (like timeline) are missing
 - Generate the summary without user interaction when all files are present
 

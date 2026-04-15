@@ -10,10 +10,12 @@ Runs the complete Sherpy planning pipeline from start to finish. Detects your cu
 ## Usage
 
 ```
-/sherpy-flow [project-directory]
+/sherpy-flow [output-directory]
 ```
 
-If no directory is given, use the current working directory.
+If no directory is provided, prompt the user: "Where should I create the planning documents?"
+
+Wait for the user to provide a path before proceeding.
 
 ## The Pipeline
 
@@ -32,55 +34,53 @@ Step 10  Generate Summaries             → developer-summary.md + executive-sum
 
 All artifacts are automatically organized into:
 ```
-docs/
-├── planning/           (requirements, gap analysis)
-├── implementation/     (milestones, tasks)
+<output-directory>/
+├── requirements/       (requirements, gap analysis)
+├── implementation/
+│   ├── milestones.yaml
+│   └── tasks/          (milestone task files)
 ├── delivery/           (timeline, QA, definition of done)
-├── architecture/       (ADRs)
-├── artifacts/          (reviews, interview transcripts)
+├── architecture/
+│   └── adrs/           (ADRs)
+├── artifacts/          (reviews, interview transcripts, style anchors, CONTINUE.md, etc.)
 └── summaries/          (developer & executive summaries)
 ```
 
 ## Process
 
-### Step 0: Initialize Folder Structure
+### Step 0: Determine Output Directory
 
-Before scanning for artifacts, ensure the folder structure exists. Create if missing:
+If no directory was provided as a parameter, prompt the user:
 
-```bash
-mkdir -p docs/planning
-mkdir -p docs/implementation/tasks
-mkdir -p docs/delivery
-mkdir -p docs/architecture/adrs
-mkdir -p docs/artifacts
-mkdir -p docs/summaries
-```
+> "Where should I create the planning documents?"
 
-This ensures all generated files have a consistent home.
+Wait for user response. Store the provided path as `base_directory`.
+
+**Do not create any folders at this stage.** Folders will be created on-demand by individual skills as they generate files.
 
 ### Step 1: Scan for Existing Artifacts
 
-Check both root directory and docs/ folder structure for existing files. Artifacts may exist in either location (root = legacy, docs/ = organized):
+Check the `base_directory` for existing files in the organized structure:
 
-| Artifact | Organized Location | Legacy Location | Indicates step complete |
-|----------|-------------------|-----------------|------------------------|
-| `gap-analysis-worksheet.md` | `docs/planning/` | root | Step 1 |
-| `business-requirements.yaml` | `docs/planning/` | root | Step 2 |
-| `technical-requirements.yaml` | `docs/planning/` | root | Step 3 |
-| `milestones.yaml` | `docs/implementation/` | root | Step 4 |
-| `milestone-m*.tasks.yaml` | `docs/implementation/tasks/` | root | Step 4 |
-| `implementation-plan-review.yaml` | `docs/artifacts/` | root | Step 5 |
-| `definition-of-done.yaml` | `docs/delivery/` | root | Step 6 |
-| `adrs/INDEX.md` | `docs/architecture/adrs/` | `adrs/` | Step 7 |
-| `timeline.yaml` | `docs/delivery/` | root | Step 8 |
-| `qa-test-plan.yaml` | `docs/delivery/` | root | Step 9 |
-| `developer-summary.md` | `docs/summaries/` | n/a | Step 10 |
-| `executive-summary.md` | `docs/summaries/` | n/a | Step 10 |
+| Artifact | Expected Location | Indicates step complete |
+|----------|-------------------|------------------------|
+| `gap-analysis-worksheet.md` | `requirements/` | Step 1 |
+| `business-requirements.yaml` | `requirements/` | Step 2 |
+| `technical-requirements.yaml` | `requirements/` | Step 3 |
+| `milestones.yaml` | `implementation/` | Step 4 |
+| `milestone-m*.tasks.yaml` | `implementation/tasks/` | Step 4 |
+| `implementation-plan-review.yaml` | `artifacts/` | Step 5 |
+| `definition-of-done.yaml` | `delivery/` | Step 6 |
+| `adrs/INDEX.md` | `architecture/adrs/` | Step 7 |
+| `timeline.yaml` | `delivery/` | Step 8 |
+| `qa-test-plan.yaml` | `delivery/` | Step 9 |
+| `developer-summary.md` | `summaries/` | Step 10 |
+| `executive-summary.md` | `summaries/` | Step 10 |
 
 **Artifact Detection Logic:**
-- Check organized location first (`docs/`)
-- Fall back to legacy location (root) if not found
-- If found in legacy location, mark for organization after skill completes
+- Check expected location within `base_directory`
+- If file exists, step is considered complete
+- Skills will create folders as needed when generating files
 
 ### Step 2: Show Pipeline Status
 
@@ -114,41 +114,45 @@ Wait for confirmation before proceeding.
 
 ### Step 3: Execute Each Step
 
-For each pending step, follow the referenced skill's full process as if it were invoked directly. The behavior at each step is identical to invoking the skill standalone — sherpy-flow is a sequencer, not a replacement.
+For each pending step, invoke the referenced skill with `base_directory` as a parameter. The behavior at each step is identical to invoking the skill standalone — sherpy-flow is a sequencer, not a replacement.
 
-**After each skill completes**, organize generated files into the standard folder structure:
+**Important**: Pass `base_directory` to each skill so files are created in the correct location. Skills will create necessary folders as they generate output.
 
-#### File Organization Rules
+**Each skill is responsible for outputting files to the correct location within `base_directory`**. No post-skill file organization is needed — skills create folders and files in the right place from the start.
 
-When a skill completes, move generated files to their organized locations:
+#### Expected Output Locations
 
-**Planning Documents:**
-- `gap-analysis-worksheet.md` → `docs/planning/`
-- `business-requirements.yaml` → `docs/planning/`
-- `technical-requirements.yaml` → `docs/planning/`
+When invoking skills, pass `base_directory` as a parameter (or skills will auto-detect by looking for `requirements/business-requirements.yaml`):
+
+**Requirements Documents:**
+- `gap-analysis-worksheet.md` → `{base_directory}/requirements/`
+- `business-requirements.yaml` → `{base_directory}/requirements/`
+- `technical-requirements.yaml` → `{base_directory}/requirements/`
 
 **Implementation Documents:**
-- `milestones.yaml` → `docs/implementation/`
-- `milestone-m*.tasks.yaml` → `docs/implementation/tasks/`
+- `milestones.yaml` → `{base_directory}/implementation/`
+- `milestone-m*.tasks.yaml` → `{base_directory}/implementation/tasks/`
 
 **Delivery Documents:**
-- `timeline.yaml` → `docs/delivery/`
-- `qa-test-plan.yaml` → `docs/delivery/`
-- `definition-of-done.yaml` → `docs/delivery/`
+- `timeline.yaml` → `{base_directory}/delivery/`
+- `qa-test-plan.yaml` → `{base_directory}/delivery/`
+- `definition-of-done.yaml` → `{base_directory}/delivery/`
 
 **Architecture Documents:**
-- `adrs/` (entire directory) → `docs/architecture/adrs/`
+- `adrs/INDEX.md` + `ADR-*.md` → `{base_directory}/architecture/adrs/`
 
 **Artifact/Review Documents:**
-- `business-interview.jsonl` → `docs/artifacts/`
-- `technical-interview.jsonl` → `docs/artifacts/`
-- `implementation-plan-review.yaml` → `docs/artifacts/`
+- `business-interview.jsonl` → `{base_directory}/artifacts/`
+- `technical-interview.jsonl` → `{base_directory}/artifacts/`
+- `implementation-plan-review.yaml` → `{base_directory}/artifacts/`
+- `style-anchor-references.yaml` → `{base_directory}/artifacts/`
+- `CONTINUE.md` → `{base_directory}/artifacts/`
+- `FEATURE_FLAGS.md` → `{base_directory}/artifacts/`
+- `UPDATES.md` → `{base_directory}/artifacts/`
 
 **Summary Documents:**
-- `developer-summary.md` → `docs/summaries/`
-- `executive-summary.md` → `docs/summaries/`
-
-Use `mv` commands to move files after skill completion. If a file already exists in the destination, skip the move (don't overwrite organized files).
+- `developer-summary.md` → `{base_directory}/summaries/`
+- `executive-summary.md` → `{base_directory}/summaries/`
 
 **Step 1 — Gap Analysis Worksheet (`/gap-analysis-worksheet`)**
 - Skip this step if no initial requirements document is present in the project directory.
@@ -218,9 +222,9 @@ After all steps are complete, display a final summary:
 **Project:** [name]
 **Directory:** [path]
 
-All artifacts organized in: docs/
+All artifacts organized in: [base_directory]/
 
-📋 Planning
+📋 Requirements
   ✓ gap-analysis-worksheet.md       [if generated]
   ✓ business-requirements.yaml
   ✓ technical-requirements.yaml
@@ -253,8 +257,8 @@ QA Rounds: [n] × [n] days each
 Your project is fully planned and ready for development!
 
 Next Steps:
-- Review docs/summaries/ for project overview
-- Start development with docs/implementation/milestones.yaml
+- Review summaries/ for project overview
+- Start development with implementation/milestones.yaml
 - Use /create-continuation-prompt to hand off context to a new session
 ```
 

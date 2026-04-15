@@ -10,10 +10,14 @@ Generates an executive-focused summary document from Sherpy planning artifacts. 
 ## Usage
 
 ```
-/executive-summary [project-directory]
+/executive-summary [base-directory]
 ```
 
-If no directory is given, use the current working directory.
+If no directory is provided, auto-detect by looking for `requirements/business-requirements.yaml` in the current directory.
+
+If not found, prompt the user: "Where are your planning artifacts located?"
+
+Wait for the user to provide a path before proceeding.
 
 ## Required Artifacts
 
@@ -21,24 +25,29 @@ The skill auto-discovers these files from the standard Sherpy folder structure:
 
 | File | Location | Purpose |
 |------|----------|---------|
-| `business-requirements.yaml` | `docs/planning/` | Business problem, features, success metrics |
-| `technical-requirements.yaml` | `docs/planning/` | Technical context, risks, dependencies |
-| `timeline.yaml` | `docs/delivery/` | Delivery timeline and milestones |
+| `business-requirements.yaml` | `requirements/` | Business problem, features, success metrics |
+| `technical-requirements.yaml` | `requirements/` | Technical context, risks, dependencies |
+| `timeline.yaml` | `delivery/` | Delivery timeline and milestones |
 
 ## Process
 
-### Step 1: Scan for Required Artifacts
+### Step 1: Determine Base Directory and Scan for Required Artifacts
 
-Check the project directory for required files in standard locations. Display status:
+If no directory parameter was provided, check if `requirements/business-requirements.yaml` exists in the current directory.
+
+- If found, use current directory as `base_directory`
+- If not found, prompt: "Where are your planning artifacts located?" and wait for user response
+
+Once `base_directory` is determined, scan for required files in standard locations. Display status:
 
 ```
 ## Executive Summary — Dependency Check
 
 Scanning for required artifacts...
 
- ✓  docs/planning/business-requirements.yaml
- ✓  docs/planning/technical-requirements.yaml
- ✓  docs/delivery/timeline.yaml
+ ✓  requirements/business-requirements.yaml
+ ✓  requirements/technical-requirements.yaml
+ ✓  delivery/timeline.yaml
 
 3 of 3 required files found.
 ```
@@ -88,7 +97,7 @@ Read all available files and extract:
 
 ### Step 4: Generate Executive Summary
 
-Create `docs/summaries/executive-summary.md` with this structure:
+Create `summaries/executive-summary.md` with this structure:
 
 ```markdown
 # Executive Summary
@@ -221,7 +230,7 @@ Create `docs/summaries/executive-summary.md` with this structure:
 
 ---
 
-*For detailed technical specifications, see `docs/planning/technical-requirements.yaml`.*
+*For detailed technical specifications, see `requirements/technical-requirements.yaml`.*
 *For detailed implementation plan, see `docs/implementation/milestones.yaml`.*
 ```
 
@@ -257,7 +266,7 @@ After generating the summary, display:
 ```
 ## Executive Summary Generated ✓
 
-**Location:** docs/summaries/executive-summary.md
+**Location:** summaries/executive-summary.md
 **Size:** [file size]
 
 Summary includes:
@@ -482,11 +491,11 @@ If expected fields are missing:
 
 ## Output Location
 
-Always output to: `docs/summaries/executive-summary.md`
+Always output to: `{base_directory}/summaries/executive-summary.md`
 
-Create directories if they don't exist:
+Create directory if it doesn't exist:
 ```bash
-mkdir -p docs/summaries
+mkdir -p {base_directory}/summaries
 ```
 
 ## Writing Style Guidelines
@@ -517,9 +526,9 @@ mkdir -p docs/summaries
 
 ## Integration with Sherpy Flow
 
-This skill is designed to be called as the **last part of Step 10** in `/sherpy-flow`, after `/developer-summary`. It should:
+This skill is designed to be called as the **last part of Step 10** in `/sherpy-flow`, after `/developer-summary`. When invoked by sherpy-flow, it receives `base_directory` as a parameter. It should:
 - Run after all planning artifacts are complete
-- Auto-discover files from the organized folder structure
+- Auto-discover files from the organized folder structure within `base_directory`
 - Not fail if optional sections are missing
 - Generate the summary without user interaction when all files are present
 
