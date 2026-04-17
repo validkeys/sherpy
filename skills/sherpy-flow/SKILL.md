@@ -116,6 +116,11 @@ Wait for confirmation before proceeding.
 
 For each pending step, invoke the referenced skill with `base_directory` as a parameter. The behavior at each step is identical to invoking the skill standalone — sherpy-flow is a sequencer, not a replacement.
 
+**CRITICAL EXECUTION RULES:**
+1. **NEVER proceed to the next step without explicit user confirmation** — wait after EVERY step completion
+2. **Step 4 (Style Anchors Collection) MUST NOT be skipped automatically** — always prompt the user and show risk warning if they want to skip
+3. **If a step requires input that doesn't exist (e.g., Step 5 needs style anchors)**, STOP and warn the user before proceeding
+
 **Important**: Pass `base_directory` to each skill so files are created in the correct location. Skills will create necessary folders as they generate output.
 
 **Each skill is responsible for outputting files to the correct location within `base_directory`**. No post-skill file organization is needed — skills create folders and files in the right place from the start.
@@ -167,20 +172,31 @@ When invoking skills, pass `base_directory` as a parameter (or skills will auto-
 - Run the full interview process.
 - After `technical-requirements.yaml` is generated, display the summary and ask: "Technical requirements complete. Continue to Style Anchors Collection?"
 
-**Step 4 — Style Anchors Collection (`/style-anchors-collection`)**
+**Step 4 — Style Anchors Collection (`/style-anchors-collection`) — MANDATORY**
 - Requires `technical-requirements.yaml`.
+- **CRITICAL**: This step MUST NOT be skipped. Style anchors prevent architectural drift during implementation.
 - Interactive collection of code examples demonstrating approved patterns.
 - For each pattern identified in technical requirements:
   - Ask user to provide file path, line range
   - Document what pattern demonstrates
   - Specify when to use it
 - Generate `style-anchors/` directory with individual `.md` files and `index.yaml`.
+- **If user wants to skip**: Ask "Skipping style anchors significantly increases drift risk. Are you sure? (yes to skip / no to collect anchors)"
 - After completion, display anchor count by category and ask: "Style anchors collected. Continue to Implementation Planner?"
 
 **Step 5 — Implementation Planner (`/implementation-planner`)**
-- Requires `business-requirements.yaml`, `technical-requirements.yaml`, and `style-anchors/index.yaml`.
+- Requires `business-requirements.yaml`, `technical-requirements.yaml`.
+- **Strongly Recommended**: `style-anchors/index.yaml` from Step 4.
+- **Before running**: If no style anchors exist, STOP and ask:
+  > "⚠️  No style anchors found. The implementation plan will be generated WITHOUT concrete code examples, which significantly increases architectural drift risk.
+  >
+  > Would you like to:
+  > 1. Go back to Step 4 and collect style anchors now (recommended)
+  > 2. Continue without style anchors (not recommended)"
+- If user chooses option 1, return to Step 4.
+- If user chooses option 2, confirm with: "Proceeding without style anchors. Expect higher drift during implementation. Continue? (yes/no)"
 - Generate `milestones.yaml` + `milestone-m*.tasks.yaml`.
-- Style anchors from Step 4 are automatically referenced in task instructions.
+- Style anchors from Step 4 are automatically referenced in task instructions (if collected).
 - After completion, display milestone summary and ask: "Implementation plan generated. Continue to Plan Review?"
 
 **Step 6 — Implementation Plan Review (`/implementation-plan-review`)**
@@ -269,8 +285,11 @@ Next Steps:
 
 ## Transition Rules
 
-- **Always confirm** before moving to the next step — never auto-advance.
+- **CRITICAL: Always confirm** before moving to the next step — **NEVER auto-advance**. Wait for explicit user confirmation after EVERY step completion.
+- **Step 4 (Style Anchors) is MANDATORY**: Do not skip this step unless user explicitly requests to skip AND confirms after seeing the risk warning.
 - **Loop-back**: If the user says "go back" or "redo step N", return to that step and re-run it. The new output overwrites the previous artifact.
-- **Skip**: If the user says "skip step N", mark it as skipped and note it in the final summary. Downstream steps that require its output will warn if the input is missing.
+- **Skip**: If the user says "skip step N":
+  - If N == 4 (Style Anchors): Display warning about drift risk and require explicit "yes to skip" confirmation
+  - For other steps: Mark as skipped and note it in the final summary. Downstream steps that require its output will warn if the input is missing.
 - **Jump**: If the user says "jump to step N", run from that step forward. Load any required inputs from existing artifacts.
 - **Interruption**: If the user needs to stop mid-flow, remind them they can resume by running `/sherpy-flow` again — the pipeline status will show exactly where they left off.
