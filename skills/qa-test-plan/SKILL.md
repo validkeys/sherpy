@@ -137,47 +137,12 @@ After generating the file, report inline:
 
 ### qa-test-plan.yaml Schema
 
-```yaml
-version: "1.0.0"
-project: [project name]
-generated: "[ISO 8601 timestamp]"
-sources:
-  business_requirements: business-requirements.yaml
-  technical_requirements: technical-requirements.yaml
+The output document includes: `version`, `project`, `generated`, `sources` (reference file paths), `summary` (test counts by priority, coverage metrics), and `test_suites` (each with `id` (ts-slug), `name`, `description`, `requirement_refs`, and `test_cases`). Each test case has: `id` (tc-suite-nnn), `name`, `type` (positive/negative/edge/security/performance), `priority` (high/medium/low), `preconditions`, `steps`, `expected_result`, `requirement_refs`, and optional `tags`.
 
-summary:
-  total_test_suites: [n]
-  total_test_cases: [n]
-  by_priority:
-    high: [n]
-    medium: [n]
-    low: [n]
-  coverage:
-    functional_requirements: "[n]%"
-    personas: "[n]%"
-    has_performance_tests: [true/false]
-    has_security_tests: [true/false]
+See **[references/output-spec.md](references/output-spec.md)** for the complete document specification with all fields, coverage calculation rules, and test case structure.
 
-test_suites:
-  - id: ts-[slug]
-    name: [Suite Name]
-    description: [one-line scope of this suite]
-    requirement_refs: [list of requirement IDs]
-    test_cases:
-      - id: tc-[suite-slug]-[nnn]
-        name: [what is being tested]
-        type: positive  # positive | negative | edge | security | performance
-        priority: high  # high | medium | low
-        preconditions:
-          - [state required before test runs]
-        steps:
-          - [step 1]
-          - [step 2]
-        expected_result: [specific, verifiable outcome]
-        requirement_refs: [requirement IDs this validates]
-        tags: [optional filter labels]
-```
+See **[references/example.yaml](references/example.yaml)** for a full example.
 
 ## Example Output
 
-See [examples/qa-test-plan.yaml](./examples/qa-test-plan.yaml) for a complete sample.
+See **[references/example.yaml](references/example.yaml)** for a complete sample QA test plan.

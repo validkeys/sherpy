@@ -1,0 +1,480 @@
+milestone: m1
+name: "User Authentication Service"
+generated: "2026-04-15T14:30:00Z"
+
+style_anchor_refs:
+  - SA-001  # Effect.Service with Repository pattern
+  - SA-003  # TRPC router with Zod validation
+  - SA-004  # Effect.Service testing with mocks
+  - SA-015  # Error handling with Result types
+
+global_constraints:
+  allowed_patterns:
+    - "Use Effect.Service for all service classes"
+    - "Use Schema.Class for all data validation"
+    - "Use TRPC routers with Zod schemas for API endpoints"
+    - "Use Effect.gen for async operations (no async/await)"
+    - "Repository pattern for all data access"
+  forbidden_patterns:
+    - "Direct async/await in service methods (use Effect.gen)"
+    - "Type assertions on external data (use Schema validation)"
+    - "Throwing exceptions (use Effect.fail or TaggedErrors)"
+    - "Direct database access outside repositories"
+    - "Global state or singletons"
+  tdd_required: true
+  max_task_duration_minutes: 120
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete
+      - Development environment running (npm run dev)
+      - Test database accessible
+      - Required style anchors reviewed
+      - Branch up to date with main
+  - stage: pre-commit
+    commands:
+      - npm run lint
+      - npm run type-check
+      - npm run test:unit
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint errors
+      - No type errors
+      - Code formatted with Prettier
+      - Documentation updated
+      - Test coverage >80% for new code
+  - stage: milestone-completion
+    criteria:
+      - All milestone success criteria met
+      - Integration tests passing
+      - Code review completed and approved
+      - Manual smoke test passed
+      - API documentation generated
+      - No P0 or P1 bugs outstanding
+  - stage: pre-push
+    commands:
+      - npm run test:integration
+      - npm run build
+      - git fetch origin main
+
+tasks:
+  - id: m1-001
+    name: "Create User model with Schema"
+    description: |
+      Define User data model using Effect Schema.Class with validation rules
+      for email, username, and password constraints. Foundation for all user
+      operations.
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create:
+        - src/models/user.ts
+    style_anchor_refs:
+      - SA-002  # Schema.Class pattern
+    instructions: |
+      **Objective:**
+      Create User model with comprehensive validation using Effect Schema.
+
+      **Implementation Steps:**
+      1. Create `src/models/user.ts`
+      2. Define User using Schema.Class with fields:
+         - id: UUID (auto-generated)
+         - email: Email format validation
+         - username: 3-30 chars, alphanumeric + underscore
+         - passwordHash: bcrypt hash format
+         - createdAt: ISO timestamp
+         - updatedAt: ISO timestamp
+      3. Export User type and schema
+      4. Add helper methods: User.create, User.validate
+
+      **Constraints:**
+      - ONLY use: Effect Schema.Class and Schema validators
+      - Follow pattern in **SA-002** for model structure
+      - NEVER use: Plain interfaces or type assertions
+      - Include JSDoc comments for all fields
+
+      **Testing Requirements:**
+      - Unit tests in next task (m1-002)
+
+      **Success Criteria:**
+      - User model exported with full type inference
+      - Email validation rejects invalid formats
+      - Username validation enforces length/character rules
+      - Schema compiles without type errors
+
+  - id: m1-002
+    name: "Add User model unit tests"
+    description: |
+      Comprehensive test coverage for User model validation rules including
+      edge cases for email, username, and successful/failed validation scenarios.
+    estimate_minutes: 30
+    type: test
+    dependencies: [m1-001]
+    files:
+      create:
+        - src/models/user.test.ts
+      touch_only:
+        - src/models/user.ts
+    style_anchor_refs:
+      - SA-005  # Effect Schema testing pattern
+    instructions: |
+      **Objective:**
+      Achieve >90% test coverage for User model validation.
+
+      **Implementation Steps:**
+      1. Create `src/models/user.test.ts`
+      2. Test valid user creation with all fields
+      3. Test email validation (valid/invalid formats)
+      4. Test username validation (length, characters)
+      5. Test edge cases (empty strings, null, undefined)
+      6. Test schema encoding/decoding
+
+      **Constraints:**
+      - ONLY use: Vitest for test framework
+      - Follow pattern in **SA-005** for schema testing
+      - NEVER use: Real database or external dependencies
+
+      **Testing Requirements:**
+      - All validation rules covered
+      - Both success and failure cases
+      - Edge cases documented
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >90% for user.ts
+      - Clear test descriptions (Given/When/Then style)
+
+  - id: m1-003
+    name: "Create UserRepository with database access"
+    description: |
+      Implement repository pattern for user data access with methods for CRUD
+      operations. Encapsulates all database queries for user table.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m1-001]
+    files:
+      create:
+        - src/repositories/user-repository.ts
+      modify:
+        - src/db/schema.ts
+      touch_only:
+        - src/models/user.ts
+    style_anchor_refs:
+      - SA-006  # Repository pattern with Drizzle ORM
+    instructions: |
+      **Objective:**
+      Create UserRepository with Effect-based data access methods.
+
+      **Implementation Steps:**
+      1. Add users table to `src/db/schema.ts` using Drizzle schema
+      2. Create `src/repositories/user-repository.ts`
+      3. Define repository interface with methods:
+         - findById(id: string): Effect<User, NotFoundError>
+         - findByEmail(email: string): Effect<User, NotFoundError>
+         - create(data: CreateUserData): Effect<User, DbError>
+         - update(id: string, data: UpdateUserData): Effect<User, DbError | NotFoundError>
+         - delete(id: string): Effect<void, NotFoundError>
+      4. Implement methods using Drizzle query builder
+      5. Export repository as Effect.Service
+
+      **Constraints:**
+      - ONLY use: Effect.gen for async operations, Drizzle ORM for queries
+      - Follow pattern in **SA-006** for repository structure
+      - NEVER use: Direct SQL strings, async/await, or throwing exceptions
+      - Use **SA-015** for error handling (TaggedErrors)
+
+      **Testing Requirements:**
+      - Integration tests in task m1-004
+
+      **Success Criteria:**
+      - All CRUD methods implemented
+      - Returns Effect types (not Promises)
+      - Proper error handling with TaggedErrors
+      - No direct SQL queries (use Drizzle query builder)
+
+  - id: m1-004
+    name: "Add UserRepository integration tests"
+    description: |
+      Test repository against real database with transaction rollback for
+      isolation. Validates CRUD operations, error handling, and edge cases.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m1-003]
+    files:
+      create:
+        - src/repositories/user-repository.test.ts
+      touch_only:
+        - src/repositories/user-repository.ts
+    style_anchor_refs:
+      - SA-007  # Repository integration testing
+    instructions: |
+      **Objective:**
+      Test UserRepository against test database with full CRUD coverage.
+
+      **Implementation Steps:**
+      1. Create `src/repositories/user-repository.test.ts`
+      2. Setup test database with beforeAll/afterAll hooks
+      3. Use transactions with rollback for test isolation
+      4. Test each CRUD method (create, findById, findByEmail, update, delete)
+      5. Test error cases (not found, duplicate email, invalid data)
+      6. Test concurrent operations if applicable
+
+      **Constraints:**
+      - ONLY use: Test database (not production), transactions for isolation
+      - Follow pattern in **SA-007** for repository testing
+      - NEVER use: Production database or shared test data
+
+      **Testing Requirements:**
+      - Each repository method tested
+      - Error handling verified
+      - Test data cleaned up after each test
+
+      **Success Criteria:**
+      - All tests passing
+      - Tests run in isolation (no cross-test pollution)
+      - Test coverage >85% for user-repository.ts
+      - Tests complete in <5 seconds
+
+  - id: m1-005
+    name: "Implement UserService with business logic"
+    description: |
+      Service layer coordinating user operations with validation, password
+      hashing, and business rules. Depends on UserRepository for data access.
+    estimate_minutes: 75
+    type: code
+    dependencies: [m1-003]
+    files:
+      create:
+        - src/services/user-service.ts
+      touch_only:
+        - src/models/user.ts
+        - src/repositories/user-repository.ts
+    style_anchor_refs:
+      - SA-001  # Effect.Service with Repository pattern
+      - SA-015  # Error handling with Result types
+    instructions: |
+      **Objective:**
+      Create UserService with business logic for user management.
+
+      **Implementation Steps:**
+      1. Create `src/services/user-service.ts`
+      2. Define UserService extending Effect.Service with methods:
+         - register(email, username, password): Effect<User, ValidationError | DuplicateEmailError>
+         - authenticate(email, password): Effect<User, InvalidCredentialsError>
+         - getUserById(id): Effect<User, NotFoundError>
+         - updateProfile(id, data): Effect<User, ValidationError | NotFoundError>
+         - deleteUser(id): Effect<void, NotFoundError>
+      3. Inject UserRepository via Effect.Service dependencies
+      4. Implement password hashing with bcrypt (use Effect.promise)
+      5. Add email uniqueness check in register method
+
+      **Constraints:**
+      - ONLY use: Effect.gen, Effect.Service, bcrypt for hashing
+      - Follow pattern in **SA-001** for service structure
+      - Apply **SA-015** for error handling (TaggedErrors)
+      - NEVER use: Direct repository instantiation, throwing exceptions
+      - Password minimum length: 8 characters
+
+      **Testing Requirements:**
+      - Unit tests in task m1-006
+
+      **Success Criteria:**
+      - All service methods implemented
+      - Password hashing working (verify with bcrypt.compare)
+      - Duplicate email check prevents multiple registrations
+      - Proper dependency injection via Effect.Service
+      - All errors use TaggedError pattern
+
+  - id: m1-006
+    name: "Add UserService unit tests with mocks"
+    description: |
+      Test UserService business logic with mocked repository dependencies.
+      Validates authentication, registration, and error handling flows.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m1-005]
+    files:
+      create:
+        - src/services/user-service.test.ts
+      touch_only:
+        - src/services/user-service.ts
+    style_anchor_refs:
+      - SA-004  # Effect.Service testing with mocks
+    instructions: |
+      **Objective:**
+      Achieve >85% test coverage for UserService with mocked dependencies.
+
+      **Implementation Steps:**
+      1. Create `src/services/user-service.test.ts`
+      2. Mock UserRepository using Effect.provideService
+      3. Test register method (success, duplicate email, invalid password)
+      4. Test authenticate method (success, invalid credentials)
+      5. Test getUserById (success, not found)
+      6. Test updateProfile (success, validation error, not found)
+      7. Test deleteUser (success, not found)
+
+      **Constraints:**
+      - ONLY use: Effect.provideService for mocking, Vitest
+      - Follow pattern in **SA-004** for service testing
+      - NEVER use: Real database or external services
+
+      **Testing Requirements:**
+      - All service methods tested
+      - Success and error paths covered
+      - Mock data setup/teardown between tests
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >85% for user-service.ts
+      - Mocks properly isolate service logic
+      - Clear test descriptions
+
+  - id: m1-007
+    name: "Create TRPC user router with Zod validation"
+    description: |
+      API layer exposing user operations via TRPC procedures with Zod schema
+      validation. Maps to UserService methods.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m1-005]
+    files:
+      create:
+        - src/api/routers/user-router.ts
+        - src/api/schemas/user-schemas.ts
+      modify:
+        - src/api/root.ts
+      touch_only:
+        - src/services/user-service.ts
+    style_anchor_refs:
+      - SA-003  # TRPC router with Zod validation
+      - SA-008  # API error mapping
+    instructions: |
+      **Objective:**
+      Create TRPC router exposing user operations with Zod validation.
+
+      **Implementation Steps:**
+      1. Create `src/api/schemas/user-schemas.ts` with Zod schemas:
+         - RegisterInput (email, username, password)
+         - AuthenticateInput (email, password)
+         - UpdateProfileInput (username, optional fields)
+      2. Create `src/api/routers/user-router.ts` with procedures:
+         - register: publicProcedure
+         - authenticate: publicProcedure
+         - getProfile: protectedProcedure (requires auth)
+         - updateProfile: protectedProcedure
+         - deleteAccount: protectedProcedure
+      3. Inject UserService and call appropriate methods
+      4. Map service errors to HTTP status codes using **SA-008**
+      5. Update `src/api/root.ts` to include user router
+
+      **Constraints:**
+      - ONLY use: TRPC procedures, Zod schemas for validation
+      - Follow pattern in **SA-003** for router structure
+      - Apply **SA-008** for error-to-HTTP mapping
+      - NEVER use: Express routes, manual validation, or raw request parsing
+      - Protected procedures must verify JWT token
+
+      **Testing Requirements:**
+      - Integration tests in task m1-008
+
+      **Success Criteria:**
+      - All procedures defined with input validation
+      - Zod schemas reject invalid inputs
+      - Service errors mapped to proper HTTP status codes
+      - Router integrated into root router
+      - Type-safe client-server communication
+
+  - id: m1-008
+    name: "Add TRPC user router integration tests"
+    description: |
+      End-to-end tests for user router procedures validating request/response
+      flow, authentication, authorization, and error responses.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m1-007, m1-004]
+    files:
+      create:
+        - src/api/routers/user-router.test.ts
+      touch_only:
+        - src/api/routers/user-router.ts
+    style_anchor_refs:
+      - SA-009  # TRPC router integration testing
+    instructions: |
+      **Objective:**
+      Test user router with real TRPC client against test server.
+
+      **Implementation Steps:**
+      1. Create `src/api/routers/user-router.test.ts`
+      2. Setup test TRPC server with test database
+      3. Test register procedure (success, duplicate email, validation errors)
+      4. Test authenticate procedure (success, invalid credentials)
+      5. Test getProfile procedure (success, unauthorized)
+      6. Test updateProfile procedure (success, unauthorized, validation errors)
+      7. Test deleteAccount procedure (success, unauthorized)
+      8. Verify HTTP status codes for errors
+
+      **Constraints:**
+      - ONLY use: TRPC test client, test database with transactions
+      - Follow pattern in **SA-009** for router testing
+      - NEVER use: Production database or real external services
+
+      **Testing Requirements:**
+      - All procedures tested
+      - Authentication/authorization verified
+      - Error responses validated
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >80% for user-router.ts
+      - Proper HTTP status codes returned
+      - Tests isolated with transaction rollback
+
+  - id: m1-009
+    name: "Document UserService and API endpoints"
+    description: |
+      Create API documentation for user endpoints including request/response
+      examples, error codes, and authentication requirements.
+    estimate_minutes: 45
+    type: docs
+    dependencies: [m1-007]
+    files:
+      create:
+        - docs/api/user-endpoints.md
+      modify:
+        - README.md
+      touch_only:
+        - src/api/routers/user-router.ts
+        - src/services/user-service.ts
+    instructions: |
+      **Objective:**
+      Document user API endpoints for frontend developers and API consumers.
+
+      **Implementation Steps:**
+      1. Create `docs/api/user-endpoints.md` with:
+         - Endpoint list with HTTP methods and paths
+         - Request/response schemas for each endpoint
+         - Authentication requirements
+         - Error codes and meanings
+         - Example requests with curl/fetch
+      2. Add JSDoc comments to UserService public methods
+      3. Update README.md with link to API documentation
+      4. Include rate limiting and security considerations
+
+      **Constraints:**
+      - ONLY use: Markdown format, realistic examples
+      - Include authentication headers where required
+      - Document all possible error responses
+
+      **Testing Requirements:**
+      - N/A (documentation task)
+
+      **Success Criteria:**
+      - All endpoints documented with examples
+      - Error codes listed with descriptions
+      - Authentication flow explained
+      - README.md links to new docs
+      - JSDoc comments added to service methods

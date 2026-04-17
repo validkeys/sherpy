@@ -78,40 +78,13 @@ mkdir -p {base_directory}/requirements
 
 ## Output Format
 
-```markdown
-# Gap Analysis Worksheet
+Write `{base_directory}/requirements/gap-analysis-worksheet.md`.
 
-**Document:** [path to requirements file]
-**Generated:** [date]
-**Status:** Awaiting Review
-**Total Gaps:** [n]
+The output is a Markdown document with a header (document path, generated date, status, total gaps) followed by sections for each gap category. Each gap includes a requirement snippet, a specific question, and an answer field.
 
----
+See **[references/output-spec.md](references/output-spec.md)** for the complete document specification with all categories, gap structure, and validation rules.
 
-## [Category Name]
-
-### Gap [n]
-
-**Requirement:** "[exact snippet or brief reference to the relevant requirement, or 'Not addressed' if entirely missing]"
-**Question:** [A specific, answerable question that surfaces the gap]
-**Answer:**
-
----
-
-### Gap [n+1]
-
-**Requirement:** "[...]"
-**Question:** [...]
-**Answer:**
-
----
-
-## [Next Category]
-
-...
-```
-
-Gaps within each category should be ordered by importance — critical questions first, minor clarifications last.
+See **[references/example.yaml](references/example.yaml)** for a full example.
 
 ## Writing Good Gap Questions
 
@@ -140,7 +113,7 @@ Gaps within each category should be ordered by importance — critical questions
 
 ## Example Output
 
-See [examples/gap-analysis-worksheet.md](./examples/gap-analysis-worksheet.md) for a complete sample based on [examples/sample-requirements.md](./examples/sample-requirements.md).
+See **[references/example.yaml](references/example.yaml)** for a complete sample based on the spec example input.
 
 ## Self-Review
 

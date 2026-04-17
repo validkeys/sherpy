@@ -1,0 +1,604 @@
+project: TaskFlow Pro
+version: "1.0.0"
+generated: "2026-04-15T14:30:00Z"
+
+overview:
+  problem: |
+    Small to medium-sized development teams (5-25 people) struggle with fragmented
+    project management workflows. Teams currently juggle multiple tools: Jira for
+    tickets, Slack for updates, Google Sheets for capacity planning, and email for
+    stakeholder reporting. This fragmentation leads to:
+    - 2-3 hours per week per developer lost to status updates and context switching
+    - Critical blockers discovered 24-48 hours late due to poor visibility
+    - Product managers spending 30% of their time manually aggregating data for reports
+    - Misaligned priorities between engineering and business stakeholders
+
+  value_proposition: |
+    TaskFlow Pro consolidates task tracking, team communication, capacity planning,
+    and automated reporting into a single, AI-assisted workspace. By eliminating
+    tool fragmentation and providing real-time insights, teams reduce coordination
+    overhead by 40% and improve delivery predictability by identifying risks 3-5 days
+    earlier than current workflows allow.
+
+  scope:
+    in_scope:
+      - Task and project tracking with customizable workflows
+      - Real-time team capacity dashboard with workload balancing
+      - Automated daily standup summaries and weekly stakeholder reports
+      - AI-powered blocker detection and priority recommendations
+      - Slack and GitHub integration for status updates
+      - Mobile app for iOS and Android
+      - Team collaboration features (comments, mentions, file attachments)
+      - Basic time tracking and velocity metrics
+
+    out_of_scope:
+      - Advanced resource management (cross-project portfolio planning)
+      - Financial budgeting and cost tracking
+      - Client billing and invoicing
+      - Custom field builder (v1 uses predefined fields only)
+      - White-label or multi-tenant enterprise features
+      - Video conferencing integration
+      - Advanced analytics and custom reporting (beyond preset reports)
+
+personas:
+  - name: Sarah (Product Manager)
+    description: |
+      Mid-level product manager at a 50-person SaaS startup, managing 2 engineering
+      teams (15 developers total). Reports to VP of Product and stakeholders in
+      leadership. Tech-savvy but not technical. Juggles feature prioritization,
+      stakeholder communication, and roadmap planning.
+    goals:
+      - Track engineering progress across multiple sprints without constant check-ins
+      - Generate executive-ready status reports in under 10 minutes
+      - Identify blockers and bottlenecks before they delay releases
+      - Make data-driven prioritization decisions based on team capacity
+      - Maintain alignment between engineering work and business goals
+    pain_points:
+      - Spends 6+ hours weekly in status meetings and creating manual reports
+      - Discovers critical blockers too late to adjust sprint plans
+      - Struggles to explain technical work to non-technical stakeholders
+      - Cannot accurately predict delivery dates due to poor visibility into capacity
+      - Constantly interrupted by "what's the status of X?" questions
+
+  - name: Marcus (Engineering Lead)
+    description: |
+      Senior engineering lead managing a team of 8 developers (3 senior, 5 mid-level).
+      10 years experience, responsible for technical delivery, code quality, and team
+      velocity. Balances hands-on coding (30%) with leadership responsibilities.
+    goals:
+      - Protect team from constant context switching and interruptions
+      - Maintain clear visibility into who's working on what and their workload
+      - Surface blockers early so they can be resolved quickly
+      - Track technical debt and quality metrics alongside feature work
+      - Enable autonomous decision-making by empowering senior engineers
+    pain_points:
+      - Team members overcommit and burn out due to invisible workload
+      - Junior developers get stuck for hours before asking for help
+      - Priorities shift without clear communication, causing thrash
+      - Difficult to balance feature velocity with code quality and tech debt
+      - Stakeholders bypass process and add "quick wins" that destabilize sprints
+
+  - name: Jordan (Software Developer)
+    description: |
+      Mid-level full-stack developer with 4 years experience. Works on feature
+      development, bug fixes, and code reviews. Prefers focused work time with
+      minimal meetings. Active in Slack and GitHub but avoids heavy PM tools.
+    goals:
+      - Understand priorities clearly without attending multiple meetings
+      - Get unblocked quickly when waiting on teammates or external dependencies
+      - See the impact of their work on overall product goals
+      - Minimize time spent on status updates and administrative overhead
+      - Collaborate effectively with designers and product managers
+    pain_points:
+      - Unclear priorities lead to starting wrong tasks or switching frequently
+      - Blocked on other work but unsure who to ask or when it will be ready
+      - Status meetings feel like wasted time repeating what's in tickets
+      - PM tools feel heavyweight and slow down workflow vs coding
+      - Hard to say no to new requests when current workload isn't visible
+
+  - name: Alex (Executive Stakeholder)
+    description: |
+      VP of Engineering or CTO at the company. Oversees 3-5 engineering teams,
+      reports to CEO and board. Focuses on strategic planning, hiring, and ensuring
+      engineering delivers business outcomes. Limited time for operational details.
+    goals:
+      - Understand cross-team progress and risks at a glance
+      - Make informed decisions about resource allocation and priorities
+      - Communicate engineering progress to CEO and board with confidence
+      - Identify systemic issues (team health, process bottlenecks) early
+      - Ensure engineering work aligns with quarterly company OKRs
+    pain_points:
+      - Requires manual report compilation from multiple teams to get full picture
+      - Learns about delays or issues too late to course-correct
+      - Difficult to compare team performance and identify patterns
+      - Cannot easily answer "when will X ship?" without deep investigation
+      - Lacks visibility into technical debt accumulation and quality trends
+
+use_cases:
+  - name: Daily Standup Summary
+    actor: Sarah (Product Manager)
+    description: |
+      Each morning at 9 AM, Sarah opens TaskFlow Pro and sees an AI-generated
+      standup summary showing what each team member accomplished yesterday, their
+      plan for today, and any blockers flagged. She reviews the summary in 3 minutes
+      and posts it to the team Slack channel, replacing the need for a synchronous
+      standup meeting.
+    outcome: |
+      Team stays aligned without meeting overhead. Sarah identifies blockers early
+      and can intervene before they cause delays. Developers appreciate async updates
+      and uninterrupted focus time.
+
+  - name: Capacity-Based Sprint Planning
+    actor: Marcus (Engineering Lead)
+    description: |
+      During sprint planning, Marcus opens the capacity dashboard showing each
+      developer's committed hours, PTO, and existing carryover work. He drags tasks
+      from the backlog into the sprint, and the system warns when individual or
+      team capacity is exceeded. He adjusts scope based on real-time workload data.
+    outcome: |
+      Sprint commitments are realistic and achievable. Team avoids overcommitment
+      and burnout. Velocity becomes predictable, improving trust with stakeholders.
+
+  - name: Blocker Detection and Resolution
+    actor: Jordan (Software Developer)
+    description: |
+      Jordan marks a task as blocked because it depends on an API endpoint another
+      team is building. TaskFlow Pro automatically notifies the blocking team's lead
+      and adds the dependency to the blockers dashboard. Marcus sees it during his
+      morning review and escalates to unblock Jordan within 4 hours.
+    outcome: |
+      Jordan loses only 4 hours instead of 2 days to being blocked. Explicit
+      dependency tracking prevents silent bottlenecks and finger-pointing.
+
+  - name: Weekly Stakeholder Report
+    actor: Sarah (Product Manager)
+    description: |
+      Every Friday afternoon, Sarah clicks "Generate Report" and TaskFlow Pro creates
+      an executive summary showing completed features, in-progress work, upcoming
+      milestones, risks, and velocity trends. She reviews and edits for 5 minutes,
+      then sends to stakeholders.
+    outcome: |
+      Sarah reduces report creation time from 90 minutes to 10 minutes. Stakeholders
+      receive consistent, data-driven updates. Sarah focuses energy on strategic
+      decisions instead of manual aggregation.
+
+  - name: Cross-Team Dependency Tracking
+    actor: Alex (Executive Stakeholder)
+    description: |
+      Alex opens the cross-team dashboard showing all active projects, their
+      dependencies, and health status (green/yellow/red). A critical mobile app
+      release is flagged yellow due to backend API delay. Alex clicks through to
+      see the dependency chain and allocates additional resources to unblock.
+    outcome: |
+      Alex identifies risks 1 week before they would have delayed release. Proactive
+      intervention prevents escalation and maintains customer trust.
+
+functional_requirements:
+  - id: FR-1
+    category: Task Management
+    description: |
+      Users can create, edit, and delete tasks with title, description, assignee,
+      status, priority, estimated hours, and due date. Tasks support custom workflow
+      states (To Do, In Progress, In Review, Blocked, Done).
+    priority: high
+    rationale: |
+      Core functionality required for any task tracking system. Custom workflow states
+      allow teams to model their actual processes instead of rigid predefined states.
+
+  - id: FR-2
+    category: Task Management
+    description: |
+      Users can create parent-child task relationships (epics, stories, subtasks)
+      with up to 3 levels of nesting. Child tasks automatically roll up progress
+      to parent tasks.
+    priority: high
+    rationale: |
+      Teams need hierarchical organization to break down large features into
+      manageable work. Automatic progress rollup provides accurate big-picture status.
+
+  - id: FR-3
+    category: Task Management
+    description: |
+      Users can link tasks with dependency relationships (blocks, blocked by). System
+      displays dependency graph and automatically notifies assignees when dependencies
+      are resolved.
+    priority: high
+    rationale: |
+      Explicit dependency tracking prevents silent blockers that delay projects.
+      Automatic notifications reduce manual coordination overhead.
+
+  - id: FR-4
+    category: Capacity Planning
+    description: |
+      System displays team capacity dashboard showing each member's committed hours,
+      available hours (accounting for PTO), and utilization percentage. Updates
+      in real-time as tasks are assigned or completed.
+    priority: high
+    rationale: |
+      Prevents overcommitment and burnout by making workload visible. Essential for
+      realistic sprint planning and sustainable team velocity.
+
+  - id: FR-5
+    category: Capacity Planning
+    description: |
+      System warns when assigning tasks would exceed individual capacity (>40 hours/week)
+      or team capacity for the current sprint. Warnings are visual but not blocking.
+    priority: medium
+    rationale: |
+      Provides guardrails against overcommitment while allowing flexibility for
+      urgent work. Reduces risk of missed commitments and team burnout.
+
+  - id: FR-6
+    category: AI Features
+    description: |
+      System automatically detects potential blockers by analyzing task dependencies,
+      age of tasks in "Blocked" status, and comment sentiment. Surfaces detected
+      blockers in daily summary and dedicated blockers dashboard.
+    priority: high
+    rationale: |
+      Proactive blocker detection is key differentiator from existing tools. Reduces
+      mean time to resolution by 50% based on user research insights.
+
+  - id: FR-7
+    category: AI Features
+    description: |
+      System generates daily standup summaries showing completed work, planned work,
+      and blockers for each team member. Summary uses natural language and highlights
+      items requiring attention.
+    priority: high
+    rationale: |
+      Replaces synchronous standup meetings with async summaries, saving 30-60
+      minutes daily. Maintains alignment without interrupting focus time.
+
+  - id: FR-8
+    category: Reporting
+    description: |
+      Users can generate weekly stakeholder reports with one click. Reports include
+      completed features, in-progress work, upcoming milestones, velocity trends,
+      and identified risks. Output format is Markdown and PDF.
+    priority: high
+    rationale: |
+      Reduces report creation time from 90 minutes to 10 minutes per Sarah's pain
+      point. Critical for executive communication and stakeholder management.
+
+  - id: FR-9
+    category: Reporting
+    description: |
+      System tracks velocity metrics (story points or hours completed per sprint)
+      and displays trends over time. Shows velocity by team member and team aggregate.
+    priority: medium
+    rationale: |
+      Enables data-driven planning and identifies productivity trends early. Supports
+      continuous improvement and realistic forecasting.
+
+  - id: FR-10
+    category: Collaboration
+    description: |
+      Users can comment on tasks, mention other users (@mentions), attach files
+      (up to 10MB), and react with emoji. Comments support Markdown formatting.
+    priority: medium
+    rationale: |
+      Essential for async collaboration and reducing Slack noise. Keeps discussion
+      context attached to relevant tasks.
+
+  - id: FR-11
+    category: Collaboration
+    description: |
+      Users receive in-app and email notifications for mentions, task assignments,
+      dependency resolutions, and blocker alerts. Notification preferences are
+      customizable per user.
+    priority: high
+    rationale: |
+      Ensures critical updates reach team members without requiring constant app
+      monitoring. Customization prevents notification fatigue.
+
+  - id: FR-12
+    category: Integration
+    description: |
+      System integrates with Slack to post daily summaries, blocker alerts, and
+      allow task status updates via slash commands (/taskflow status <task-id>).
+    priority: high
+    rationale: |
+      Teams live in Slack. Bringing TaskFlow updates into Slack reduces tool-switching
+      and increases adoption by meeting users where they are.
+
+  - id: FR-13
+    category: Integration
+    description: |
+      System integrates with GitHub to automatically link pull requests to tasks,
+      update task status when PRs are merged, and display PR status in task view.
+    priority: medium
+    rationale: |
+      Automates status updates and reduces manual busywork for developers. Provides
+      single source of truth for feature delivery status.
+
+  - id: FR-14
+    category: Authentication & Authorization
+    description: |
+      System supports email/password authentication and OAuth2 via Google Workspace
+      and Microsoft 365. Implements role-based access control with roles: Admin,
+      Team Lead, Developer, Viewer.
+    priority: high
+    rationale: |
+      OAuth reduces friction for enterprise users requiring SSO. RBAC ensures
+      sensitive operations (deleting projects, managing teams) are properly secured.
+
+  - id: FR-15
+    category: Mobile Access
+    description: |
+      Native mobile apps for iOS and Android support core workflows: viewing tasks,
+      updating status, commenting, and receiving notifications. Does not support
+      admin features or complex sprint planning.
+    priority: medium
+    rationale: |
+      Enables on-the-go updates and quick status checks. Supports remote teams and
+      async workflows without requiring laptop access.
+
+non_functional_requirements:
+  performance:
+    - Task list views must load within 500ms for up to 1000 tasks
+    - AI blocker detection must process daily within 60 seconds per team
+    - Report generation must complete within 10 seconds for 4-week data range
+    - Mobile app must function offline with sync on reconnect
+    - API response time must be < 200ms at p95 under 1000 concurrent users
+
+  security:
+    - All data encrypted in transit (TLS 1.3) and at rest (AES-256)
+    - OWASP Top 10 compliance verified via annual penetration testing
+    - Session tokens expire after 24 hours of inactivity
+    - Support for SOC 2 Type II compliance requirements
+    - Password policies enforce minimum 12 characters with complexity requirements
+    - Multi-factor authentication (MFA) available for all users
+
+  usability:
+    - WCAG 2.1 Level AA accessibility compliance
+    - Onboarding flow allows new users to create first task within 3 minutes
+    - Critical workflows (create task, update status) require ≤3 clicks
+    - Mobile app supports standard gestures (swipe to archive, pull to refresh)
+    - Keyboard shortcuts available for power users (create task: 'c', search: '/')
+
+  reliability:
+    - 99.5% uptime SLA (excluding planned maintenance)
+    - Maximum 4 hours monthly planned maintenance window
+    - Data backup every 6 hours with 30-day retention
+    - Mean time to recovery (MTTR) < 1 hour for critical failures
+    - Graceful degradation when AI features unavailable (show last known data)
+
+  maintainability:
+    - Code follows established architectural patterns (service-command architecture)
+    - All public APIs have comprehensive JSDoc/TSDoc documentation
+    - Unit test coverage >80% for critical business logic
+    - Integration tests for all major workflows
+    - Clear separation of concerns (presentation, business logic, data access)
+    - Consistent naming conventions and code style enforced by linters
+
+  observability:
+    - Structured logging for all critical operations (task CRUD, capacity updates, AI calls)
+    - Metrics tracked - API latency (p50/p95/p99), error rates, queue depth, AI call duration
+    - Distributed tracing for cross-service requests
+    - Health check endpoints for all services (/health, /ready)
+    - Alerts configured for SLA violations, error spikes, and queue backlog
+
+success_criteria:
+  - criterion: User adoption and engagement
+    metric: Weekly active users (WAU) as percentage of total team
+    target: 85%+ WAU within 60 days of team onboarding
+
+  - criterion: Time savings for status reporting
+    metric: Self-reported time spent on status updates and reports per week
+    target: 50% reduction from baseline (Sarah: 6 hours → 3 hours)
+
+  - criterion: Blocker detection speed
+    metric: Average time between blocker occurring and being flagged
+    target: < 4 hours (vs 24-48 hours baseline)
+
+  - criterion: Sprint predictability
+    metric: Percentage of sprint commitments delivered on time
+    target: 80%+ completion rate (vs 60% baseline)
+
+  - criterion: User satisfaction
+    metric: Net Promoter Score (NPS)
+    target: NPS > 40 within 6 months
+
+  - criterion: Tool consolidation impact
+    metric: Number of tools replaced per team
+    target: Average 2.5 tools replaced (typically Jira + Google Sheets + email)
+
+  - criterion: Revenue target
+    metric: Annual recurring revenue (ARR)
+    target: $1M ARR by end of year 1 ($83/team/month, 1000 teams)
+
+constraints:
+  technical:
+    - Must support modern browsers (Chrome, Firefox, Safari, Edge - last 2 versions)
+    - Backend must be built on cloud-native architecture (AWS or GCP)
+    - Must integrate with Slack API v2 and GitHub REST API v3
+    - Database must support ACID transactions for critical operations
+    - Must support up to 100 teams (2500 users) in MVP deployment
+    - API rate limits: 1000 requests per user per hour
+
+  business:
+    - MVP must be shippable within 16 weeks from project kickoff
+    - Development team is 4 engineers (2 frontend, 2 backend) + 1 designer
+    - Total MVP budget is $400K (loaded cost, including infrastructure)
+    - Cannot require on-premise deployment for MVP (cloud-only)
+    - Must comply with GDPR for European customers
+
+  timeline:
+    - Beta launch to 10 pilot customers by Week 14
+    - Public launch by Week 16
+    - Must hit $100K ARR within 6 months to secure Series A funding
+
+  budget:
+    - Infrastructure costs must remain under $5K/month at 1000-team scale
+    - Third-party API costs (OpenAI, Slack, etc.) budgeted at $2K/month
+    - No budget for custom machine learning model training (use OpenAI API)
+
+  operational:
+    - Must deploy to AWS us-east-1 region for production
+    - Must support zero-downtime deployments with rolling updates
+    - Database migrations must be backward-compatible for 1 release cycle
+    - Must integrate with existing CI/CD pipeline (GitHub Actions)
+    - Production deployments require approval from technical lead
+    - Must maintain separate staging environment for pre-production testing
+
+dependencies:
+  internal:
+    - Design system and component library from UX team (due Week 2)
+    - OAuth integration testing environment from IT team (due Week 4)
+    - Legal review of data privacy policy (due Week 10)
+    - Customer success team trained on product for beta support (due Week 12)
+
+  external:
+    - OpenAI API access for GPT-4 (for AI blocker detection and summaries)
+    - Slack App Directory approval process (6-8 weeks lead time)
+    - GitHub OAuth app approval (2-3 weeks lead time)
+    - AWS infrastructure provisioned and configured
+    - Stripe payment processing integration for billing
+
+timeline:
+  phase: MVP / Beta Launch
+  duration: 16 weeks
+  milestones:
+    - Week 4: Core task management and authentication complete
+    - Week 8: Capacity planning and dependency tracking functional
+    - Week 11: AI features (blocker detection, summaries) in private beta
+    - Week 13: Slack and GitHub integrations tested and deployed
+    - Week 14: Beta launch to 10 pilot teams
+    - Week 16: Public launch with full feature set
+
+assumptions:
+  - Target customers (50-200 person companies) are willing to pay $50-100/month per team
+  - Teams currently spend 10-15 hours per week on coordination overhead
+  - OpenAI API pricing and availability will remain stable through MVP development
+  - Slack and GitHub integrations will be approved without major changes
+  - Pilot customers will provide weekly feedback during beta period
+  - Existing tools (Jira, Asana) have high enough friction that switching costs are acceptable
+  - Product manager and engineering lead personas are common across target market
+  - Teams prefer async communication and are comfortable with AI-assisted workflows
+  - Mobile app can launch 4-6 weeks after web app without blocking adoption
+  - 80% of value can be delivered with web app; mobile is enhancement not requirement
+
+risks:
+  - risk: AI blocker detection accuracy is insufficient, creating false positives/negatives
+    probability: medium
+    impact: high
+    mitigation: |
+      Implement confidence scoring and allow users to provide feedback on AI
+      suggestions. Start with rule-based detection (task age, dependency chains)
+      and layer in ML progressively. Set clear expectations that AI is assistive,
+      not authoritative. Include manual blocker flagging as backup workflow.
+
+  - risk: Slack/GitHub integration approvals delayed beyond 6-8 week estimates
+    probability: medium
+    impact: medium
+    mitigation: |
+      Submit integration applications in Week 1 to maximize buffer. Develop integrations
+      against beta APIs in parallel. Prepare fallback using webhooks and manual setup
+      if directory approval is delayed. Communicate integration status clearly to beta
+      customers.
+
+  - risk: Team capacity planning requires too much manual data entry, reducing adoption
+    probability: medium
+    impact: high
+    mitigation: |
+      Integrate with calendar APIs (Google Calendar, Outlook) to auto-import PTO.
+      Start with simple hours-based estimation before introducing story points.
+      Provide bulk import from existing tools. Track setup time during beta and
+      optimize onboarding flow.
+
+  - risk: OpenAI API costs exceed $2K/month budget at scale
+    probability: low
+    impact: medium
+    mitigation: |
+      Monitor token usage closely during beta. Implement aggressive caching for
+      summaries (regenerate daily, not per view). Explore OpenAI batching API for
+      non-real-time features. Consider fallback to rule-based system if costs prohibitive.
+
+  - risk: Pilot customers churn during beta due to missing critical features
+    probability: medium
+    impact: high
+    mitigation: |
+      Conduct detailed customer interviews before beta to identify must-have features.
+      Provide white-glove support during beta including weekly check-ins. Set clear
+      expectations that beta is limited feature set. Offer extended trial period to
+      maintain engagement through feedback cycles.
+
+  - risk: Team of 4 engineers cannot deliver all MVP features in 16 weeks
+    probability: high
+    impact: high
+    mitigation: |
+      Ruthlessly prioritize features using MoSCoW method (Must/Should/Could/Won't).
+      Identify scope reduction options at each milestone. Consider extending timeline
+      to 20 weeks if funding allows. Leverage open-source libraries for non-differentiating
+      features (auth, UI components). Track velocity weekly and adjust scope proactively.
+
+future_enhancements:
+  - Webhooks API for real-time task updates to external systems
+  - Custom field builder allowing teams to define their own task attributes
+  - Advanced analytics dashboard with burndown charts and velocity forecasting
+  - Time tracking with detailed per-task time logs and reporting
+  - Portfolio view for cross-team project management
+  - Advanced permissions model with project-level and task-level access control
+  - White-label customization for enterprise customers
+  - Gantt chart view for timeline-based project planning
+  - Resource management across multiple projects
+  - Budget tracking and financial reporting per project
+  - Integration marketplace for third-party tool connections
+  - AI-powered work breakdown structure generation from high-level descriptions
+
+documentation_references:
+  architecture_diagram: docs/architecture/system-overview.md
+  architecture_diagram_description: |
+    High-level system architecture showing API layer, worker services, Kafka queue,
+    database schema, and integration points with Slack/GitHub
+
+  api_schema: docs/api/openapi-spec.yaml
+  api_schema_description: |
+    OpenAPI 3.0 specification for REST API endpoints including authentication,
+    task management, capacity planning, and reporting endpoints
+
+  data_model: docs/database/schema.sql
+  data_model_description: |
+    PostgreSQL schema definitions for tasks, users, teams, comments, attachments,
+    and capacity tracking tables with indexes and constraints
+
+notes: |
+  This project follows a phased rollout strategy:
+
+  **Phase 1 (MVP - 16 weeks):**
+  - Core task management and capacity planning
+  - Single template AI features (blocker detection, summaries)
+  - Basic Slack/GitHub integrations
+  - Web application only
+
+  **Phase 2 (Post-MVP - 8 weeks):**
+  - Mobile applications (iOS/Android)
+  - Advanced AI features (priority recommendations, work estimation)
+  - Enhanced integrations (bi-directional sync, deeper GitHub integration)
+
+  **Phase 3 (6 months post-launch):**
+  - Portfolio management and cross-team views
+  - Advanced analytics and custom reporting
+  - Enterprise features (SSO, advanced permissions, white-label)
+
+  **Architectural Patterns:**
+  - API follows RESTful conventions with consistent error handling
+  - Worker services use event-driven architecture via Kafka
+  - Database uses row-level security for multi-tenancy
+  - AI features designed for graceful degradation when OpenAI unavailable
+  - Mobile apps use optimistic UI updates with background sync
+
+  **Key Technical Decisions:**
+  - React for frontend (team expertise, rich ecosystem)
+  - Node.js for backend (isomorphic JavaScript, Lambda compatibility)
+  - PostgreSQL for data (ACID compliance, rich query capabilities)
+  - Kafka for async processing (reliability, scalability, existing infra)
+  - OpenAI API for AI features (rapid iteration, no ML expertise needed)
+
+  **Success Metrics Tracking:**
+  - Weekly active users tracked via Mixpanel
+  - Time savings measured via user surveys at onboarding, 30 days, 90 days
+  - Blocker detection accuracy tracked via user feedback (helpful/not helpful)
+  - Sprint completion tracked automatically from task status changes
+  - NPS surveys sent quarterly to active users

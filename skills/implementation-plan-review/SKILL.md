@@ -344,138 +344,13 @@ gaps:
 
 ## Review Output
 
-Generate comprehensive review report:
+Generate comprehensive review report as `implementation-plan-review.yaml`.
 
-```yaml
-implementation_plan_review:
-  metadata:
-    plan_files:
-      - milestones.yaml
-      - milestone-m0.tasks.yaml
-      - milestone-m1.tasks.yaml
-    review_date: [timestamp]
-    reviewer: implementation-plan-review skill
-  
-  overall_scores:
-    structure: [1-10]
-    best_practices_compliance: [1-10]
-    task_sizing: [1-10]
-    completeness: [1-10]
-    alignment: [1-10]
-    development_readiness: [1-10]
-  
-  summary:
-    total_milestones: [count]
-    total_tasks: [count]
-    estimated_total_duration: [time]
-    critical_path_duration: [time]
-    
-    task_sizing_summary:
-      too_small: [count]
-      optimal: [count]
-      too_large: [count]
-    
-    compliance_summary:
-      style_anchors_present: [count/total]
-      tdd_checklists_present: [count/total]
-      drift_policies_present: [count/total]
-      quality_gates_defined: [yes/no/partial]
-  
-  critical_issues:
-    - category: [category]
-      severity: critical
-      issue: [description]
-      affected_items: [list]
-      recommendation: [how to fix]
-      blocks_development: [true/false]
-  
-  high_priority_issues:
-    - category: [category]
-      severity: high
-      issue: [description]
-      affected_items: [list]
-      recommendation: [how to fix]
-  
-  medium_priority_issues:
-    - category: [category]
-      severity: medium
-      issue: [description]
-      recommendation: [how to fix]
-  
-  best_practices_violations:
-    style_anchors:
-      - issue: [description]
-        affected_tasks: [list]
-        guidance: [reference to best practice]
-    
-    task_sizing:
-      - issue: [description]
-        affected_tasks: [list]
-        guidance: [reference to sizing rules]
-    
-    tdd_requirements:
-      - issue: [description]
-        affected_tasks: [list]
-        guidance: [reference to TDD practices]
-    
-    drift_prevention:
-      - issue: [description]
-        affected_tasks: [list]
-        guidance: [reference to drift policy]
-    
-    quality_gates:
-      - issue: [description]
-        affected_milestones: [list]
-        guidance: [reference to quality constraints]
-  
-  gaps:
-    missing_coverage:
-      requirements: [list of uncovered requirements]
-      task_types: [list of missing task types]
-    
-    missing_elements:
-      - element: [description]
-        importance: [high/medium/low]
-        recommendation: [how to add]
-  
-  strong_areas:
-    - [what's well-planned]
-    - [what follows best practices well]
-  
-  optimization_opportunities:
-    - type: [parallelization/merging/splitting]
-      description: [opportunity]
-      benefit: [time saved / quality improvement]
-      affected_items: [list]
-  
-  specific_recommendations:
-    - priority: [critical/high/medium/low]
-      category: [category]
-      recommendation: [specific action]
-      rationale: [why this matters]
-  
-  readiness_assessment:
-    ready_for_development: [yes/no/with-modifications]
-    blocking_issues: [count]
-    recommended_modifications: [count]
-    
-    estimated_effort_to_fix:
-      critical: [time]
-      high: [time]
-      medium: [time]
-    
-    timeline_impact:
-      if_fixed: [time]
-      if_not_fixed: [time]
-  
-  detailed_findings:
-    structure_validation: [detailed report]
-    best_practices_compliance: [detailed report]
-    task_sizing_analysis: [detailed report]
-    drift_policy_compliance: [detailed report]
-    dependency_analysis: [detailed report]
-    coverage_analysis: [detailed report]
-```
+The output document includes: `metadata` (plan files, review date), `overall_scores` (structure, best practices, task sizing, completeness, alignment, development readiness — each 1-10), `critical_issues`, `high_priority_issues`, `medium_priority_issues`, `best_practices_violations` (by category), `gaps`, `strong_areas`, `optimization_opportunities`, `specific_recommendations`, and `readiness_assessment`.
+
+See **[references/output-spec.md](references/output-spec.md)** for the complete document specification with all fields, issue IDs (CRIT-NNN/WARN-NNN/INFO-NNN), and scoring criteria.
+
+See **[references/example.yaml](references/example.yaml)** for a full example.
 
 ## Usage
 
@@ -659,4 +534,4 @@ This skill integrates with:
 
 ## Examples
 
-See [examples/](./examples/) for sample review outputs.
+See **[references/example.yaml](references/example.yaml)** for a complete sample review output.

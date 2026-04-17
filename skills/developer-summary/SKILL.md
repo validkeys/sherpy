@@ -99,71 +99,13 @@ Read all available files and extract:
 
 ### Step 4: Generate Developer Summary
 
-Create `summaries/developer-summary.md` with this structure:
+Create `summaries/developer-summary.md`.
 
-```markdown
-# Developer Summary
+The output document includes: header (timestamp, project name), `Overview` (3-5 sentence synthesis), `Deliverables` (grouped by category), `Milestones & Timeline` (M0, M1... with duration, dependencies, key deliverable), and `Summary` (total milestones, estimated duration, target completion).
 
-*Generated: [timestamp]*
-*Project: [project-name]*
+See **[references/output-spec.md](references/output-spec.md)** for the complete document specification with section structure and formatting rules.
 
----
-
-## Overview
-
-[Single paragraph describing what we're building. Synthesize from business requirements description, core problem statement, and solution overview. Keep it to 3-5 sentences maximum. Focus on: what is being built, why it matters, and what it enables.]
-
----
-
-## Deliverables
-
-[High-level list of what will be delivered. Group by category. Extract from business requirements functional requirements and technical requirements components.]
-
-### [Category 1 - e.g., "API Endpoints"]
-- [Deliverable 1]
-- [Deliverable 2]
-
-### [Category 2 - e.g., "Domain Package Handlers"]
-- [Deliverable 1]
-- [Deliverable 2]
-
-### [Category 3 - e.g., "Infrastructure"]
-- [Deliverable 1]
-- [Deliverable 2]
-
-[Add more categories as needed based on the requirements]
-
----
-
-## Milestones & Timeline
-
-[List milestones in sequence with key information]
-
-### M0: [Milestone Name]
-**Duration:** [estimated duration]
-**Dependencies:** None
-**Key Deliverable:** [primary outcome of this milestone]
-
-### M1: [Milestone Name]
-**Duration:** [estimated duration]
-**Dependencies:** M0
-**Key Deliverable:** [primary outcome of this milestone]
-
-[Continue for all milestones...]
-
----
-
-## Summary
-
-**Total Milestones:** [count]
-**Estimated Total Duration:** [sum of milestone durations OR timeline total if available]
-**Target Completion:** [date from timeline.yaml if available, otherwise "TBD - run /delivery-timeline"]
-
----
-
-*For detailed implementation tasks, see `implementation/milestones.yaml` and task files in `implementation/tasks/`.*
-*For delivery timeline and QA plan, see `delivery/`.*
-```
+See **[references/example.md](references/example.md)** for a full example.
 
 ### Step 5: Handle Missing Data Gracefully
 
@@ -369,7 +311,7 @@ This skill is designed to be called as **Step 10** in `/sherpy-flow`. When invok
 
 ## Examples
 
-See the main Sherpy documentation for example outputs.
+See **[references/example.md](references/example.md)** for a complete sample developer summary.
 
 ## Related Skills
 

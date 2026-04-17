@@ -114,16 +114,13 @@ Each question follows this structure:
 
 ## JSONL Format
 
-Track all questions and answers in `{base_directory}/artifacts/business-interview.jsonl`:
+Track all questions and answers in `{base_directory}/artifacts/business-interview.jsonl`.
 
-```json
-{"id":1,"category":"Problem Definition","question":"What is the primary problem your project aims to solve?","answer":"Automate manual workflow - Replace time-consuming manual processes with automated workflows","timestamp":"2025-01-27T10:00:00Z"}
-{"id":2,"category":"User Personas","question":"Who are your primary target users?","answer":"Individual developers - Solo developers working on personal or small projects","timestamp":"2025-01-27T10:05:00Z"}
-```
+See **[references/interview-jsonl-spec.md](references/interview-jsonl-spec.md)** for the complete JSONL schema with field definitions and examples.
 
 ## Output Format
 
-Generate `{base_directory}/requirements/business-requirements.yaml` with this structure:
+Generate `{base_directory}/requirements/business-requirements.yaml` upon interview completion.
 
 Create directory if it doesn't exist:
 ```bash
@@ -131,95 +128,11 @@ mkdir -p {base_directory}/requirements
 mkdir -p {base_directory}/artifacts
 ```
 
-```yaml
-project: [project-name]
-version: "1.0.0"
-generated: [timestamp]
+The output document includes these top-level sections: `project`, `version`, `generated`, `overview` (problem, value_proposition, scope), `personas`, `use_cases`, `functional_requirements` (FR-NNN format), `non_functional_requirements`, `success_criteria`, `constraints`, `dependencies`, `timeline`, `assumptions`, and `risks`.
 
-overview:
-  problem: |
-    [Problem description]
-  value_proposition: |
-    [Core value being delivered]
-  scope:
-    in_scope:
-      - [Item 1]
-      - [Item 2]
-    out_of_scope:
-      - [Item 1]
-      - [Item 2]
+See **[references/output-spec.md](references/output-spec.md)** for the complete document specification with all fields, types, and validation rules.
 
-personas:
-  - name: [Persona Name]
-    description: [Who they are]
-    goals:
-      - [Goal 1]
-      - [Goal 2]
-    pain_points:
-      - [Pain point 1]
-      - [Pain point 2]
-
-use_cases:
-  - name: [Use Case Name]
-    actor: [Who performs it]
-    description: [What they do]
-    outcome: [What they achieve]
-
-functional_requirements:
-  - id: FR-1
-    category: [Category]
-    description: [Requirement description]
-    priority: [high/medium/low]
-    rationale: [Why this is needed]
-
-non_functional_requirements:
-  performance:
-    - [Performance requirement 1]
-  security:
-    - [Security requirement 1]
-  usability:
-    - [Usability requirement 1]
-  reliability:
-    - [Reliability requirement 1]
-
-success_criteria:
-  - criterion: [Success criterion]
-    metric: [How to measure]
-    target: [Target value]
-
-constraints:
-  technical:
-    - [Technical constraint 1]
-  business:
-    - [Business constraint 1]
-  timeline:
-    - [Timeline constraint 1]
-  budget:
-    - [Budget constraint 1]
-
-dependencies:
-  internal:
-    - [Internal dependency 1]
-  external:
-    - [External dependency 1]
-
-timeline:
-  phase: [Phase name]
-  duration: [Duration]
-  milestones:
-    - [Milestone 1]
-    - [Milestone 2]
-
-assumptions:
-  - [Assumption 1]
-  - [Assumption 2]
-
-risks:
-  - risk: [Risk description]
-    probability: [high/medium/low]
-    impact: [high/medium/low]
-    mitigation: [Mitigation strategy]
-```
+See **[references/example.yaml](references/example.yaml)** for a full example.
 
 ## Usage
 
@@ -366,4 +279,4 @@ After completing the business requirements interview and gap analysis:
 
 ## Examples
 
-See [examples/](./examples/) for sample output files.
+See **[references/example.yaml](references/example.yaml)** for a complete sample output.

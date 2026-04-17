@@ -11,7 +11,7 @@ This skill generates comprehensive implementation plans with milestones, tasks, 
 
 - Completed `business-requirements.yaml`
 - Completed `technical-requirements.yaml`
-- Optional but recommended: Style anchor code examples
+- Recommended: `style-anchors/index.yaml` from style-anchors-collection skill
 
 ## Planning Process
 
@@ -51,6 +51,7 @@ Record the user's selection as `ordering_strategy`. If the user says "recommend 
 
    - Parse business requirements for functional scope
    - Parse technical requirements for architectural decisions
+   - Load style anchors from `{base_directory}/artifacts/style-anchors/index.yaml` (if exists)
    - Identify dependencies and constraints
 
 2. **Identify Milestones**
@@ -65,7 +66,8 @@ Record the user's selection as `ordering_strategy`. If the user says "recommend 
    - Break down milestones into atomic tasks
    - Apply task sizing rules (30m - 2.5h)
    - Define task dependencies
-   - Add style anchors and constraints
+   - Select relevant style anchors from index.yaml based on task type and file patterns
+   - Embed style anchor references in task instructions
    - Add final code review task for each milestone
 
 4. **Apply Best Practices**
@@ -140,147 +142,32 @@ Record the user's selection as `ordering_strategy`. If the user says "recommend 
 
 ### Milestones Structure
 
-Generate `milestones.yaml`:
+Generate `milestones.yaml` with version, project metadata, ordering strategy, and a `milestones` array. Each milestone has: `id` (m0, m1...), `name`, `description`, `dependencies`, `estimated_duration`, `tasks_file`, and `success_criteria`. Optional fields include `acceptance_criteria` (functional, non_functional, testing, documentation) and `exit_checklist`.
 
-```yaml
-version: "1.0.0"
-project: [project-name]
-generated: [timestamp]
+See **[references/milestones-spec.md](references/milestones-spec.md)** for the complete document specification with all fields, ordering strategies, and optional fields.
 
-business_requirements: [path/to/business-requirements.yaml]
-technical_requirements: [path/to/technical-requirements.yaml]
+See **[references/milestones-example.yaml](references/milestones-example.yaml)** for a full example.
 
-meta:
-  ordering_strategy: [multi-pr|single-feature-branch|value-first|risk-first|vertical-slice|foundation-first]
-  ordering_rationale: "[One sentence explaining why this strategy was chosen]"
+**Note on Optional Fields:**
+- `success_criteria` (required): High-level planning acceptance criteria
+- `acceptance_criteria` (optional): Detailed delivery criteria with requirement tracing, testing requirements, and documentation expectations. Use when rigorous milestone sign-off is needed.
+- `exit_checklist` (optional): Binary go/no-go checklist for code review. Use when formal gate-driven process is required.
 
-milestones:
-  - id: m0
-    name: [Milestone Name]
-    description: |
-      [What this milestone delivers]
-    dependencies: [] # Empty for first milestone
-    estimated_duration: [timeframe]
-    tasks_file: milestone-m0.tasks.yaml
-    success_criteria:
-      - [Criterion 1]
-      - [Criterion 2]
+Most projects use only `success_criteria`. Add detailed acceptance criteria when:
+- Project requires audit-ready requirement traceability
+- Multiple stakeholders need clear sign-off criteria
+- QA team needs explicit testing requirements per milestone
+- Code review process requires detailed checklists
 
-  - id: m1
-    name: [Milestone Name]
-    description: |
-      [What this milestone delivers]
-    dependencies: [m0] # References previous milestone
-    estimated_duration: [timeframe]
-    tasks_file: milestone-m1.tasks.yaml
-    success_criteria:
-      - [Criterion 1]
-      - [Criterion 2]
-```
+**To add detailed criteria after generation:** Run `/definition-of-done` to enhance milestones.yaml with acceptance_criteria and exit_checklist fields derived from your requirements.
 
 ### Tasks Structure
 
-Generate `milestone-m*.tasks.yaml`:
+Generate `milestone-m*.tasks.yaml` with style anchors, global constraints, quality gates, and a `tasks` array. Each task has: `id` (mN-NNN format), `name`, `description`, `estimate_minutes` (30-150), `type` (code/test/docs/config), `dependencies`, `files` (create/modify/touch_only), `style_anchor_refs`, and detailed `instructions`.
 
-````yaml
-milestone: [milestone-id]
-name: [Milestone Name]
-generated: [timestamp]
+See **[references/milestone-tasks-spec.md](references/milestone-tasks-spec.md)** for the complete document specification with task structure, quality gates, and TDD checklists.
 
-style_anchors:
-  - path: [path/to/example/file.ts]
-    lines: [10-50]
-    description: |
-      [What pattern this demonstrates]
-      [Why it's a good example]
-  - path: [path/to/test/file.test.ts]
-    lines: [1-30]
-    description: |
-      [Testing pattern example]
-
-global_constraints:
-  allowed_patterns:
-    - [Pattern 1 - e.g., "Use Effect.Service for all services"]
-    - [Pattern 2 - e.g., "Use Schema.Class for all data validation"]
-  forbidden_patterns:
-    - [Anti-pattern 1 - e.g., "Direct async/await in service methods"]
-    - [Anti-pattern 2 - e.g., "Type assertions on external data"]
-  tdd_required: true
-  max_task_duration_minutes: 150
-  commit_strategy: "Commit after each task"
-
-quality_gates:
-  - stage: pre-commit
-    commands:
-      - [linter command]
-      - [type checker command]
-      - [test command]
-  - stage: task-completion
-    criteria:
-      - All tests passing
-      - No lint errors
-      - Code formatted
-      - Documentation updated
-
-tasks:
-  - id: [milestone]-001
-    name: [Task name]
-    description: |
-      [What to implement]
-      [Why it's needed]
-    estimate_minutes: 60
-    type: [code/test/docs/config]
-    dependencies: [] # or list of task IDs
-    files:
-      create:
-        - [path/to/new/file.ts]
-        - [path/to/new/file.test.ts]
-      modify:
-        - [path/to/existing/file.ts]
-      touch_only:
-        - [files to reference but not modify]
-    instructions: |
-      **Objective:**
-      [Clear statement of what needs to be done]
-
-      **Implementation Steps:**
-      1. [Step 1]
-      2. [Step 2]
-      3. [Step 3]
-
-      **Constraints:**
-      - ONLY use: [specific libraries/approaches]
-      - Follow pattern in: [style anchor reference]
-      - File scope: ONLY modify listed files
-
-      **TDD Checklist:**
-      - [ ] Write failing test first
-      - [ ] Implement minimum code to pass
-      - [ ] Refactor if needed
-      - [ ] All tests passing
-
-      **Validation:**
-      ```bash
-      [command to run]
-      ```
-      Expected: [what success looks like]
-
-      **Drift Policy:**
-      If you encounter unexpected patterns or dependencies, STOP immediately.
-      Do not fix mid-stream. Report the issue and await guidance.
-
-    validation:
-      commands:
-        - [test command]
-        - [linter command]
-      expected_output: [success criteria]
-      on_failure: [what to do if validation fails]
-
-  - id: [milestone]-002
-    name: [Task name]
-    dependencies: [[milestone]-001]
-    ...
-````
+See **[references/milestone-tasks-example.yaml](references/milestone-tasks-example.yaml)** for a full example.
 
 ## Task Sizing Guidelines
 
@@ -537,6 +424,79 @@ Examples:
 
 ## Style Anchor Integration
 
+### Loading Style Anchors
+
+If `{base_directory}/artifacts/style-anchors/index.yaml` exists:
+
+1. **Load the index:**
+   ```
+   Read {base_directory}/artifacts/style-anchors/index.yaml
+   ```
+
+2. **Parse anchor data:**
+   - Extract categories and anchors
+   - Load usage_matrix for pattern mapping
+   - Build lookup table by task type and file patterns
+
+3. **For each task generated:**
+   - Determine task type (code/test/docs/config)
+   - Match file patterns in task against anchor applies_to rules
+   - Query usage_matrix for recommended anchors
+   - Select top 2-3 most relevant anchors
+
+### Style Anchor Selection Logic
+
+**By Task Type:**
+```
+task.type == "code" → usage_matrix.task_types[type="code"].recommended_anchors
+task.type == "test" → usage_matrix.task_types[type="test"].recommended_anchors
+task.type == "api"  → usage_matrix.task_types[type="api"].recommended_anchors
+```
+
+**By File Pattern:**
+```
+For each anchor in anchors:
+  For each pattern in anchor.applies_to.file_patterns:
+    If task.files match pattern:
+      Include this anchor
+```
+
+**By Milestone Type:**
+```
+For each anchor in anchors:
+  If milestone.type in anchor.applies_to.milestone_types OR "all" in milestone_types:
+    Consider this anchor
+```
+
+### Embedding Anchors in Task Instructions
+
+When generating task YAML, include style anchor references:
+
+```yaml
+instructions: |
+  **Objective:**
+  [Task objective]
+
+  **Style Anchors:**
+  Follow these established patterns:
+  - See `artifacts/style-anchors/[anchor-id].md` - [anchor.name]
+  - See `artifacts/style-anchors/[anchor-id].md` - [anchor.name]
+
+  Reference files:
+  - `[anchor.source.path]:[anchor.source.lines]` - [what it demonstrates]
+
+  **Implementation Steps:**
+  1. [Step 1]
+  2. [Step 2]
+
+  **Constraints:**
+  - ONLY use: [specific libraries/approaches]
+  - Follow pattern in: [anchor reference]
+  - File scope: ONLY modify listed files
+
+  [Rest of task instructions...]
+```
+
 ### What Makes a Good Style Anchor
 
 1. **Concrete** - Real file paths, not abstract descriptions
@@ -545,26 +505,18 @@ Examples:
 4. **Current** - Reflects current best practices
 5. **Exemplary** - Demonstrates the pattern correctly
 
-### Style Anchor Examples
+### If No Style Anchors Exist
 
-```yaml
-style_anchors:
-  - path: src/services/UserService.ts
-    lines: 10-50
-    description: |
-      Example of Effect.Service pattern with:
-      - Dependency injection via Effect.Service
-      - All methods returning Effect types
-      - Proper error handling with tagged errors
+If `{base_directory}/artifacts/style-anchors/index.yaml` does not exist:
 
-  - path: test/services/UserService.test.ts
-    lines: 1-40
-    description: |
-      Example of testing Effect services:
-      - Using it.effect from @effect/vitest
-      - Providing service dependencies
-      - Testing both success and failure cases
-```
+- Display warning: "⚠️  No style anchors found. Tasks will be generated without concrete code examples. Consider running /style-anchors-collection first to reduce drift risk."
+- Generate tasks with generic best practices instead
+- Include placeholder for style anchors in task instructions:
+  ```yaml
+  instructions: |
+    **Style Anchors:**
+    (No style anchors collected. Follow general best practices from technical requirements)
+  ```
 
 ## Quality Gate Configuration
 
@@ -625,17 +577,18 @@ The skill will:
 
 1. Ask user to choose a milestone ordering strategy (Phase 0)
 2. Load and analyze both requirement documents from `{base_directory}/requirements/`
-3. Identify logical milestones based on functionality, sequenced by the chosen strategy
-4. Create dependency-ordered milestone breakdown
-5. For each milestone:
+3. Load style anchors from `{base_directory}/artifacts/style-anchors/index.yaml` (if exists)
+4. Identify logical milestones based on functionality, sequenced by the chosen strategy
+5. Create dependency-ordered milestone breakdown
+6. For each milestone:
    - Generate detailed task breakdown
-   - Add style anchor references
+   - Select and embed relevant style anchor references based on task type and file patterns
    - Apply task sizing rules
    - Add TDD and quality constraints
    - Add final code review task as last task
-6. Output `milestones.yaml` to `{base_directory}/implementation/`
-7. Output `milestone-m*.tasks.yaml` files to `{base_directory}/implementation/tasks/`
-8. If generated, output `FEATURE_FLAGS.md` and `UPDATES.md` to `{base_directory}/artifacts/`
+7. Output `milestones.yaml` to `{base_directory}/implementation/`
+8. Output `milestone-m*.tasks.yaml` files to `{base_directory}/implementation/tasks/`
+9. If generated, output `FEATURE_FLAGS.md` and `UPDATES.md` to `{base_directory}/artifacts/`
 
 ## Planning Best Practices
 
@@ -959,4 +912,4 @@ If you encounter unexpected patterns:
 
 ## Examples
 
-See [examples/](./examples/) for sample milestone and task files.
+See **[references/milestones-example.yaml](references/milestones-example.yaml)** and **[references/milestone-tasks-example.yaml](references/milestone-tasks-example.yaml)** for sample output files.

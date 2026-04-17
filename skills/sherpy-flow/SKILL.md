@@ -23,9 +23,9 @@ Wait for the user to provide a path before proceeding.
 Step 1   Gap Analysis Worksheet         → gap-analysis-worksheet.md
 Step 2   Business Requirements          → business-requirements.yaml
 Step 3   Technical Requirements         → technical-requirements.yaml
-Step 4   Implementation Planner         → milestones.yaml + milestone-m*.tasks.yaml
-Step 5   Implementation Plan Review     → implementation-plan-review.yaml
-Step 6   Definition of Done             → definition-of-done.yaml
+Step 4   Style Anchors Collection       → style-anchors/index.yaml + *.md
+Step 5   Implementation Planner         → milestones.yaml + milestone-m*.tasks.yaml (with optional acceptance_criteria)
+Step 6   Implementation Plan Review     → implementation-plan-review.yaml
 Step 7   Architecture Decision Records  → adrs/INDEX.md + adrs/ADR-*.md
 Step 8   Delivery Timeline              → timeline.yaml
 Step 9   QA Test Plan                   → qa-test-plan.yaml
@@ -37,9 +37,9 @@ All artifacts are automatically organized into:
 <output-directory>/
 ├── requirements/       (requirements, gap analysis)
 ├── implementation/
-│   ├── milestones.yaml
+│   ├── milestones.yaml (with optional acceptance_criteria)
 │   └── tasks/          (milestone task files)
-├── delivery/           (timeline, QA, definition of done)
+├── delivery/           (timeline, QA test plan)
 ├── architecture/
 │   └── adrs/           (ADRs)
 ├── artifacts/          (reviews, interview transcripts, style anchors, CONTINUE.md, etc.)
@@ -67,10 +67,10 @@ Check the `base_directory` for existing files in the organized structure:
 | `gap-analysis-worksheet.md` | `requirements/` | Step 1 |
 | `business-requirements.yaml` | `requirements/` | Step 2 |
 | `technical-requirements.yaml` | `requirements/` | Step 3 |
-| `milestones.yaml` | `implementation/` | Step 4 |
-| `milestone-m*.tasks.yaml` | `implementation/tasks/` | Step 4 |
-| `implementation-plan-review.yaml` | `artifacts/` | Step 5 |
-| `definition-of-done.yaml` | `delivery/` | Step 6 |
+| `style-anchors/index.yaml` | `artifacts/style-anchors/` | Step 4 |
+| `milestones.yaml` | `implementation/` | Step 5 |
+| `milestone-m*.tasks.yaml` | `implementation/tasks/` | Step 5 |
+| `implementation-plan-review.yaml` | `artifacts/` | Step 6 |
 | `adrs/INDEX.md` | `architecture/adrs/` | Step 7 |
 | `timeline.yaml` | `delivery/` | Step 8 |
 | `qa-test-plan.yaml` | `delivery/` | Step 9 |
@@ -92,9 +92,9 @@ Display a visual status of the pipeline before doing any work:
  ✓  Step 1   Gap Analysis Worksheet
  ✓  Step 2   Business Requirements
  →  Step 3   Technical Requirements        ← resuming here
- ○  Step 4   Implementation Planner
- ○  Step 5   Implementation Plan Review
- ○  Step 6   Definition of Done
+ ○  Step 4   Style Anchors Collection
+ ○  Step 5   Implementation Planner
+ ○  Step 6   Implementation Plan Review
  ○  Step 7   Architecture Decision Records
  ○  Step 8   Delivery Timeline
  ○  Step 9   QA Test Plan
@@ -136,7 +136,6 @@ When invoking skills, pass `base_directory` as a parameter (or skills will auto-
 **Delivery Documents:**
 - `timeline.yaml` → `{base_directory}/delivery/`
 - `qa-test-plan.yaml` → `{base_directory}/delivery/`
-- `definition-of-done.yaml` → `{base_directory}/delivery/`
 
 **Architecture Documents:**
 - `adrs/INDEX.md` + `ADR-*.md` → `{base_directory}/architecture/adrs/`
@@ -144,8 +143,8 @@ When invoking skills, pass `base_directory` as a parameter (or skills will auto-
 **Artifact/Review Documents:**
 - `business-interview.jsonl` → `{base_directory}/artifacts/`
 - `technical-interview.jsonl` → `{base_directory}/artifacts/`
+- `style-anchors/index.yaml` + `*.md` → `{base_directory}/artifacts/style-anchors/`
 - `implementation-plan-review.yaml` → `{base_directory}/artifacts/`
-- `style-anchor-references.yaml` → `{base_directory}/artifacts/`
 - `CONTINUE.md` → `{base_directory}/artifacts/`
 - `FEATURE_FLAGS.md` → `{base_directory}/artifacts/`
 - `UPDATES.md` → `{base_directory}/artifacts/`
@@ -166,28 +165,34 @@ When invoking skills, pass `base_directory` as a parameter (or skills will auto-
 **Step 3 — Technical Requirements Interview (`/technical-requirements-interview`)**
 - Requires `business-requirements.yaml`.
 - Run the full interview process.
-- After `technical-requirements.yaml` is generated, display the summary and ask: "Technical requirements complete. Continue to Implementation Planner?"
+- After `technical-requirements.yaml` is generated, display the summary and ask: "Technical requirements complete. Continue to Style Anchors Collection?"
 
-**Step 4 — Implementation Planner (`/implementation-planner`)**
-- Requires `business-requirements.yaml` + `technical-requirements.yaml`.
+**Step 4 — Style Anchors Collection (`/style-anchors-collection`)**
+- Requires `technical-requirements.yaml`.
+- Interactive collection of code examples demonstrating approved patterns.
+- For each pattern identified in technical requirements:
+  - Ask user to provide file path, line range
+  - Document what pattern demonstrates
+  - Specify when to use it
+- Generate `style-anchors/` directory with individual `.md` files and `index.yaml`.
+- After completion, display anchor count by category and ask: "Style anchors collected. Continue to Implementation Planner?"
+
+**Step 5 — Implementation Planner (`/implementation-planner`)**
+- Requires `business-requirements.yaml`, `technical-requirements.yaml`, and `style-anchors/index.yaml`.
 - Generate `milestones.yaml` + `milestone-m*.tasks.yaml`.
+- Style anchors from Step 4 are automatically referenced in task instructions.
 - After completion, display milestone summary and ask: "Implementation plan generated. Continue to Plan Review?"
 
-**Step 5 — Implementation Plan Review (`/implementation-plan-review`)**
+**Step 6 — Implementation Plan Review (`/implementation-plan-review`)**
 - Requires `milestones.yaml` + task files.
 - Run the full review.
 - After `implementation-plan-review.yaml` is generated, display the readiness score and critical issues.
 - If critical issues exist, ask:
   > "The plan review found [n] critical issue(s). Would you like to:
-  > 1. Address issues now (loops back to Step 4)
+  > 1. Address issues now (loops back to Step 5)
   > 2. Continue with acknowledged issues
   > 3. Review the issues in detail first"
-- Otherwise ask: "Plan review passed. Continue to Definition of Done?"
-
-**Step 6 — Definition of Done (`/definition-of-done`)**
-- Requires `milestones.yaml` + `business-requirements.yaml`.
-- Generate `definition-of-done.yaml`.
-- After completion, display milestone count and ask: "Definition of Done generated. Continue to Architecture Decision Records?"
+- Otherwise ask: "Plan review passed. Continue to Architecture Decision Records?"
 
 **Step 7 — Architecture Decision Records (`/architecture-decision-record`)**
 - Requires `technical-requirements.yaml`.
@@ -236,7 +241,6 @@ All artifacts organized in: [base_directory]/
 🚀 Delivery
   ✓ timeline.yaml
   ✓ qa-test-plan.yaml
-  ✓ definition-of-done.yaml
 
 🏛️ Architecture
   ✓ adrs/INDEX.md + ADR-*.md        ([n] decision records)
@@ -249,6 +253,7 @@ All artifacts organized in: [base_directory]/
   ✓ implementation-plan-review.yaml
   ✓ business-interview.jsonl
   ✓ technical-interview.jsonl
+  ✓ style-anchors/index.yaml + [n] anchor files
 
 Timeline: [project start date] → [production deploy date]
 Total Delivery Days: [n] business days

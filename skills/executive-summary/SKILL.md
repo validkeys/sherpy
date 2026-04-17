@@ -97,142 +97,13 @@ Read all available files and extract:
 
 ### Step 4: Generate Executive Summary
 
-Create `summaries/executive-summary.md` with this structure:
+Create `summaries/executive-summary.md`.
 
-```markdown
-# Executive Summary
+The output document includes: header (timestamp, project name), `Business Problem` (current state, business impact), `Solution Overview` (approach, benefits), `Key Features & Capabilities` (grouped by category), `Timeline & Milestones` (table with dates), `Success Metrics` (primary and secondary), `Risks & Dependencies` (risk table, external dependencies, assumptions), `Resource Requirements` (team, infrastructure, timeline commitment), and `Conclusion`.
 
-*Generated: [timestamp]*
-*Project: [project-name]*
+See **[references/output-spec.md](references/output-spec.md)** for the complete document specification with section structure, writing guidelines, and formatting rules.
 
----
-
-## Business Problem
-
-[Describe the problem being solved. Extract from business requirements: problem statement, business goals, and why this matters. Focus on business impact, not technical details. 2-3 paragraphs maximum.]
-
-**Current State:** [What's the current situation or pain point]
-
-**Business Impact:** [How this problem affects the business - costs, inefficiencies, missed opportunities]
-
----
-
-## Solution Overview
-
-[High-level description of the proposed solution. Non-technical language. Explain what we're building and how it addresses the business problem. 2-3 paragraphs.]
-
-**Approach:** [Key aspects of the solution]
-
-**Benefits:** [How this solution improves the current state]
-
----
-
-## Key Features & Capabilities
-
-[User-facing and business-facing features. Extract from business requirements functional_requirements and features sections. Group logically.]
-
-### [Feature Category 1]
-- **[Feature Name]** - [What it enables/provides]
-- **[Feature Name]** - [What it enables/provides]
-
-### [Feature Category 2]
-- **[Feature Name]** - [What it enables/provides]
-- **[Feature Name]** - [What it enables/provides]
-
-[Continue for all major feature groups]
-
----
-
-## Timeline & Milestones
-
-[Delivery schedule with key milestones. Extract from timeline.yaml if available, otherwise use milestones.yaml estimates.]
-
-**Project Start:** [Start date]
-**Production Deploy:** [Target production date]
-**Total Duration:** [Weeks/months]
-
-### Key Milestones
-
-| Milestone | Target Date | Key Deliverables |
-|-----------|-------------|------------------|
-| [M0: Name] | [Date] | [Primary deliverable] |
-| [M1: Name] | [Date] | [Primary deliverable] |
-| [M2: Name] | [Date] | [Primary deliverable] |
-| ... | ... | ... |
-
-### Delivery Phases
-
-- **Development:** [Duration] - [Date range]
-- **QA & Testing:** [Duration] - [X rounds, Y days each]
-- **Signoff & Deploy:** [Date]
-
----
-
-## Success Metrics
-
-[How success will be measured. Extract from business requirements success_criteria and measurable_outcomes.]
-
-### Primary Metrics
-- **[Metric Name]:** [Target] - [What this measures]
-- **[Metric Name]:** [Target] - [What this measures]
-
-### Secondary Metrics
-- **[Metric Name]:** [Target] - [What this measures]
-- **[Metric Name]:** [Target] - [What this measures]
-
-**Measurement Approach:** [How and when metrics will be evaluated]
-
----
-
-## Risks & Dependencies
-
-[Key risks and external dependencies that could impact delivery. Extract from technical requirements risks, constraints, and external_dependencies sections.]
-
-### Technical Risks
-| Risk | Impact | Mitigation Strategy |
-|------|--------|---------------------|
-| [Risk description] | [High/Med/Low] | [How we're addressing it] |
-| [Risk description] | [High/Med/Low] | [How we're addressing it] |
-
-### External Dependencies
-- **[Dependency Name]:** [What we depend on, who owns it, status]
-- **[Dependency Name]:** [What we depend on, who owns it, status]
-
-### Assumptions
-- [Key assumption 1]
-- [Key assumption 2]
-
----
-
-## Resource Requirements
-
-[Team, infrastructure, and other resources needed. Extract from technical requirements and business requirements.]
-
-### Team
-- **Development Team:** [Size, roles, time commitment]
-- **QA/Testing:** [Size, time commitment]
-- **Product/Design:** [Size, time commitment]
-- **DevOps/Infrastructure:** [Size, time commitment]
-
-### Infrastructure
-- [Key infrastructure requirements - servers, databases, services]
-- [Estimated costs if available]
-
-### Timeline Commitment
-- **Total Project Duration:** [Duration]
-- **Team Capacity Required:** [FTE count or percentage]
-
----
-
-## Conclusion
-
-[2-3 sentence summary tying together problem, solution, timeline, and expected outcome.]
-
----
-
-*For detailed technical specifications, see `requirements/technical-requirements.yaml`.*
-*For detailed implementation plan, see `docs/implementation/milestones.yaml`.*
-```
+See **[references/example.md](references/example.md)** for a full example.
 
 ### Step 5: Handle Missing Data Gracefully
 
@@ -534,7 +405,7 @@ This skill is designed to be called as the **last part of Step 10** in `/sherpy-
 
 ## Examples
 
-See the main Sherpy documentation for example outputs.
+See **[references/example.md](references/example.md)** for a complete sample executive summary.
 
 ## Related Skills
 

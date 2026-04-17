@@ -1,0 +1,199 @@
+version: "1.0.0"
+project: task-automation-cli
+generated: "2026-03-26T10:00:00Z"
+sources:
+  business_requirements: business-requirements.yaml
+  technical_requirements: technical-requirements.yaml
+
+summary:
+  total_test_suites: 4
+  total_test_cases: 12
+  by_priority:
+    high: 5
+    medium: 5
+    low: 2
+  coverage:
+    functional_requirements: "88%"   # 7/8 requirements have high-priority cases
+    personas: "100%"                 # all 3 personas covered
+    has_performance_tests: true
+    has_security_tests: true
+
+test_suites:
+  # ── Suite 1: Workflow Loading ──────────────────────────────────────────────
+
+  - id: ts-workflow-loading
+    name: Workflow Loading & Validation
+    description: Verifies that workflow definition files are correctly parsed, validated, and rejected when malformed.
+    requirement_refs: [BR-001, BR-002]
+    test_cases:
+      - id: tc-wf-001
+        name: Valid workflow YAML loads without errors
+        type: positive
+        priority: high
+        preconditions:
+          - A syntactically valid workflow.yaml exists in the project directory
+        steps:
+          - Run `sherpy run workflow.yaml`
+          - Observe CLI output
+        expected_result: CLI confirms workflow loaded with [n] tasks listed; exit code 0
+        requirement_refs: [BR-001]
+        tags: [smoke, workflow, happy-path]
+
+      - id: tc-wf-002
+        name: Workflow with missing required field is rejected
+        type: negative
+        priority: high
+        preconditions:
+          - A workflow.yaml missing the `name` field exists
+        steps:
+          - Run `sherpy run workflow.yaml`
+        expected_result: CLI prints a descriptive validation error naming the missing field; exit code 1
+        requirement_refs: [BR-002]
+        tags: [validation, error-handling]
+
+      - id: tc-wf-003
+        name: Workflow referencing an unknown task type is rejected
+        type: negative
+        priority: medium
+        preconditions:
+          - A workflow.yaml contains a task with `type: unknownType`
+        steps:
+          - Run `sherpy run workflow.yaml`
+        expected_result: CLI reports unrecognised task type with line number; exit code 1
+        requirement_refs: [BR-002]
+        tags: [validation, error-handling]
+
+  # ── Suite 2: Task Execution ────────────────────────────────────────────────
+
+  - id: ts-task-execution
+    name: Task Execution Engine
+    description: Verifies that individual tasks execute correctly, in dependency order, and handle failures gracefully.
+    requirement_refs: [BR-003, BR-004]
+    test_cases:
+      - id: tc-exec-001
+        name: Sequential tasks execute in defined order
+        type: positive
+        priority: high
+        preconditions:
+          - A workflow with three sequential tasks (A → B → C) is defined
+        steps:
+          - Run `sherpy run workflow.yaml`
+          - Observe execution log
+        expected_result: Tasks complete in order A, B, C; each start time is after the prior task's end time
+        requirement_refs: [BR-003]
+        tags: [smoke, execution, ordering]
+
+      - id: tc-exec-002
+        name: Parallel tasks execute concurrently
+        type: positive
+        priority: high
+        preconditions:
+          - A workflow with two tasks sharing no dependency is defined
+        steps:
+          - Run `sherpy run workflow.yaml`
+          - Observe execution log timestamps
+        expected_result: Both tasks have overlapping execution windows; total runtime < sum of individual runtimes
+        requirement_refs: [BR-003]
+        tags: [execution, parallelism]
+
+      - id: tc-exec-003
+        name: Workflow halts when a task fails and `on_failure: stop` is set
+        type: negative
+        priority: high
+        preconditions:
+          - A workflow where task B is configured to fail and `on_failure: stop` is set
+        steps:
+          - Run `sherpy run workflow.yaml`
+        expected_result: Execution stops after task B fails; downstream tasks C and D do not run; exit code non-zero
+        requirement_refs: [BR-004]
+        tags: [error-handling, failure-modes]
+
+      - id: tc-exec-004
+        name: Execution continues when a task fails and `on_failure: continue` is set
+        type: edge
+        priority: medium
+        preconditions:
+          - A workflow where task B fails and `on_failure: continue` is set
+        steps:
+          - Run `sherpy run workflow.yaml`
+        expected_result: Tasks after B that do not depend on B still execute; summary shows B as failed
+        requirement_refs: [BR-004]
+        tags: [error-handling, edge-case]
+
+  # ── Suite 3: CLI Interface ─────────────────────────────────────────────────
+
+  - id: ts-cli
+    name: CLI Interface & User Experience
+    description: Verifies the CLI surface including help text, output formatting, and exit codes.
+    requirement_refs: [BR-005]
+    test_cases:
+      - id: tc-cli-001
+        name: --help flag prints usage information
+        type: positive
+        priority: medium
+        preconditions:
+          - CLI is installed and on PATH
+        steps:
+          - Run `sherpy --help`
+        expected_result: Usage text printed including all top-level commands; exit code 0
+        requirement_refs: [BR-005]
+        tags: [cli, ux, smoke]
+
+      - id: tc-cli-002
+        name: Running with no arguments prints help (not an error)
+        type: edge
+        priority: low
+        preconditions:
+          - CLI is installed
+        steps:
+          - Run `sherpy` with no arguments
+        expected_result: Help/usage text printed; exit code 0 (not an error state)
+        requirement_refs: [BR-005]
+        tags: [cli, ux, edge-case]
+
+  # ── Suite 4: Security & Performance ────────────────────────────────────────
+
+  - id: ts-security-performance
+    name: Security & Performance
+    description: Verifies non-functional requirements around execution safety and CLI responsiveness.
+    requirement_refs: [TR-SEC-001, TR-PERF-001]
+    test_cases:
+      - id: tc-sec-001
+        name: Shell task cannot access environment variables outside declared scope
+        type: security
+        priority: high
+        preconditions:
+          - A workflow with a shell task that attempts to read $SECRET_KEY
+          - SECRET_KEY is not in the workflow's declared env scope
+        steps:
+          - Run `sherpy run workflow.yaml`
+          - Inspect task output and logs
+        expected_result: $SECRET_KEY resolves to empty or an error is raised; the value is never printed in logs
+        requirement_refs: [TR-SEC-001]
+        tags: [security, env-isolation]
+
+      - id: tc-perf-001
+        name: CLI startup completes in under 500ms on cold start
+        type: performance
+        priority: medium
+        preconditions:
+          - CLI binary installed; system not under load
+        steps:
+          - Run `time sherpy --version` three times
+          - Record wall-clock time for each run
+        expected_result: All three runs complete in < 500ms
+        requirement_refs: [TR-PERF-001]
+        tags: [performance, startup]
+
+      - id: tc-perf-002
+        name: Workflow with 50 sequential tasks completes within acceptable time
+        type: performance
+        priority: low
+        preconditions:
+          - A generated workflow with 50 no-op shell tasks
+        steps:
+          - Run `sherpy run large-workflow.yaml`
+          - Record total execution time
+        expected_result: Execution completes in < 10 seconds; memory usage stays below 256MB
+        requirement_refs: [TR-PERF-001]
+        tags: [performance, scale]

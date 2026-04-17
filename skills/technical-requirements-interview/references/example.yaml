@@ -1,0 +1,802 @@
+project: customer-portal-api
+version: "2.0.0"
+generated: "2026-04-15T10:30:00Z"
+business_requirements_ref: ./business-requirements.yaml
+
+overview: |
+  Customer Portal API service provides secure access to account data and transaction
+  history for end customers. Built as a REST API with JWT authentication, following
+  service-command architecture patterns for maintainability and testability.
+
+  Key features: Account queries, transaction history, document retrieval, notification
+  preferences. Designed for 100K+ active users with P95 response times under 500ms.
+
+architecture:
+  pattern: Service-Command Architecture
+  description: |
+    Service organized around discrete command operations using @validkeys/contracted
+    for type-safe command definitions. Commands handle business logic and return
+    Result types (never throw exceptions).
+
+    **Architecture Components:**
+
+    1. **API Layer** (Fastify REST v2)
+       - Authentication middleware (JWT + refresh tokens)
+       - Request validation (Zod schemas)
+       - Error transformation
+       - OpenAPI documentation
+
+    2. **Service Layer** (d-modules/customer-portal)
+       - Command composition via defineService()
+       - Dependency injection
+       - Result type wrappers
+
+    3. **Command Layer** (src/commands/)
+       - Individual command implementations
+       - CFMV pattern (Context/Filters/Modifiers/Values)
+       - Business logic
+       - Repository delegation
+
+    4. **Repository Layer** (src/lib/repositories/)
+       - Database access abstraction
+       - Kysely query builder
+       - Transaction management
+
+    5. **PostgreSQL Database**
+       - Customer account data
+       - Transaction history
+       - Document metadata
+       - Notification preferences
+
+    **Key Benefits:**
+    - Clear separation of concerns
+    - Type-safe contracts
+    - Testable in isolation
+    - Easy to extend with new commands
+
+  components:
+    - name: API Layer
+      responsibility: HTTP interface, auth, validation, OpenAPI docs
+    - name: Service Layer
+      responsibility: Command composition and dependency injection
+    - name: Command Layer
+      responsibility: Business logic with Result types
+    - name: Repository Layer
+      responsibility: Database access and query optimization
+    - name: PostgreSQL Database
+      responsibility: Persistent data storage
+
+  patterns:
+    cfmv:
+      description: |
+        All commands follow CFMV (Context/Filters/Modifiers/Values) architecture patterns.
+
+        Query commands use CFM pattern:
+        - Context: RequestContext with customer_id from JWT
+        - Filters: Optional filtering criteria (account status, date ranges)
+        - Modifiers: Pagination, ordering, includes
+
+        Mutation commands use CV pattern:
+        - Context: RequestContext with customer_id from JWT
+        - Values: Data to update
+
+      examples:
+        - example_name: listTransactions
+          pattern: CFM
+          structure: |
+            {
+              context: RequestContext { customer_id: UUID },
+              filters: {
+                account_id: UUID,
+                transaction_type?: string,
+                start_date?: Date,
+                end_date?: Date
+              },
+              modifiers: {
+                page: number,
+                limit: number,
+                order_by: 'executed_at' | 'amount'
+              }
+            }
+
+        - example_name: updateNotificationPreferences
+          pattern: CV
+          structure: |
+            {
+              context: RequestContext { customer_id: UUID },
+              values: {
+                email_enabled?: boolean,
+                sms_enabled?: boolean,
+                push_enabled?: boolean,
+                frequency?: 'instant' | 'daily' | 'weekly'
+              }
+            }
+
+technology_stack:
+  language: TypeScript
+  runtime: Node.js 20.x
+  frameworks:
+    - Fastify (REST API server)
+    - "@validkeys/contracted (service-command architecture)"
+    - Kysely (type-safe SQL query builder)
+  libraries:
+    core:
+      - zod (schema validation)
+      - neverthrow (Result type utilities)
+      - jsonwebtoken (JWT authentication)
+      - bcrypt (password hashing)
+      - pino (structured logging)
+      - "@spark/postgres (database connection)"
+      - "@spark/env (environment configuration)"
+    development:
+      - vitest (testing framework)
+      - "@types/node"
+      - typescript
+      - eslint
+      - prettier
+      - fastify-zod-openapi (OpenAPI generation)
+  package_manager: pnpm (monorepo)
+
+project_structure:
+  type: monorepo
+  layout: |
+    d-modules/customer-portal/
+    ├── src/
+    │   ├── commands/                        # Command implementations
+    │   │   ├── listAccounts/                # Query commands
+    │   │   │   ├── index.ts                 # Command definition
+    │   │   │   └── index.test.ts            # Command tests
+    │   │   ├── getAccount/
+    │   │   ├── listTransactions/
+    │   │   ├── getTransaction/
+    │   │   ├── listDocuments/
+    │   │   ├── getDocument/
+    │   │   ├── updateNotificationPreferences/  # Mutation commands
+    │   │   └── getNotificationPreferences/
+    │   ├── lib/
+    │   │   ├── repositories/                # Data access layer
+    │   │   │   ├── accounts/
+    │   │   │   │   ├── list.ts
+    │   │   │   │   ├── list.test.ts
+    │   │   │   │   ├── find-by-id.ts
+    │   │   │   │   └── find-by.ts
+    │   │   │   ├── transactions/
+    │   │   │   │   ├── list.ts
+    │   │   │   │   └── find-by-id.ts
+    │   │   │   ├── documents/
+    │   │   │   └── notifications/
+    │   │   └── utils/                       # Shared utilities
+    │   │       ├── pagination.ts
+    │   │       └── filters.ts
+    │   ├── service.ts                       # Service composition
+    │   └── index.ts                         # Public exports
+    ├── package.json
+    ├── tsconfig.json
+    └── README.md
+
+    lib/contracts/src/domains/customerPortal/
+    ├── commands/                            # Command schemas
+    │   ├── listAccounts.ts
+    │   ├── getAccount.ts
+    │   ├── listTransactions.ts
+    │   └── ...
+    ├── errors.ts                            # Error type definitions
+    ├── types.ts                             # Shared types
+    └── index.ts                             # Barrel export
+
+    b-containers/customer-api/src/api/rest-v2/customer-portal/
+    ├── index.ts                             # Fastify plugin
+    ├── endpoints.ts                         # Route definitions
+    └── handlers/                            # REST handlers
+        ├── listAccounts/
+        │   ├── index.ts
+        │   └── schema.ts
+        └── ...
+
+  key_directories:
+    - path: d-modules/customer-portal/src/commands
+      purpose: Service commands using @validkeys/contracted
+    - path: d-modules/customer-portal/src/lib/repositories
+      purpose: Database access methods (internal implementation)
+    - path: lib/contracts/src/domains/customerPortal
+      purpose: Centralized schemas, types, and error definitions
+    - path: b-containers/customer-api/src/api/rest-v2/customer-portal
+      purpose: REST v2 HTTP endpoints
+
+data_model:
+  strategy: PostgreSQL database (existing schema)
+  database: PostgreSQL 15.x (existing infrastructure)
+  schema_approach: |
+    Use existing PostgreSQL instance with schema 'customer_portal' for isolation.
+    No schema changes required - read-only access to existing tables.
+
+    **Tables:**
+
+    1. **customer_portal.accounts** (Primary account table)
+       - id: UUID PRIMARY KEY
+       - customer_id: UUID NOT NULL (indexed)
+       - account_number: VARCHAR(20) UNIQUE NOT NULL
+       - account_type: VARCHAR(50) NOT NULL
+       - status: VARCHAR(20) NOT NULL CHECK (status IN ('active', 'closed', 'suspended'))
+       - balance: DECIMAL(15, 2)
+       - currency: VARCHAR(3) DEFAULT 'USD'
+       - opened_at: TIMESTAMPTZ NOT NULL
+       - created_at: TIMESTAMPTZ DEFAULT NOW()
+       - updated_at: TIMESTAMPTZ DEFAULT NOW()
+
+    2. **customer_portal.transactions** (Transaction history)
+       - id: UUID PRIMARY KEY
+       - account_id: UUID REFERENCES customer_portal.accounts(id)
+       - transaction_type: VARCHAR(50) NOT NULL
+       - amount: DECIMAL(15, 2) NOT NULL
+       - currency: VARCHAR(3) DEFAULT 'USD'
+       - description: TEXT
+       - executed_at: TIMESTAMPTZ NOT NULL
+       - created_at: TIMESTAMPTZ DEFAULT NOW()
+
+    3. **customer_portal.documents** (Document metadata)
+       - id: UUID PRIMARY KEY
+       - customer_id: UUID NOT NULL (indexed)
+       - account_id: UUID (nullable)
+       - document_type: VARCHAR(100) NOT NULL
+       - file_path: TEXT NOT NULL
+       - generated_at: TIMESTAMPTZ NOT NULL
+       - created_at: TIMESTAMPTZ DEFAULT NOW()
+
+    4. **customer_portal.notification_preferences** (User preferences)
+       - id: UUID PRIMARY KEY
+       - customer_id: UUID UNIQUE NOT NULL
+       - email_enabled: BOOLEAN DEFAULT true
+       - sms_enabled: BOOLEAN DEFAULT false
+       - push_enabled: BOOLEAN DEFAULT true
+       - frequency: VARCHAR(20) DEFAULT 'daily'
+       - created_at: TIMESTAMPTZ DEFAULT NOW()
+       - updated_at: TIMESTAMPTZ DEFAULT NOW()
+
+  indexes:
+    customer_accounts:
+      index: idx_accounts_customer_id ON customer_portal.accounts(customer_id)
+      purpose: Fast lookup of all accounts for a customer
+
+    account_status:
+      index: idx_accounts_status ON customer_portal.accounts(status)
+      purpose: Filter by account status (active, closed, suspended)
+
+    transaction_account_date:
+      index: idx_transactions_account_executed ON customer_portal.transactions(account_id, executed_at DESC)
+      purpose: Transaction history queries with date ordering
+
+    customer_documents:
+      index: idx_documents_customer_id ON customer_portal.documents(customer_id, generated_at DESC)
+      purpose: Document list queries per customer
+
+    document_type:
+      index: idx_documents_type ON customer_portal.documents(document_type)
+      purpose: Filter documents by type
+
+  migrations: |
+    No migrations required - using existing database schema.
+    Read-only access via Kysely query builder.
+
+api:
+  style: REST v2
+  framework: Fastify with fastify-zod-openapi
+  base_url: /api/v2/customer-portal
+  versioning: URL path versioning (/api/v2/)
+  documentation: OpenAPI 3.0 auto-generated from Zod schemas
+
+  endpoints:
+    # Account queries
+    - path: /listAccounts
+      method: POST
+      description: List all accounts for authenticated customer
+      auth: Required (JWT)
+      schema: ListAccountsRequestSchema / ListAccountsResponseSchema
+
+    - path: /getAccount
+      method: POST
+      description: Get detailed account information
+      auth: Required (JWT + account ownership verification)
+      schema: GetAccountRequestSchema / GetAccountResponseSchema
+
+    # Transaction queries
+    - path: /listTransactions
+      method: POST
+      description: List transactions for an account with pagination
+      auth: Required (JWT + account ownership verification)
+      schema: ListTransactionsRequestSchema / ListTransactionsResponseSchema
+
+    - path: /getTransaction
+      method: POST
+      description: Get detailed transaction information
+      auth: Required (JWT + account ownership verification)
+      schema: GetTransactionRequestSchema / GetTransactionResponseSchema
+
+    # Document queries
+    - path: /listDocuments
+      method: POST
+      description: List documents for customer
+      auth: Required (JWT)
+      schema: ListDocumentsRequestSchema / ListDocumentsResponseSchema
+
+    - path: /getDocument
+      method: POST
+      description: Get document metadata and signed download URL
+      auth: Required (JWT + document ownership verification)
+      schema: GetDocumentRequestSchema / GetDocumentResponseSchema
+
+    # Notification preferences
+    - path: /getNotificationPreferences
+      method: POST
+      description: Get customer notification preferences
+      auth: Required (JWT)
+      schema: GetNotificationPreferencesRequestSchema / GetNotificationPreferencesResponseSchema
+
+    - path: /updateNotificationPreferences
+      method: POST
+      description: Update customer notification preferences
+      auth: Required (JWT)
+      schema: UpdateNotificationPreferencesRequestSchema / UpdateNotificationPreferencesResponseSchema
+
+security:
+  authentication:
+    method: JWT with refresh tokens
+    implementation: |
+      JWT-based authentication with short-lived access tokens (15 minutes)
+      and long-lived refresh tokens (7 days).
+
+      Flow:
+      1. User authenticates via /auth/login (separate auth service)
+      2. Receives access_token (JWT) and refresh_token
+      3. Access token includes: customer_id, email, issued_at, expires_at
+      4. All API requests require Bearer token in Authorization header
+      5. Expired tokens refreshed via /auth/refresh endpoint
+
+      JWT payload:
+      {
+        "sub": "customer_id (UUID)",
+        "email": "customer@example.com",
+        "iat": 1234567890,
+        "exp": 1234568790
+      }
+
+  authorization:
+    model: Context-based authorization (customer_id scoping)
+    implementation: |
+      All commands require authenticated customer context. Authorization
+      enforced via RequestContext pattern:
+
+      - Customer can only access their own accounts
+      - Account ownership verified on every request
+      - Database queries scoped by customer_id from JWT
+      - No admin or elevated permissions in this API
+
+      Enforcement:
+      1. JWT middleware extracts customer_id from token
+      2. RequestContext created with customer_id
+      3. Repository queries filtered by customer_id
+      4. Attempting to access other customers' data returns 404 Not Found
+         (not 403 Forbidden to avoid enumeration attacks)
+
+  secrets:
+    storage: Environment variables via @spark/env package
+    rotation: Quarterly rotation for JWT signing keys
+    secrets_required:
+      - JWT_SECRET (signing key for access tokens)
+      - JWT_REFRESH_SECRET (signing key for refresh tokens)
+      - DATABASE_URL (from @spark/postgres)
+      - S3_BUCKET_NAME (for document storage)
+      - AWS_ACCESS_KEY_ID (S3 access)
+      - AWS_SECRET_ACCESS_KEY (S3 access)
+
+  data_validation:
+    input: Zod schemas at API layer + command layer validation
+    output: Zod schemas validate command responses before returning
+
+testing:
+  strategy: TDD with integration-focused approach
+  types:
+    unit:
+      framework: Vitest
+      coverage_target: 80% (focus on business logic)
+      scope: |
+        - Command implementations (input transformation, Result wrapping)
+        - CFMV schema validation
+        - Authorization logic
+        - Repository query builders
+
+    integration:
+      framework: Vitest with test database
+      approach: |
+        Test commands end-to-end against real PostgreSQL test database.
+        - Seed test data via fixtures
+        - Execute commands with realistic inputs
+        - Verify Result types and data correctness
+        - Test authorization boundaries
+        - Test pagination and filtering
+
+      coverage_target: 70%
+
+    e2e:
+      framework: Vitest + Fastify inject (no live HTTP)
+      approach: |
+        Test full API flows through Fastify routes:
+        - JWT authentication flow
+        - Account list and detail retrieval
+        - Transaction history with pagination
+        - Document access with signed URLs
+        - Notification preference updates
+
+      focus: |
+        - Authentication and authorization
+        - API contract compliance
+        - Error response formats
+        - OpenAPI schema validation
+
+  mocking:
+    strategy: |
+      Mock external dependencies (S3 for documents), use real database
+      for repository tests. Mock database only for command unit tests.
+
+    tools:
+      - Vitest mock functions
+      - Test database with seed data
+      - S3 mock via aws-sdk-mock
+
+development:
+  workflow: |
+    1. Local development with Docker Compose (PostgreSQL test instance)
+    2. Feature branch workflow (main → feature → PR → main)
+    3. Use @spark/postgres for database connection
+    4. Hot reload via Fastify plugin in development mode
+    5. OpenAPI docs available at /docs in development
+
+  code_quality:
+    linter: ESLint (monorepo config)
+    formatter: Prettier (monorepo config)
+    type_checker: TypeScript strict mode
+
+  pre_commit_hooks:
+    - ESLint --fix on staged files
+    - Prettier --write on staged files
+    - TypeScript type check (tsc --noEmit)
+    - Vitest related tests
+
+  ci_cd:
+    platform: GitHub Actions (existing monorepo CI/CD)
+    pipeline:
+      - stage: Validate
+        actions:
+          - Install dependencies (pnpm install)
+          - Type check (tsc --noEmit)
+          - Lint (eslint)
+          - Unit tests (vitest unit)
+          - Integration tests (vitest integration)
+
+      - stage: Build
+        actions:
+          - Build service package (turbo build --filter=@spark/customer-portal)
+          - Build affected packages
+          - Generate OpenAPI documentation
+
+      - stage: Deploy to Staging
+        actions:
+          - Deploy to staging environment
+          - Run E2E tests against staging
+          - Run smoke tests
+
+      - stage: Deploy to Production
+        actions:
+          - Manual approval required
+          - Blue-green deployment to production
+          - Run production smoke tests
+          - Monitor error rates for 30 minutes
+          - Automatic rollback on error spike
+
+operations:
+  deployment:
+    target: Kubernetes (existing infrastructure)
+    packaging:
+      format: Docker image (Fastify application)
+      distribution: ECR (Elastic Container Registry)
+
+    environments:
+      - name: development
+        config: |
+          - Kubernetes namespace: customer-portal-dev
+          - Database: customer_portal schema on dev instance
+          - JWT_SECRET: dev secret (not for production use)
+          - S3 bucket: customer-documents-dev
+          - Logging: debug level
+
+      - name: staging
+        config: |
+          - Kubernetes namespace: customer-portal-staging
+          - Database: customer_portal schema on staging instance
+          - JWT_SECRET: staging secret (rotated quarterly)
+          - S3 bucket: customer-documents-staging
+          - Logging: info level
+
+      - name: production
+        config: |
+          - Kubernetes namespace: customer-portal-prod
+          - Database: customer_portal schema on prod instance
+          - JWT_SECRET: production secret (rotated quarterly)
+          - S3 bucket: customer-documents-prod
+          - Logging: warn level (errors always logged)
+          - Horizontal Pod Autoscaler (HPA): 3-10 replicas
+          - Resource limits: 1 CPU, 2GB memory per pod
+
+    release_process:
+      strategy: Semantic Versioning (SemVer)
+      automation: |
+        Fully automated via GitHub Actions:
+        1. Merge to main branch triggers CI/CD
+        2. Automated deployment to staging
+        3. Automated E2E tests on staging
+        4. Manual approval gate for production
+        5. Blue-green deployment to production
+        6. Automated smoke tests
+        7. Automatic rollback on failure
+
+  monitoring:
+    logging:
+      format: Structured JSON (pino logger)
+      destination: Kubernetes logs → CloudWatch Logs
+      levels: |
+        - debug: Development only, request/response details
+        - info: Request logs, successful operations
+        - warn: Deprecations, non-blocking issues
+        - error: Errors, exceptions, failures
+
+    metrics:
+      collection: Prometheus (existing infrastructure)
+      visualization: Grafana dashboards
+      key_metrics:
+        - api_request_duration_seconds (histogram by endpoint)
+        - api_request_total (counter by endpoint and status)
+        - database_query_duration_seconds (histogram by query type)
+        - jwt_validation_duration_seconds (histogram)
+        - active_customer_sessions (gauge)
+
+    alerts:
+      strategy: |
+        Alert on:
+        - Error rate > 1% over 5-minute window
+        - P95 response time > 1 second
+        - Database connection pool exhaustion
+        - JWT validation failures > 5% (potential attack)
+
+      channels:
+        - Slack #customer-portal-alerts channel
+        - PagerDuty for critical alerts (production only)
+
+  performance:
+    targets:
+      response_time: P95 < 500ms, P99 < 1000ms
+      throughput: 5000 requests/minute sustained, 10K requests/minute peak
+
+    optimization:
+      strategy: |
+        - Database connection pooling (max 50 connections per pod)
+        - Query optimization with proper indexes
+        - Pagination for all list endpoints (default 50, max 200)
+        - Zod schema compilation and caching
+        - Fastify serialization optimization
+        - No N+1 queries (use joins or batch queries)
+        - JWT signature verification caching (5-minute TTL)
+
+      monitoring: |
+        Continuous monitoring via Grafana dashboards:
+        - Response time percentiles (P50, P95, P99)
+        - Database query performance
+        - Connection pool utilization
+        - Memory and CPU usage per pod
+
+  scalability:
+    approach: Horizontal scaling via Kubernetes HPA
+    limits:
+      concurrent_users: 100K+ (designed for scale)
+      data_volume: 10M+ transactions, 1M+ customers
+
+    bottlenecks:
+      - Database connection pool (mitigated with proper sizing)
+      - Transaction history queries for high-volume accounts (mitigated with pagination + indexes)
+      - JWT signature verification CPU usage (mitigated with caching)
+
+feature_flags:
+  strategy: Gradual rollout with instant rollback capability
+  system: Statsig
+
+  flags:
+    - flag_id: customer_portal_api
+      name: feature.customer_portal.api_access
+      description: |
+        Controls access to the new Customer Portal API. When disabled, API returns
+        503 Service Unavailable. When enabled, customers can access account data
+        via the new API endpoints.
+
+        Disabled behavior (default):
+        - API returns 503 with maintenance message
+        - Customers directed to legacy portal
+
+        Enabled behavior:
+        - Full API access with JWT authentication
+        - All endpoints functional
+      default_state: false
+      rollout_strategy:
+        phases:
+          - name: Internal Testing
+            target: Internal test users
+            percentage: 1-2%
+            duration: 1 week
+          - name: Early Adopters
+            target: Selected customers
+            percentage: 10%
+            duration: 1 week
+          - name: Gradual Rollout
+            target: All customers
+            percentage: 25% → 50% → 100%
+            duration: 2 weeks
+          - name: Stabilization
+            target: All customers
+            percentage: 100%
+            duration: 30 days
+          - name: Cleanup
+            target: Remove flag code
+            percentage: N/A
+            duration: 1 week
+      cleanup_timeline: 30 days at 100% with no critical issues
+      monitoring:
+        - API error rate by flag state (enabled vs disabled)
+        - Response time percentiles by flag state
+        - JWT validation success rate
+        - Customer adoption rate (API usage vs legacy)
+      integration_points:
+        - location: b-containers/customer-api/src/middleware/feature-flag.ts
+          purpose: API-level kill switch - returns 503 when disabled
+        - location: apps/customer-webapp/src/hooks/useCustomerPortalAccess.ts
+          purpose: UI visibility - show/hide new portal features
+        - location: lib/kitchen-sink/src/statsig/feature-gates.ts
+          purpose: Feature gate enum definition
+
+constraints:
+  technical:
+    - Must use TypeScript with strict mode
+    - Must use @validkeys/contracted for service-command architecture
+    - Must use existing PostgreSQL database (read-only access)
+    - Must follow REST v2 patterns from existing APIs
+    - Must use existing authentication service (no auth logic in this API)
+    - Must centralize schemas in @spark/contracts
+    - JWT tokens must be short-lived (15-minute max)
+
+  operational:
+    - 6-week timeline for MVP
+    - Team of 3 developers
+    - Read-only access to customer data (no mutations except preferences)
+    - Must support 100K+ active users from day one
+    - Production deployment requires security review
+
+  architectural:
+    - Must follow monorepo naming conventions (d-modules/customer-portal)
+    - Repository methods must be internal to service
+    - Must expose via REST v2 at /api/v2/customer-portal
+    - Must generate OpenAPI documentation
+
+trade_offs:
+  - decision: JWT with short expiration vs session-based auth
+    rationale: |
+      Stateless authentication scales better, no session storage required,
+      works across multiple API instances without sticky sessions.
+    alternative: Session-based authentication with Redis
+    consequence: |
+      Requires refresh token mechanism for mobile apps, JWT cannot be
+      invalidated before expiration (mitigated with short expiration).
+    reversibility: Low - authentication is foundational decision
+
+  - decision: Read-only API vs full CRUD
+    rationale: |
+      Aligns with business requirements (view-only portal), reduces complexity,
+      eliminates audit trail requirements, faster time to market.
+    alternative: Full CRUD API with audit logging
+    consequence: |
+      Cannot modify account data via API (future feature if needed).
+      Notification preferences are only mutation allowed.
+    reversibility: Medium - can add mutations later if needed
+
+  - decision: Context-based authorization vs RBAC
+    rationale: |
+      Simpler model for single-tenant customer access, customers can only
+      access their own data. No roles or permissions needed.
+    alternative: RBAC with customer/admin roles
+    consequence: |
+      No admin access via this API (separate ops tools for admin functions).
+    reversibility: Medium - can layer RBAC on top later
+
+  - decision: Repository layer internal to service vs shared package
+    rationale: |
+      Service owns its data access, can evolve independently, clear
+      encapsulation boundaries.
+    alternative: Shared repository package in e-framework/data
+    consequence: |
+      Cannot reuse repositories across services (intentional isolation).
+    reversibility: Medium - can extract if reuse becomes necessary
+
+open_questions:
+  - question: Should we support CSV export for transaction history?
+    options:
+      - "No - keep API simple, defer to future enhancement"
+      - "Yes - add /exportTransactions endpoint with async job pattern"
+    impact: API surface area, implementation complexity, timeline
+    recommendation: Defer to Phase 2, validate user demand first
+    decision: Deferred to Phase 2
+
+  - question: How to handle document download authentication?
+    options:
+      - "Signed S3 URLs with 1-hour expiration (recommended)"
+      - "Proxy downloads through API (higher bandwidth cost)"
+    impact: Security, cost, API performance
+    recommendation: Signed S3 URLs for security and cost efficiency
+    decision: Signed S3 URLs with 1-hour expiration
+
+implementation_priorities:
+  phase_1_weeks_1_2:
+    - Set up d-modules/customer-portal package structure
+    - Create lib/contracts/src/domains/customerPortal with Zod schemas
+    - Implement repository layer (accounts, transactions, documents, notifications)
+    - Write repository tests with test database
+    - Create command definitions using @validkeys/contracted
+
+  phase_2_weeks_3_4:
+    - Implement account commands (listAccounts, getAccount)
+    - Implement transaction commands (listTransactions, getTransaction)
+    - Implement document commands (listDocuments, getDocument)
+    - Implement notification commands (get/update preferences)
+    - Unit tests for all commands
+    - Integration tests with test database
+
+  phase_3_weeks_5_6:
+    - Create REST v2 endpoints in b-containers/customer-api
+    - Implement JWT authentication middleware
+    - Implement authorization middleware
+    - Generate OpenAPI documentation
+    - E2E tests via Fastify inject
+    - Security review and hardening
+    - Production deployment
+
+success_criteria:
+  - criterion: API responds within performance targets
+    metric: P95 response time
+    target: < 500ms
+
+  - criterion: API handles expected load
+    metric: Sustained throughput
+    target: 5000 requests/minute
+
+  - criterion: Zero unauthorized data access
+    metric: Authorization test pass rate
+    target: 100%
+
+  - criterion: API contract completeness
+    metric: OpenAPI schema coverage
+    target: 100% of endpoints documented
+
+  - criterion: Test coverage meets targets
+    metric: Code coverage
+    target: > 80% (unit), > 70% (integration)
+
+implementation_notes:
+  - Reference service-command architecture specification in monorepo docs
+  - Follow existing REST v2 patterns from IAM service
+  - JWT middleware already exists in b-containers/customer-api, reuse it
+  - Use existing @spark/postgres connection pooling patterns
+  - S3 signed URL generation in lib/aws-utils package
+  - Authorization pattern: lib/kitchen-sink/src/auth/context-based-auth.ts
+  - OpenAPI generation: existing Fastify plugin configuration
+
+next_steps:
+  - Review technical requirements with stakeholders
+  - Security team review of authentication/authorization approach
+  - DBA review of database indexes and query patterns
+  - Use /implementation-planner to generate detailed milestones and tasks
+  - Begin Phase 1: Package setup and repository layer implementation

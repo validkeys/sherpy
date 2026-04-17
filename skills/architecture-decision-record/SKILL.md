@@ -76,58 +76,21 @@ Write one file per ADR: `{base_directory}/architecture/adrs/ADR-NNN-kebab-case-t
 
 Each file follows this format:
 
-```markdown
-# ADR-NNN: [Title]
+The ADR document includes: header (`ADR-NNN: Title`, `Status`, `Date`, `Source`), and four required sections: `Context` (problem description), `Decision` (the choice made), `Alternatives Considered` (table of options ruled out), and `Consequences` (Positive, Negative/Trade-offs, Risks).
 
-**Status:** Accepted
-**Date:** [YYYY-MM-DD — use today's date]
-**Source:** technical-requirements.yaml
+See **[references/adr-document-spec.md](references/adr-document-spec.md)** for the complete ADR document specification with all sections and formatting rules.
 
-## Context
-
-[2-4 sentences describing the problem or decision that needed to be made.
-What forces were at play? What constraints existed? Why did this need a decision?]
-
-## Decision
-
-[1-3 sentences stating the decision clearly and directly.
-Start with "We will..." or "The system will..."]
-
-## Alternatives Considered
-
-| Option | Reason not chosen |
-|--------|-------------------|
-| [Alternative 1] | [why ruled out] |
-| [Alternative 2] | [why ruled out] |
-
-[If alternatives are not documented in the requirements, write:
-"Alternatives were not documented in the source requirements."]
-
-## Consequences
-
-### Positive
-- [benefit 1]
-- [benefit 2]
-
-### Negative / Trade-offs
-- [drawback or constraint this decision introduces]
-
-### Risks
-- [risk 1, if any]
-```
+See **[references/example-ADR-001.md](references/example-ADR-001.md)** and **[references/example-ADR-003.md](references/example-ADR-003.md)** for full examples.
 
 ### Step 5: Write INDEX.md
 
 Create `{base_directory}/architecture/adrs/INDEX.md` as a summary table:
 
-```markdown
-# Architecture Decision Records
+The index includes a single table with columns: ID (link), Title, Status, Date.
 
-| ID | Title | Status | Date |
-|----|-------|--------|------|
-| [ADR-001](ADR-001-title.md) | [Title] | Accepted | YYYY-MM-DD |
-| ... | | | |
-```
+See **[references/adr-index-spec.md](references/adr-index-spec.md)** for the complete INDEX specification.
+
+See **[references/example-INDEX.md](references/example-INDEX.md)** for a full example.
 
 ### Step 6: Gap Analysis
 
@@ -167,4 +130,4 @@ formalized as Accepted ADRs — these are candidates for future ADRs.]
 
 ## Example Output
 
-See [examples/](./examples/) for a sample INDEX.md and two ADR files.
+See **[references/](references/)** for sample ADR files (ADR-001, ADR-003) and an INDEX.md.

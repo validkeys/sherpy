@@ -108,18 +108,23 @@ Large projects receive two rounds of QA feedback by default, but this is **overr
 
 ### Step 6: Build the Development Timeline
 
-Starting at Day 0, assign a `completion_day` to each milestone in dependency order. Each milestone's `start_day` is the `completion_day` of its last dependency (or 0 if no dependencies). Its `completion_day` is `start_day + estimated_days`.
+Starting at Day 0, assign a `completion_day` to each milestone in dependency order. Each milestone's `start_day` is the business day after its last dependency completes (or 0 if no dependencies). Its `completion_day` is `start_day + estimated_days`.
 
-For sequential milestone chains (each depends on the previous), completion days are simply cumulative:
+**Day calculation formula:**
+- No dependencies: `start_day = 0`
+- Has dependencies: `start_day = max(dependency.completion_day) + 1` (next business day after dependencies complete)
+- `completion_day = start_day + estimated_days`
+
+For sequential milestone chains (each depends on the previous):
 
 ```
-m0: completion_day = 0 + estimated_days(m0)
-m1: completion_day = completion_day(m0) + estimated_days(m1)
-m2: completion_day = completion_day(m1) + estimated_days(m2)
+m0: start_day=0, completion_day=0+estimated_days(m0)=5
+m1: start_day=5+1=6, completion_day=6+estimated_days(m1)=16
+m2: start_day=16+1=17, completion_day=17+estimated_days(m2)=27
 ...
 ```
 
-For parallel milestones (same dependency), they share the same `start_day` but their `completion_day` is calculated independently.
+For parallel milestones (sharing same dependency), they all start the day after that dependency completes. They share the same `start_day` but their `completion_day` is calculated independently based on their individual `estimated_days`.
 
 #### Standard strategies (all except `multi-pr`)
 
@@ -136,22 +141,22 @@ After each milestone, insert four PR cycle phases before the next milestone may 
 | [milestone-id]-review-feedback | [Milestone Name] Review Feedback Implementation | 2 |                               |
 | [milestone-id]-merge           | [Milestone Name] Merge        | 0              | Same day as review-feedback completion   |
 
-The PR cycle adds **4 calendar days** of overhead after each milestone. The next milestone's `start_day` = `completion_day` of its predecessor's `merge` phase (not the raw milestone `completion_day`).
+The PR cycle adds **4 business days** of overhead after each milestone. The next milestone's `start_day` = `completion_day` of its predecessor's `merge` phase **+ 1** (starts the day after merge completes).
 
 For sequential milestones under `multi-pr`:
 
 ```
-m0: start_day=0, completion_day=estimated_days(m0)
-m0-pr-creation: start_day=completion_day(m0), completion_day=completion_day(m0)          # 0 days
-m0-pr-review: start_day=completion_day(m0), completion_day=completion_day(m0)+2
-m0-review-feedback: start_day=completion_day(m0)+2, completion_day=completion_day(m0)+4
-m0-merge: start_day=completion_day(m0)+4, completion_day=completion_day(m0)+4            # 0 days
+m0: start_day=0, completion_day=0+estimated_days(m0)=5
+m0-pr-creation: start_day=5, completion_day=5          # 0 days, opens same day
+m0-pr-review: start_day=5, completion_day=5+2=7
+m0-review-feedback: start_day=7, completion_day=7+2=9
+m0-merge: start_day=9, completion_day=9                # 0 days, merges same day
 
-m1: start_day=completion_day(m0-merge), completion_day=completion_day(m0-merge)+estimated_days(m1)
+m1: start_day=9+1=10, completion_day=10+estimated_days(m1)=20
 # ... repeat for each milestone
 ```
 
-For parallel milestones under `multi-pr`, each branch gets its own PR cycle. A milestone depending on multiple parallel predecessors starts after the latest `merge` completion_day among them.
+For parallel milestones under `multi-pr`, each branch gets its own PR cycle. A milestone depending on multiple parallel predecessors starts the day after the latest `merge` completion_day among them (max(merge.completion_day) + 1).
 
 `last_milestone_day` = the highest `completion_day` of the final `[milestone-id]-merge` phase across all milestones.
 
@@ -230,73 +235,15 @@ The `estimated_days` field is added to each milestone entry. All other content i
 
 ### timeline.yaml Schema
 
-```yaml
-version: "1.0.0"
-project: [project name from milestones.yaml]
-generated: "[ISO 8601 timestamp]"
-milestones_file: milestones.yaml
+The output document includes: `version`, `project`, `generated`, `milestones_file`, `summary` (total days, project size, QA rounds, delivery model), `timeline` (milestones + delivery phases with start_day/completion_day/estimated_days), and `workback` (production deploy date, project start date, real calendar schedule).
 
-summary:
-  total_development_days: [n]
-  total_delivery_days: [n]            # development + post-dev
-  is_large_project: [true/false]
-  milestone_count: [n]
-  qa_rounds: [n]                      # from user input
-  qa_days_per_round: [n]              # from user input
-  production_deploy_date: "[YYYY-MM-DD]"
-  delivery_model: [ordering_strategy value from milestones.yaml meta, e.g. multi-pr]
+See **[references/output-spec.md](references/output-spec.md)** for the complete document specification with all fields, phase types, and workback calculation rules.
 
-timeline:
-  # Development milestones
-  - id: [milestone id, e.g. m0]
-    name: [milestone name]
-    type: milestone
-    start_day: [n]
-    completion_day: [n]
-    estimated_days: [n]
-    dependencies: [list of milestone ids, or []]
-
-  # ... additional milestones
-
-  # Post-development delivery phases
-  - id: post-pr-creation
-    name: PR Creation
-    type: delivery
-    start_day: [n]
-    completion_day: [n]
-    estimated_days: 0
-    notes: "Opened upon completion of final milestone"
-
-  - id: post-pr-review
-    name: PR Review
-    type: delivery
-    start_day: [n]
-    completion_day: [n]
-    estimated_days: 2
-
-  # ... remaining delivery phases
-
-workback:
-  production_deploy_date: "[YYYY-MM-DD]"
-  project_start_date: "[YYYY-MM-DD]"   # Day 0 in real calendar terms
-  schedule:
-    - id: [same id as timeline entry]
-      name: [same name as timeline entry]
-      type: [milestone | delivery]
-      start_date: "[YYYY-MM-DD]"
-      completion_date: "[YYYY-MM-DD]"
-
-    # ... all timeline items in order
-
-    - id: production-deploy
-      name: Production Deploy
-      type: deploy
-      date: "[YYYY-MM-DD]"             # = production_deploy_date
-```
+See **[references/example.yaml](references/example.yaml)** for a full example.
 
 ## Example Output
 
-See [examples/timeline.yaml](./examples/timeline.yaml) for a complete sample.
+See **[references/example.yaml](references/example.yaml)** for a complete sample timeline.
 
 ## Gap Analysis
 
