@@ -2,14 +2,16 @@ milestone: m6
 name: "Project Detail, Documents & Chat"
 generated: "2026-04-20T12:00:00Z"
 
-style_anchor_refs: []
+style_anchor_refs:
+  - SA-011
+  - SA-012
+  - SA-013
 frontend_anchor_note: |
-  No frontend style anchors were collected (SA-001 through SA-010 cover Effect-TS backend patterns).
-  Frontend tasks should follow these reference patterns:
-  - React 19: functional components with hooks, Suspense boundaries for data loading
-  - shadcn/ui: Collapsible for milestone expand/collapse, Accordion for explanations
-  - assistant-ui: Thread/Composer for all chat UI — NO custom message bubbles
-  - prism-react-renderer: Highlight component for syntax highlighting
+  Frontend style anchors SA-011 through SA-013 provide patterns for:
+  - SA-011: shadcn Mail/Inbox layout (ResizablePanel, ScrollArea patterns)
+  - SA-012: shadcn Dashboard cards (Card composition, Collapsible, Progress)
+  - SA-013: React 19 composition patterns (use hook, Suspense, compound components)
+  Additional libraries: assistant-ui for chat, prism-react-renderer for syntax highlighting
 
 global_constraints:
   allowed_patterns:
@@ -73,10 +75,16 @@ tasks:
         - packages/web/src/components/project/project-header.tsx
       modify:
         - packages/web/src/router.tsx
-    style_anchor_refs: []
+    style_anchor_refs:
+      - SA-012
+      - SA-013
     instructions: |
       **Objective:**
       Build the project detail page with pipeline status visualization.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-012.md` — shadcn Dashboard card patterns
+      - See `artifacts/style-anchors/SA-013.md` — React 19 composition patterns (use hook, Suspense)
 
       **Implementation Steps:**
       1. Create `packages/web/src/pages/project-detail.tsx`:
@@ -129,10 +137,16 @@ tasks:
         - packages/web/src/components/project/milestone-list.tsx
         - packages/web/src/components/project/milestone-card.tsx
         - packages/web/src/components/project/task-status-bar.tsx
-    style_anchor_refs: []
+    style_anchor_refs:
+      - SA-012
+      - SA-013
     instructions: |
       **Objective:**
       Build the milestone list with task status breakdown.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-012.md` — Collapsible milestone pattern with Progress bars
+      - See `artifacts/style-anchors/SA-013.md` — Compound component composition
 
       **Implementation Steps:**
       1. Create `packages/web/src/components/project/task-status-bar.tsx`:

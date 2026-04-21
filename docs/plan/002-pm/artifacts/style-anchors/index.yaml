@@ -39,6 +39,14 @@ categories:
       - SA-008
       - SA-009
 
+  - id: frontend
+    name: Frontend Patterns
+    description: "React 19, shadcn/ui, and Tailwind patterns for layout, composition, and component design"
+    anchors:
+      - SA-011
+      - SA-012
+      - SA-013
+
 anchors:
   - code: SA-001
     name: Effect.Service with Layer-based Dependency Injection
@@ -165,6 +173,44 @@ anchors:
       - "packages/api/src/db/**"
     tags: [effect, sql, migration, schema]
 
+  - code: SA-011
+    name: shadcn Mail/Inbox Layout Pattern
+    file: SA-011-shadcn-mail-layout.md
+    category: frontend
+    source:
+      repository: "https://ui.shadcn.com/blocks"
+      path: "Mail block"
+      lines: "N/A"
+    applies_to:
+      - "packages/web/src/components/inbox/**"
+      - "packages/web/src/pages/inbox.tsx"
+    tags: [react, shadcn, layout, resizable, inbox]
+
+  - code: SA-012
+    name: shadcn Dashboard Card Patterns
+    file: SA-012-shadcn-dashboard-cards.md
+    category: frontend
+    source:
+      repository: "https://ui.shadcn.com/blocks"
+      path: "Dashboard blocks"
+      lines: "N/A"
+    applies_to:
+      - "packages/web/src/components/project/**"
+      - "packages/web/src/pages/project-detail.tsx"
+    tags: [react, shadcn, card, dashboard, collapsible]
+
+  - code: SA-013
+    name: React 19 Composition Patterns
+    file: SA-013-react-composition-patterns.md
+    category: frontend
+    source:
+      repository: "https://react.dev/blog/2024/12/05/react-19"
+      path: "React 19 docs, Vercel composition patterns"
+      lines: "N/A"
+    applies_to:
+      - "packages/web/src/**"
+    tags: [react, composition, hooks, suspense, context]
+
 usage_matrix:
   by_architecture_pattern:
     effect-layered-services:
@@ -186,6 +232,10 @@ usage_matrix:
       - SA-006
       - SA-007
       - SA-002
+    react-frontend:
+      - SA-011
+      - SA-012
+      - SA-013
 
   by_task_type:
     code:
@@ -194,6 +244,9 @@ usage_matrix:
       - SA-003
       - SA-006
       - SA-007
+      - SA-011
+      - SA-012
+      - SA-013
     test:
       - SA-008
       - SA-009
@@ -205,9 +258,11 @@ usage_matrix:
       - SA-010
 
 meta:
-  total_anchors: 10
-  total_categories: 5
+  total_anchors: 13
+  total_categories: 6
   collection_date: "2026-04-20"
   source_repositories:
     - "~/Sites/ai-use-repos/effect"
     - "~/Sites/ai-use-repos/EffectPatterns"
+    - "https://ui.shadcn.com/blocks"
+    - "https://react.dev"

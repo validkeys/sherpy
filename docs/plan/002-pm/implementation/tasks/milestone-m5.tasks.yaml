@@ -2,14 +2,15 @@ milestone: m5
 name: "Inbox Web UI"
 generated: "2026-04-20T12:00:00Z"
 
-style_anchor_refs: []
+style_anchor_refs:
+  - SA-011
+  - SA-012
+  - SA-013
 frontend_anchor_note: |
-  No frontend style anchors were collected (SA-001 through SA-010 cover Effect-TS backend patterns).
-  Frontend tasks should follow these reference patterns:
-  - React 19: functional components with hooks, no class components
-  - Tailwind CSS: utility-first, no CSS modules or styled-components
-  - shadcn/ui: use components/ui/ primitives, extend via composition not modification
-  - assistant-ui: use Thread/Composer components, scope to project via runtime config
+  Frontend style anchors SA-011 through SA-013 provide patterns for:
+  - SA-011: shadcn Mail/Inbox layout (ResizablePanel three-pane inbox)
+  - SA-012: shadcn Dashboard cards (Card composition, Collapsible, Progress)
+  - SA-013: React 19 composition patterns (use hook, Suspense, compound components)
 
 global_constraints:
   allowed_patterns:
@@ -343,15 +344,20 @@ tasks:
         - packages/web/src/components/inbox/detail-panel.tsx
       modify:
         - packages/web/src/App.tsx
-    style_anchor_refs: []
+    style_anchor_refs:
+      - SA-011
+      - SA-013
     instructions: |
       **Objective:**
       Build the three-panel inbox layout shell that serves as the main UI.
 
-      **Frontend Pattern Reference:** Use Tailwind flex for three-column layout
-      with `h-screen overflow-hidden`. Follow shadcn sidebar patterns for
-      collapsible nav. Sheet component for mobile overlay. Keep layout component
-      thin — delegate data fetching to child components.
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-011.md` — shadcn Mail/Inbox layout with ResizablePanel
+      - See `artifacts/style-anchors/SA-013.md` — React 19 composition patterns
+
+      **Frontend Pattern Reference:** Use ResizablePanelGroup (SA-011) for adjustable
+      three-panel layout. Keep components pure with compound component pattern (SA-013).
+      Delegate data fetching to child components (composition over props).
 
       **Implementation Steps:**
       1. Create `packages/web/src/components/inbox/inbox-layout.tsx`:
@@ -424,7 +430,9 @@ tasks:
         - packages/web/src/components/inbox/pipeline-status-badge.tsx
         - packages/web/src/components/inbox/health-indicator.tsx
       modify: []
-    style_anchor_refs: []
+    style_anchor_refs:
+      - SA-011
+      - SA-013
     instructions: |
       **Objective:**
       Build the project list component with visual status indicators.
