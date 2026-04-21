@@ -1,0 +1,669 @@
+milestone: m8
+name: "Integration Testing & Polish"
+generated: "2026-04-20T12:00:00Z"
+
+style_anchor_refs: []
+
+global_constraints:
+  allowed_patterns:
+    - "Use Vitest + @effect/vitest for all test files"
+    - "Use real SQLite database for integration tests"
+    - "Use Effect.gen for test setup and teardown"
+    - "Use @effect/platform-node HttpServer for test API instances"
+    - "Use child_process for CLI integration tests"
+  forbidden_patterns:
+    - "Mocking database calls in integration tests — use real SQLite"
+    - "Skipping teardown in tests — every test must clean up its resources"
+    - "Hardcoded ports — use port 0 for OS-assigned ports in tests"
+    - "Committing test databases or PID files"
+  tdd_required: false
+  max_task_duration_minutes: 150
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All m7 tasks marked complete
+      - Full system builds without errors
+      - All existing tests passing
+  - stage: pre-commit
+    commands:
+      - pnpm run lint
+      - pnpm run typecheck
+      - pnpm test
+  - stage: task-completion
+    criteria:
+      - All new tests passing
+      - No lint or type errors
+      - No orphaned processes or temp files from tests
+  - stage: milestone-completion
+    criteria:
+      - E2E test: install → start → login → see inbox → create project → assign person
+      - CLI start/stop lifecycle reliable with no orphaned processes
+      - All API endpoints tested with valid and invalid inputs
+      - WebSocket events deliver within 200ms of data change
+      - SQLite queries return in under 100ms for typical dataset
+      - No lint errors, no type errors, all tests green
+      - README documents setup, configuration, and usage
+
+tasks:
+  - id: m8-001
+    name: "E2E test — install → start → login → see inbox → create project"
+    description: |
+      Write a comprehensive end-to-end test that exercises the full user journey:
+      installing dependencies, starting the daemon, authenticating via Okta,
+      viewing the inbox, and creating a new project. This test validates that
+      all system components integrate correctly from the user's perspective.
+    estimate_minutes: 120
+    type: test
+    dependencies: []
+    files:
+      create:
+        - tests/e2e/full-journey.test.ts
+      touch_only:
+        - packages/cli/src/commands/start.ts
+        - packages/api/src/server.ts
+        - packages/web/src/pages/inbox.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Validate the complete user journey from install to project creation in a
+      single automated test.
+
+      **Implementation Steps:**
+      1. Create `tests/e2e/full-journey.test.ts`:
+         - Set up a temporary test directory with a fresh ~/.sherpy config
+         - Step 1 — Install: run `pnpm install` and verify build succeeds
+         - Step 2 — Start: execute `sherpy start` and verify:
+           - PID file created at ~/.sherpy/sherpy.pid
+           - API server responds to GET /api/health within 5 seconds
+           - Process is alive and listening
+         - Step 3 — Login: simulate Okta OIDC SPA flow:
+           - Mock Okta token endpoint to return a valid JWT
+           - Send POST /api/auth/callback with authorization code
+           - Verify API returns session and user profile
+         - Step 4 — See inbox: call GET /api/projects with valid JWT:
+           - Verify 200 response with empty project list
+           - Verify response matches schema (ProjectListResponse)
+         - Step 5 — Create project: call POST /api/projects with valid JWT:
+           - Send CreateProjectRequest body
+           - Verify 201 response with created project
+           - Verify project appears in subsequent GET /api/projects
+         - Step 6 — Assign person: call POST /api/people to create a person,
+           then POST /api/assignments to assign them to a task in the project
+           - Verify assignment returned correctly
+           - Verify person appears in project resource list
+         - Teardown: run `sherpy stop`, verify PID file removed, process dead
+      2. Use `beforeAll` to start daemon, `afterAll` to stop
+      3. Use real HTTP calls (fetch or supertest equivalent) — no mocked API
+      4. Mock only the Okta JWKS/token endpoint externally
+
+      **Constraints:**
+      - ONLY use real system components — no API mocking except Okta
+      - Test must be idempotent — cleanup all created data in afterAll
+      - Use OS-assigned port (port 0) to avoid port conflicts in CI
+      - Test timeout of 60 seconds for the full suite
+      - No style anchors apply to E2E tests — focus on integration coverage
+
+      **Success Criteria:**
+      - Full journey test passes from install through project creation
+      - Each step asserts on expected HTTP status and response shape
+      - Daemon starts and stops cleanly within test lifecycle
+      - No orphaned processes after test completes
+
+  - id: m8-002
+    name: "CLI lifecycle integration tests (start, use, stop, restart)"
+    description: |
+      Test the full CLI daemon lifecycle: start the daemon, verify it's running,
+      make API requests, stop it, verify it's stopped, then restart and verify
+      it works again. Covers edge cases like double-start, stop-when-stopped,
+      and crash recovery.
+    estimate_minutes: 90
+    type: test
+    dependencies: []
+    files:
+      create:
+        - packages/cli/tests/lifecycle.test.ts
+      touch_only:
+        - packages/cli/src/commands/start.ts
+        - packages/cli/src/commands/stop.ts
+        - packages/cli/src/daemon.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Verify the CLI daemon lifecycle is reliable across start, stop, and restart
+      scenarios including edge cases.
+
+      **Implementation Steps:**
+      1. Create `packages/cli/tests/lifecycle.test.ts`:
+      2. Test cases:
+         - **start**: Run `sherpy start`:
+           - Verify PID file created
+           - Verify process is alive (process.kill(pid, 0) succeeds)
+           - Verify API server responds to health check
+         - **double-start**: Run `sherpy start` again:
+           - Verify "already running" message
+           - Verify same PID (no second process spawned)
+         - **use while running**: Make API request to health endpoint:
+           - Verify 200 response
+         - **stop**: Run `sherpy stop`:
+           - Verify SIGTERM sent
+           - Verify process exits within 10 seconds
+           - Verify PID file removed
+         - **stop-when-stopped**: Run `sherpy stop` again:
+           - Verify "not running" message
+           - Verify no error thrown
+         - **restart**: Run `sherpy start` again after stop:
+           - Verify new PID file created
+           - Verify new process is alive
+           - Verify API server responds
+         - **crash recovery**: Kill daemon process directly (SIGKILL):
+           - Verify PID file still exists
+           - Run `sherpy start` — should detect stale PID, clean up, start fresh
+           - Verify new daemon running
+      3. Each test case in separate `it` block with `afterEach` cleanup
+      4. Use a test-specific data directory (temp dir) to avoid conflict with
+         real user data
+
+      **Constraints:**
+      - Use real child process spawning — no mocks on CLI commands
+      - Use OS-assigned port to avoid conflicts
+      - Clean up all processes and temp files in afterEach/afterAll
+      - Test timeout of 30 seconds per test case
+
+      **Success Criteria:**
+      - All lifecycle scenarios pass reliably
+      - No orphaned processes after any test case
+      - Stale PID detection and cleanup works
+      - Double-start and double-stop handled gracefully
+
+  - id: m8-003
+    name: "API cross-service integration tests (all endpoints)"
+    description: |
+      Test every RPC endpoint across all domain services with both valid and
+      invalid inputs. Verify cross-service interactions like project → milestone
+      → task cascades, assignment conflict detection, and document generation
+      from DB data.
+    estimate_minutes: 90
+    type: test
+    dependencies: []
+    files:
+      create:
+        - packages/api/tests/integration/cross-service.test.ts
+      touch_only:
+        - packages/api/src/api/routes/health.ts
+        - packages/api/src/api/routes/projects.ts
+        - packages/api/src/api/routes/milestones.ts
+        - packages/api/src/api/routes/tasks.ts
+        - packages/api/src/api/routes/people.ts
+        - packages/api/src/api/routes/assignments.ts
+        - packages/api/src/api/routes/schedules.ts
+        - packages/api/src/api/routes/documents.ts
+        - packages/api/src/api/routes/chat.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Verify all API endpoints work correctly with real database interactions
+      and cross-service dependencies.
+
+      **Implementation Steps:**
+      1. Create `packages/api/tests/integration/cross-service.test.ts`:
+      2. Set up test API server with real SQLite database (in-memory or temp file)
+      3. Test groups organized by domain:
+
+         **Projects:**
+         - POST /api/projects — create project, verify 201 and response shape
+         - POST /api/projects — duplicate name, verify error
+         - GET /api/projects — list projects, verify array response
+         - GET /api/projects/:id — get project, verify detail response
+         - PATCH /api/projects/:id — update status, verify transition
+         - PATCH /api/projects/:id — invalid status transition, verify error
+
+         **Milestones:**
+         - POST /api/projects/:id/milestones — create milestone
+         - GET /api/projects/:id/milestones — list milestones
+         - PATCH /api/milestones/:id — update milestone status
+
+         **Tasks:**
+         - POST /api/milestones/:id/tasks — create task
+         - GET /api/milestones/:id/tasks — list tasks
+         - PATCH /api/tasks/:id — update task status
+         - PATCH /api/tasks/:id — update effort estimate
+
+         **People & Assignments:**
+         - POST /api/people — create person with skills
+         - GET /api/people — list people with skills
+         - POST /api/tasks/:id/assignments — assign person to task
+         - POST /api/tasks/:id/assignments — assign same person twice, verify conflict
+         - GET /api/people/:id/allocations — get person's allocation summary
+
+         **Cross-service cascade:**
+         - Create project → add milestones → add tasks → assign people → verify full chain
+         - Delete person → verify assignments cleaned up
+         - Complete all tasks in milestone → verify milestone auto-completes (if applicable)
+
+         **Documents & Chat:**
+         - GET /api/projects/:id/documents — verify document generation from DB
+         - POST /api/projects/:id/chat — send message, verify persisted
+         - GET /api/projects/:id/chat — retrieve chat history
+
+         **Error cases:**
+         - All endpoints with missing auth → 401
+         - All endpoints with invalid IDs → 404
+         - All endpoints with malformed body → 400
+         - Rate limiting (if implemented) → 429
+
+      4. Use a shared `beforeAll` to seed test data, `afterAll` to clean up
+      5. Generate a valid test JWT for authenticated requests
+
+      **Constraints:**
+      - Use real SQLite database — no mocked repositories
+      - Use real API server started on random port
+      - Each test group should be independent (describe block isolation)
+      - Clean up database between test groups
+
+      **Success Criteria:**
+      - All endpoints return correct status codes and response shapes
+      - Cross-service cascades work as expected
+      - Error cases return appropriate error responses
+      - No database state leaks between test groups
+
+  - id: m8-004
+    name: "WebSocket real-time event delivery tests"
+    description: |
+      Verify that WebSocket connections authenticate correctly, receive broadcast
+      events within 200ms of data changes, handle reconnection, and clean up
+      on disconnect.
+    estimate_minutes: 60
+    type: test
+    dependencies: []
+    files:
+      create:
+        - packages/api/tests/integration/websocket-events.test.ts
+      touch_only:
+        - packages/api/src/api/websocket.ts
+        - packages/api/src/services/event-broadcaster.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Verify WebSocket real-time event delivery meets the 200ms latency
+      requirement and handles connection lifecycle correctly.
+
+      **Implementation Steps:**
+      1. Create `packages/api/tests/integration/websocket-events.test.ts`:
+      2. Start test API server with WebSocket endpoint
+      3. Test cases:
+
+         **Authentication:**
+         - Connect to /ws with valid JWT → verify connection accepted
+         - Connect to /ws without JWT → verify connection rejected
+         - Connect to /ws with expired JWT → verify connection rejected
+
+         **Event delivery:**
+         - Connect two clients with valid JWTs
+         - Create a project via REST API
+         - Verify both WebSocket clients receive ProjectCreated event
+         - Measure latency from API response to WebSocket message arrival
+         - Assert latency < 200ms
+         - Update project status via REST API
+         - Verify both clients receive ProjectStatusUpdated event
+         - Create task, verify TaskCreated event broadcast
+         - Update task status, verify TaskStatusUpdated event broadcast
+
+         **Connection lifecycle:**
+         - Connect client, then disconnect
+         - Verify server removes connection from pool
+         - Broadcast event, verify disconnected client does not receive
+         - Reconnect client, verify it receives new events
+
+         **Concurrent connections:**
+         - Connect 10 clients simultaneously
+         - Broadcast event
+         - Verify all 10 clients receive the event
+         - Verify no duplicate events
+
+      4. Use WebSocket client from @effect/platform or ws library
+      5. Use performance.now() for latency measurements
+
+      **Constraints:**
+      - Use real WebSocket connections — no mocking
+      - Latency assertions must be generous enough for CI (use 200ms threshold)
+      - Clean up all WebSocket connections in afterEach
+      - Test timeout of 15 seconds per test case
+
+      **Success Criteria:**
+      - JWT authentication on WebSocket connect works
+      - Events broadcast to all connected clients
+      - Event delivery latency under 200ms
+      - Disconnected clients don't receive events
+      - No duplicate events received by any client
+
+  - id: m8-005
+    name: "SQLite query performance profiling (verify <100ms)"
+    description: |
+      Profile all database queries to verify they return in under 100ms for a
+      typical dataset. Create a seeded test database with representative data
+      volumes and measure query execution times.
+    estimate_minutes: 45
+    type: test
+    dependencies: []
+    files:
+      create:
+        - packages/api/tests/performance/query-perf.test.ts
+      touch_only:
+        - packages/api/src/services/project-service.ts
+        - packages/api/src/services/task-service.ts
+        - packages/api/src/services/person-service.ts
+        - packages/api/src/services/assignment-service.ts
+        - packages/api/src/services/schedule-service.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Verify all database queries meet the <100ms performance requirement with
+      a realistic dataset.
+
+      **Implementation Steps:**
+      1. Create `packages/api/tests/performance/query-perf.test.ts`:
+      2. Create seed data function that generates:
+         - 20 projects across various pipeline stages
+         - 5-8 milestones per project (100-160 total)
+         - 5-15 tasks per milestone (500-2400 total)
+         - 30 people with skills
+         - Assignments linking people to tasks
+         - 3 schedule snapshots per project
+      3. Seed database in `beforeAll`
+      4. Profile each query type:
+
+         **Project queries:**
+         - List all projects with status filter — measure time
+         - Get project by ID with milestones and task counts — measure time
+         - Search projects by tag — measure time
+
+         **Task queries:**
+         - List tasks for milestone with assignees — measure time
+         - Get task with full detail (assignees, tags, documents) — measure time
+         - Filter tasks by status across project — measure time
+
+         **People & assignment queries:**
+         - List people with skills — measure time
+         - Get person allocation summary (all assignments + effort) — measure time
+         - Detect conflicts for a person — measure time
+
+         **Schedule queries:**
+         - Get latest schedule snapshot with assignments — measure time
+         - List schedule history for project — measure time
+
+         **Document queries:**
+         - List documents for project — measure time
+         - Get document by type — measure time
+
+      5. Each test runs the query 10 times and reports:
+         - Min, max, mean, p95 execution time
+         - Assert mean < 100ms and p95 < 100ms
+      6. Output performance report to console
+
+      **Constraints:**
+      - Use real SQLite database (not in-memory) for realistic I/O timing
+      - Seed data must represent realistic production volumes
+      - Run queries in isolation (no concurrent query noise)
+      - Performance thresholds: mean < 100ms, p95 < 100ms
+
+      **Success Criteria:**
+      - All queries execute in under 100ms (mean and p95)
+      - Performance report shows clear metrics for each query type
+      - No query requires a full table scan (verify with EXPLAIN QUERY PLAN)
+
+  - id: m8-006
+    name: "Fix any issues found during integration testing"
+    description: |
+      Address all bugs, failures, and issues discovered during the E2E, CLI
+      lifecycle, API cross-service, WebSocket, and performance tests. This is
+      the fix pass that follows the testing tasks.
+    estimate_minutes: 120
+    type: code
+    dependencies: [m8-001, m8-002, m8-003, m8-004, m8-005]
+    files:
+      modify: []
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Fix all issues discovered during integration testing to achieve a fully
+      passing test suite.
+
+      **Implementation Steps:**
+      1. Run the full test suite and collect all failures:
+         ```
+         pnpm test 2>&1 | tee test-results.log
+         ```
+      2. Categorize issues by type:
+         - **Auth issues**: JWT validation edge cases, token expiry handling
+         - **API issues**: Response schema mismatches, missing error handling
+         - **WebSocket issues**: Connection cleanup, event serialization
+         - **CLI issues**: Process lifecycle, PID file race conditions
+         - **Performance issues**: Slow queries needing indexes or optimization
+         - **Data integrity issues**: Foreign key violations, cascade behavior
+      3. Fix each issue:
+         - Write a failing test that reproduces the issue (if not covered)
+         - Implement the fix
+         - Verify the original test now passes
+         - Run full suite to check for regressions
+      4. For performance issues:
+         - Add missing database indexes
+         - Optimize N+1 query patterns with JOINs
+         - Add query result caching where appropriate
+      5. Re-run full test suite and verify zero failures
+
+      **Constraints:**
+      - Every fix must have a corresponding test that would have caught it
+      - No fix should break existing passing tests
+      - Performance fixes must not change query result shapes
+      - Follow existing code patterns and style anchors
+
+      **Success Criteria:**
+      - Full test suite passes with zero failures
+      - All integration tests pass reliably (no flaky tests)
+      - Performance tests show all queries under 100ms
+      - No regressions in previously passing tests
+
+  - id: m8-007
+    name: "Create README with setup and usage instructions"
+    description: |
+      Write the project README with comprehensive setup instructions, configuration
+      guide, usage examples for CLI and web UI, and development contribution guide.
+    estimate_minutes: 60
+    type: docs
+    dependencies: [m8-006]
+    files:
+      create:
+        - README.md
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Create a comprehensive README that enables a new developer to set up and
+      use Sherpy PM.
+
+      **Implementation Steps:**
+      1. Create `README.md` with the following sections:
+
+         **Title & Description:**
+         - Sherpy PM — Local-first project management with AI-assisted scheduling
+         - Brief tagline: what it does, who it's for
+
+         **Prerequisites:**
+          - Node.js 23+ (required for Effect-TS latest patterns)
+         - pnpm 9+ (specify exact version)
+         - Okta developer account (for OIDC)
+         - AWS account with Bedrock access (for AI scheduling)
+
+         **Quick Start:**
+         ```bash
+         git clone <repo-url> sherpy && cd sherpy
+         pnpm install
+         pnpm run build
+         sherpy start
+         ```
+         - What happens: daemon starts, browser opens to http://localhost:3100
+
+         **Configuration:**
+         - Environment variables table:
+           | Variable | Required | Default | Description |
+           |----------|----------|---------|-------------|
+           | PORT | No | 3100 | API server port |
+           | OKTA_DOMAIN | Yes | — | Okta tenant domain |
+           | OKTA_CLIENT_ID | Yes | — | Okta SPA client ID |
+           | AWS_REGION | Yes | — | AWS region for Bedrock |
+           | AI_MODEL | No | anthropic.claude-3-5-sonnet | Bedrock model ID |
+         - Config file location: ~/.sherpy/config.json (or .env)
+
+         **CLI Commands:**
+         - `sherpy start` — Start the daemon and open browser
+         - `sherpy stop` — Stop the daemon gracefully
+         - `sherpy status` — Check if daemon is running
+         - Include example output for each command
+
+         **Web UI Guide:**
+         - Inbox: view all projects, filter by status/tag
+         - Project detail: milestones, tasks, documents, chat
+         - AI chat: interact with Sherpy flow for planning
+
+         **Development:**
+         ```bash
+         pnpm install
+         pnpm run dev        # Start API + web dev servers
+         pnpm test           # Run all tests
+         pnpm run lint       # Lint all packages
+         pnpm run typecheck  # Type check all packages
+         pnpm run build      # Build all packages
+         ```
+         - Monorepo structure diagram:
+           ```
+           packages/
+           ├── cli/      CLI daemon management
+           ├── api/      Effect-TS HTTP server + domain services
+           ├── web/      React + Vite + Tailwind SPA
+           └── shared/   Schema types, API contracts, events
+           ```
+
+         **Architecture Overview:**
+         - Local-first: all data in SQLite at ~/.sherpy/sherpy.db
+         - Effect-TS layered services on the backend
+         - Okta OIDC SPA (PKCE) for authentication
+         - WebSocket for real-time dashboard updates
+         - AWS Bedrock for AI scheduling via Vercel AI SDK
+
+         **Troubleshooting:**
+         - "Port already in use" → change PORT or stop existing process
+         - "Okta login fails" → verify OKTA_DOMAIN and OKTA_CLIENT_ID
+         - "Daemon won't start" → check ~/.sherpy/sherpy.pid for stale PID
+         - "AI scheduling unavailable" → verify AWS credentials and Bedrock access
+
+      **Constraints:**
+      - Write for a developer audience — assume familiarity with Node.js/TypeScript
+      - Include actual commands that can be copy-pasted
+      - Keep sections concise — link to separate docs for deep dives
+      - No placeholder content — every section must have real, accurate info
+
+      **Success Criteria:**
+      - README covers setup, configuration, usage, and development
+      - Quick Start section works end-to-end for a fresh clone
+      - All environment variables documented
+      - CLI commands include example output
+      - Monorepo structure clearly explained
+
+  - id: m8-008
+    name: "Final comprehensive code review"
+    description: |
+      Conduct a comprehensive code review of the entire codebase covering
+      security, performance, code quality, consistency with style anchors,
+      and alignment with technical requirements. This is the final review
+      before the project is considered complete.
+    estimate_minutes: 90
+    type: code-review
+    dependencies: [m8-006, m8-007]
+    files:
+      create:
+        - code-reviews/2026-04-20-final-code-review.yaml
+      touch_only:
+        - packages/cli/src/commands/start.ts
+        - packages/cli/src/commands/stop.ts
+        - packages/cli/src/daemon.ts
+        - packages/api/src/server.ts
+        - packages/api/src/auth/okta-jwt.ts
+        - packages/api/src/auth/jwks-cache.ts
+        - packages/api/src/api/routes/health.ts
+        - packages/api/src/api/websocket.ts
+        - packages/api/src/services/project-service.ts
+        - packages/api/src/services/task-service.ts
+        - packages/api/src/services/person-service.ts
+        - packages/api/src/services/assignment-service.ts
+        - packages/api/src/services/schedule-service.ts
+        - packages/web/src/pages/inbox.tsx
+        - packages/shared/src/schema/index.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Final comprehensive code review of the entire Sherpy PM codebase.
+
+      **Review Checklist:**
+
+      1. **Security:**
+         - [ ] Server binds to 127.0.0.1 only — never 0.0.0.0
+         - [ ] JWT validation uses Okta JWKS — no hardcoded secrets
+         - [ ] WebSocket requires JWT authentication on connect
+         - [ ] Health endpoint is the only unauthenticated route
+         - [ ] No secrets or credentials in source code
+         - [ ] SQL queries use parameterized statements (no injection)
+         - [ ] Input validation on all API endpoints via Schema
+         - [ ] CORS configured correctly for SPA origin only
+
+      2. **Performance:**
+         - [ ] SQLite queries all execute under 100ms
+         - [ ] Database indexes cover common query patterns
+         - [ ] No N+1 query patterns in service methods
+         - [ ] WebSocket broadcasts are efficient (no serialization bottleneck)
+         - [ ] Vite build output is tree-shaken and optimized
+         - [ ] API response payloads are reasonably sized
+
+      3. **Code Quality:**
+         - [ ] Effect.Service pattern used consistently across all services
+         - [ ] Layer composition is correct (no circular dependencies)
+         - [ ] Error handling uses TaggedErrors — no thrown exceptions
+         - [ ] Schema validation on all API inputs and outputs
+         - [ ] WebSocket events are typed with Effect Schema
+         - [ ] Database migrations are additive only
+         - [ ] CLI commands handle edge cases (stale PID, crash recovery)
+
+      4. **Consistency:**
+         - [ ] All services follow SA-001 (Effect.Service pattern)
+         - [ ] All API routes follow SA-004/SA-005 (HttpApi patterns)
+         - [ ] All errors follow SA-007 (TaggedError pattern)
+         - [ ] All tests follow SA-008 (@effect/vitest patterns)
+         - [ ] Import organization consistent across files
+         - [ ] Naming conventions consistent (camelCase, PascalCase)
+         - [ ] No unused imports or dead code
+
+      5. **Test Coverage:**
+         - [ ] E2E test covers critical user journey
+         - [ ] CLI lifecycle tests cover start/stop/restart
+         - [ ] API integration tests cover all endpoints
+         - [ ] WebSocket tests cover event delivery
+         - [ ] Performance tests verify <100ms queries
+         - [ ] All tests pass reliably (no flakiness)
+
+      6. **Documentation:**
+         - [ ] README is complete and accurate
+         - [ ] All environment variables documented
+         - [ ] CLI commands documented with examples
+         - [ ] Architecture overview is current
+
+      **Output:** Create `code-reviews/2026-04-20-final-code-review.yaml` with:
+      - findings: list of issues categorized by severity (critical/major/minor)
+      - summary: overall assessment
+      - approval: yes/no decision with conditions
+
+      **Success Criteria:**
+      - No critical or major security vulnerabilities
+      - All style anchor patterns followed consistently
+      - Code quality meets production standards
+      - Test coverage adequate for all critical paths
+      - Documentation is complete and accurate

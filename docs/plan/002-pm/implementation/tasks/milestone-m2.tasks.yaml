@@ -1,0 +1,520 @@
+milestone: m2
+name: "API Server, Auth & CLI"
+generated: "2026-04-20T12:00:00Z"
+
+style_anchor_refs:
+  - SA-001
+  - SA-004
+  - SA-005
+  - SA-007
+  - SA-008
+
+global_constraints:
+  allowed_patterns:
+    - "Use @effect/platform-node HttpServer for HTTP server (SA-004)"
+    - "Use HttpApiGroup + HttpApiEndpoint for route definitions (SA-004)"
+    - "Use HttpApiBuilder.group for handler implementations (SA-005)"
+    - "Use Effect.gen inside handlers to access services (SA-005)"
+    - "Use Schema.TaggedError with HttpApiSchema.annotations for API errors (SA-007)"
+    - "Use HttpApiSecurity.bearer for JWT authentication (SA-004)"
+    - "Use Effect.Service for all service definitions (SA-001)"
+  forbidden_patterns:
+    - "Express, Fastify, or other HTTP frameworks"
+    - "Manual JWT parsing — use Okta JWKS endpoint for verification"
+    - "Throwing exceptions in handlers — use Effect.fail with TaggedErrors"
+    - "Async/await — use Effect.gen for composition"
+    - "Raw request/response handling — use schema-validated endpoints"
+  tdd_required: true
+  max_task_duration_minutes: 120
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete
+      - Database migrations run successfully
+      - Style anchors SA-004, SA-005 reviewed
+  - stage: pre-commit
+    commands:
+      - pnpm run lint
+      - pnpm run typecheck
+      - pnpm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint or type errors
+      - Endpoints return schema-validated responses
+  - stage: milestone-completion
+    criteria:
+      - API server starts within 3 seconds
+      - Health endpoint responds without auth
+      - Okta JWT validation works end-to-end
+      - WebSocket accepts connections with valid JWT
+      - CLI start/stop lifecycle works reliably
+
+tasks:
+  - id: m2-001
+    name: "Create HTTP server bootstrap with Effect platform"
+    description: |
+      Set up the Effect-TS HTTP server using @effect/platform-node. Create
+      the server bootstrap that loads all layers, runs migrations, and starts
+      listening on 127.0.0.1 with a configurable port.
+    estimate_minutes: 60
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/api/src/server.ts
+      modify:
+        - packages/api/src/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-004
+    instructions: |
+      **Objective:**
+      Create the HTTP server bootstrap using Effect-TS platform.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-004.md` — HttpApi definition
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service Layer composition
+
+      Reference files:
+      - `~/Sites/ai-use-repos/effect/packages/platform-node/examples/api.ts:1-122` — API server example
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/server.ts`:
+         - Define HttpApi with groups for each domain area
+         - Use NodeHttpServer.layer from @effect/platform-node
+         - Bind to 127.0.0.1 with port from Config.integer("PORT").withDefault(3100)
+         - Use HttpApiBuilder.serve(HttpMiddleware.logger) for request logging
+         - Layer composition: MigrationRunner → SqlClient → HttpApi → Server
+      2. Update `packages/api/src/index.ts`:
+         - Export main Effect that bootstraps and runs the server
+         - Use NodeRuntime.runMain to execute
+
+      **Constraints:**
+      - ONLY use: @effect/platform-node for HTTP server
+      - Follow **SA-004** for HttpApi definition
+      - Follow **SA-001** for Layer composition
+      - Server binds to 127.0.0.1 ONLY (never 0.0.0.0)
+      - Port configurable via PORT environment variable
+
+      **Success Criteria:**
+      - Server starts and listens on configured port
+      - Health endpoint accessible at GET /api/health
+      - Layer composition chains correctly (migrations run, then server starts)
+      - Server startup completes within 3 seconds
+
+  - id: m2-002
+    name: "Implement Okta OIDC JWT validation middleware"
+    description: |
+      Create authentication middleware that validates Okta OIDC JWTs on every
+      /api/* request. Fetches Okta's public JWKS endpoint to verify token
+      signatures. Tokens are sent from the SPA frontend via Authorization header.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m2-001]
+    files:
+      create:
+        - packages/api/src/auth/okta-jwt.ts
+        - packages/api/src/auth/jwks-cache.ts
+    style_anchor_refs:
+      - SA-004
+      - SA-007
+    instructions: |
+      **Objective:**
+      Implement Okta JWT validation middleware for all API endpoints.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-004.md` — HttpApiMiddleware with bearer security
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/auth/jwks-cache.ts`:
+         - AuthService using Effect.Service (**SA-001**)
+         - Fetches Okta JWKS from ${OKTA_DOMAIN}/.well-known/jwks.json
+         - Caches JWKS with TTL (1 hour default)
+         - Uses Effect.Config for OKTA_DOMAIN and OKTA_CLIENT_ID
+      2. Create `packages/api/src/auth/okta-jwt.ts`:
+         - Validates JWT signature using cached JWKS
+         - Verifies: issuer matches OKTA_DOMAIN, audience matches OKTA_CLIENT_ID,
+           token not expired
+         - Extracts user claims (sub, email, name) from verified token
+         - Returns typed OktaClaims object or fails with UnauthorizedError
+      3. Create HttpApiMiddleware that applies to all /api/* endpoints:
+         - Extracts Bearer token from Authorization header
+         - Validates token via AuthService
+         - Attaches OktaClaims to request context
+         - Exempts GET /api/health from auth
+
+      **Constraints:**
+      - ONLY use: Okta JWKS endpoint for signature verification
+      - NEVER use: client_secret in local mode (PKCE flow)
+      - Follow **SA-004** for middleware integration with HttpApi
+      - Follow **SA-007** for UnauthorizedError TaggedError
+      - Cache JWKS to avoid fetching on every request
+
+      **Success Criteria:**
+      - Valid Okta JWT passes validation and extracts claims
+      - Expired or invalid tokens rejected with 401
+      - JWKS cached and refreshed on TTL expiry
+      - Health endpoint accessible without authentication
+
+  - id: m2-003
+    name: "Create health check endpoint"
+    description: |
+      Implement a simple health check endpoint that returns server status,
+      database connectivity, and uptime. No authentication required.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m2-001]
+    files:
+      create:
+        - packages/api/src/api/routes/health.ts
+      modify:
+        - packages/api/src/server.ts
+    style_anchor_refs:
+      - SA-004
+      - SA-005
+    instructions: |
+      **Objective:**
+      Create the health check endpoint.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-004.md` — HttpApiEndpoint definition
+      - See `artifacts/style-anchors/SA-005.md` — Handler implementation
+
+      **Implementation Steps:**
+      1. Create health API group with HttpApiGroup.make("health")
+      2. Define GET /api/health endpoint using HttpApiEndpoint.get("health", "/api/health")
+      3. Handler checks database connectivity (simple SELECT 1)
+      4. Returns { status: "ok", db: "connected", uptime: number, timestamp: string }
+      5. No authentication middleware applied to this group
+      6. Register health group with the main HttpApi
+
+      **Constraints:**
+      - ONLY use: HttpApiGroup and HttpApiEndpoint (**SA-004**)
+      - Follow **SA-005** for handler implementation
+      - No auth required — this is the only unauthenticated endpoint
+
+      **Success Criteria:**
+      - GET /api/health returns 200 with status object
+      - Database connectivity verified in health check
+      - Response time under 50ms
+
+  - id: m2-004
+    name: "Create WebSocket endpoint for real-time events"
+    description: |
+      Implement the WebSocket endpoint at /ws that accepts connections with
+      JWT authentication, maintains connection state, and broadcasts events
+      to all connected clients.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m2-002]
+    files:
+      create:
+        - packages/api/src/api/websocket.ts
+    style_anchor_refs:
+      - SA-004
+      - SA-005
+    instructions: |
+      **Objective:**
+      Create the WebSocket endpoint for real-time dashboard updates.
+
+      **Implementation Steps:**
+      1. Create WebSocket handler at /ws path
+      2. On connect:
+         - Extract JWT from first message or query parameter
+         - Validate JWT via AuthService
+         - Add connection to connection pool (Set<WebSocket>)
+         - Send acknowledgment message
+      3. On disconnect:
+         - Remove connection from pool
+         - Log disconnection
+      4. Create EventBroadcaster service using Effect.Service (**SA-001**):
+         - broadcast(event: WsEvent) — sends to all connected clients
+         - Serializes event using Schema.encode(WsEvent)
+      5. Event types from shared/src/events/ws-events.ts
+
+      **Constraints:**
+      - ONLY use: @effect/platform WebSocket support
+      - Simple broadcast for v1 (all events to all clients)
+      - JWT must be validated on WebSocket connect
+      - Follow **SA-001** for EventBroadcaster service
+
+      **Success Criteria:**
+      - WebSocket endpoint accepts connections at /ws
+      - Invalid JWT connections are rejected
+      - Connected clients receive broadcast events
+      - Disconnections clean up connection pool
+
+  - id: m2-005
+    name: "Add static asset serving for web build"
+    description: |
+      Configure the API server to serve the Vite build output as static
+      assets. In development mode, the Vite dev server proxies to the API.
+      In production mode, the API serves the built files directly.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m2-001]
+    files:
+      modify:
+        - packages/api/src/server.ts
+    instructions: |
+      **Objective:**
+      Configure static asset serving for the web frontend.
+
+      **Implementation Steps:**
+      1. Add static file middleware to serve packages/web/dist/
+      2. Detect environment: development (skip static serving, Vite proxies)
+         vs production (serve static files from built assets)
+      3. SPA fallback: serve index.html for all non-API, non-WS routes
+      4. Set proper Cache-Control headers:
+         - Static assets with hash: max-age=1y, immutable
+         - index.html: no-cache
+      5. Serve from relative path ../web/dist or configurable path
+
+      **Constraints:**
+      - ONLY use: @effect/platform HttpMiddleware for static serving
+      - In dev mode, Vite dev server runs independently
+      - SPA routing must work (all routes → index.html)
+
+      **Success Criteria:**
+      - Production build serves static files correctly
+      - SPA routes load index.html (client-side routing works)
+      - API endpoints (/api/*) not intercepted by static serving
+
+  - id: m2-006
+    name: "Implement CLI start command"
+    description: |
+      Create the CLI start command that spawns the API daemon as a detached
+      child process, tracks the PID, and opens the browser to the web UI.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m2-001]
+    files:
+      create:
+        - packages/cli/src/commands/start.ts
+      modify:
+        - packages/cli/src/daemon.ts
+        - packages/cli/src/index.ts
+    instructions: |
+      **Objective:**
+      Implement the CLI start command for daemon lifecycle management.
+
+      **Implementation Steps:**
+      1. Create `packages/cli/src/commands/start.ts`:
+         - Check if daemon already running (read PID file at ~/.sherpy/sherpy.pid)
+         - If running, report status and exit
+         - If not running, spawn API daemon:
+           - Use child_process.spawn with detached: true, stdio: 'ignore'
+           - Build API package first if needed
+           - Set NODE_ENV, PORT, and DB path as environment variables
+           - Write child PID to ~/.sherpy/sherpy.pid
+           - unref() child process so CLI can exit
+         - Open browser to http://localhost:{PORT} using platform opener
+         - Report "Sherpy started on http://localhost:{PORT}"
+      2. Update daemon.ts with PID file management:
+         - readPid(): reads PID from file, checks if process alive
+         - writePid(pid): writes PID to file
+         - removePid(): removes PID file
+      3. Update index.ts to route "start" command
+
+      **Constraints:**
+      - ONLY use: Node.js child_process for daemon spawning
+      - PID file at ~/.sherpy/sherpy.pid
+      - Database at ~/.sherpy/sherpy.db
+      - Detect already-running daemon to prevent duplicates
+
+      **Success Criteria:**
+      - `sherpy start` spawns API daemon process
+      - PID file created and process survives CLI exit
+      - Browser opens to web UI URL
+      - Running `sherpy start` again reports already running
+      - Daemon accessible at http://localhost:{PORT}
+
+  - id: m2-007
+    name: "Implement CLI stop command"
+    description: |
+      Create the CLI stop command that reads the PID, sends SIGTERM for
+      graceful shutdown, waits for confirmation, and cleans up the PID file.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m2-006]
+    files:
+      create:
+        - packages/cli/src/commands/stop.ts
+      modify:
+        - packages/cli/src/daemon.ts
+        - packages/cli/src/index.ts
+    instructions: |
+      **Objective:**
+      Implement the CLI stop command for graceful daemon shutdown.
+
+      **Implementation Steps:**
+      1. Create `packages/cli/src/commands/stop.ts`:
+         - Read PID from ~/.sherpy/sherpy.pid
+         - If no PID file, report "Sherpy is not running" and exit
+         - Check if process exists (process.kill(pid, 0))
+         - Send SIGTERM to the daemon process
+         - Wait up to 10 seconds for process to exit (poll every 500ms)
+         - If process doesn't exit, send SIGKILL
+         - Remove PID file on successful shutdown
+         - Report "Sherpy stopped"
+      2. Update daemon.ts with graceful shutdown helpers
+      3. Update index.ts to route "stop" command
+
+      **Constraints:**
+      - ONLY use: SIGTERM for graceful shutdown, SIGKILL as last resort
+      - Wait for process to exit before removing PID file
+      - Handle edge case: PID file exists but process doesn't
+
+      **Success Criteria:**
+      - `sherpy stop` gracefully terminates daemon process
+      - PID file cleaned up on shutdown
+      - Handles already-stopped daemon gracefully
+      - No orphaned processes after stop
+
+  - id: m2-008
+    name: "Add tests for auth middleware and health endpoint"
+    description: |
+      Write unit tests for the Okta JWT validation, health endpoint handler,
+      and API error responses. Mock JWKS endpoint for deterministic testing.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m2-002, m2-003]
+    files:
+      create:
+        - packages/api/src/auth/okta-jwt.test.ts
+        - packages/api/src/api/routes/health.test.ts
+    style_anchor_refs:
+      - SA-008
+    instructions: |
+      **Objective:**
+      Test auth middleware and health endpoint.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-008.md` — @effect/vitest patterns
+
+      **Implementation Steps:**
+      1. Create auth test file:
+         - Test valid JWT passes validation (mock JWKS)
+         - Test expired JWT rejected with UnauthorizedError
+         - Test invalid signature rejected
+         - Test missing Authorization header returns 401
+         - Test JWKS cache refresh on TTL expiry
+      2. Create health test file:
+         - Test health endpoint returns 200 with status object
+         - Test health reflects database connectivity
+         - Test no auth required for health endpoint
+      3. Use Effect.provide for mocking JWKS fetch
+
+      **Constraints:**
+      - ONLY use: @effect/vitest with mocked JWKS endpoint
+      - Follow **SA-008** for test patterns
+      - NEVER use: real Okta endpoint in tests
+
+      **Success Criteria:**
+      - Auth middleware tests pass with mocked JWKS
+      - Health endpoint tests verify response structure
+      - Coverage exceeds 80% for auth and health modules
+
+  - id: m2-009
+    name: "Add tests for WebSocket and CLI commands"
+    description: |
+      Write integration tests for WebSocket connection lifecycle and CLI
+      start/stop commands. Test WebSocket auth, event broadcasting, and
+      CLI process management.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m2-004, m2-007]
+    files:
+      create:
+        - packages/api/src/api/websocket.test.ts
+        - packages/cli/src/commands/start.test.ts
+        - packages/cli/src/commands/stop.test.ts
+    style_anchor_refs:
+      - SA-008
+    instructions: |
+      **Objective:**
+      Test WebSocket lifecycle and CLI commands.
+
+      **Implementation Steps:**
+      1. Create WebSocket tests:
+         - Test connection accepted with valid JWT
+         - Test connection rejected without JWT
+         - Test broadcast sends to all connected clients
+         - Test disconnection removes from pool
+      2. Create CLI start tests:
+         - Test start spawns daemon process
+         - Test start detects already-running daemon
+         - Test PID file created correctly
+      3. Create CLI stop tests:
+         - Test stop sends SIGTERM to daemon
+         - Test stop handles already-stopped daemon
+         - Test PID file cleanup
+
+      **Constraints:**
+      - ONLY use: test HTTP server and real WebSocket connections
+      - CLI tests use actual child process spawning with test binary
+      - Clean up test processes in afterEach
+
+      **Success Criteria:**
+      - WebSocket tests pass with real connections
+      - CLI lifecycle tests pass reliably
+      - No test processes left running after suite completes
+
+  - id: m2-010
+    name: "Comprehensive code review for API and CLI"
+    description: |
+      Review all API server, auth, WebSocket, and CLI code for quality,
+      security, and alignment with technical requirements.
+    estimate_minutes: 60
+    type: code-review
+    dependencies: [m2-008, m2-009]
+    files:
+      create:
+        - code-reviews/2026-04-20-3-code-review.yaml
+      touch_only:
+        - packages/api/src/server.ts
+        - packages/api/src/auth/okta-jwt.ts
+        - packages/api/src/auth/jwks-cache.ts
+        - packages/api/src/api/routes/health.ts
+        - packages/api/src/api/websocket.ts
+        - packages/cli/src/commands/start.ts
+        - packages/cli/src/commands/stop.ts
+        - packages/cli/src/daemon.ts
+    instructions: |
+      **Objective:**
+      Review API server, auth, WebSocket, and CLI code.
+
+      **Review Checklist:**
+      1. **Security:**
+         - [ ] Server binds to 127.0.0.1 only
+         - [ ] JWT validation uses JWKS, not hardcoded keys
+         - [ ] WebSocket requires JWT authentication
+         - [ ] Health endpoint is the only unauthenticated route
+         - [ ] No secrets in code or logs
+
+      2. **API Quality:**
+         - [ ] All endpoints use schema-validated request/response
+         - [ ] Error responses use TaggedErrors with HTTP status
+         - [ ] WebSocket broadcasts are typed
+         - [ ] Static serving configured correctly for SPA
+
+      3. **CLI Reliability:**
+         - [ ] PID file management handles edge cases
+         - [ ] Graceful shutdown with SIGTERM → SIGKILL fallback
+         - [ ] Duplicate start detection works
+         - [ ] Browser opens reliably
+
+      4. **Patterns:**
+         - [ ] Effect.Service pattern used consistently
+         - [ ] Layer composition correct
+         - [ ] Style anchors referenced correctly
+
+      **Output:** Create code-reviews/2026-04-20-3-code-review.yaml with findings.
+
+      **Success Criteria:**
+      - No security vulnerabilities found
+      - API patterns consistent with style anchors
+      - CLI lifecycle is robust

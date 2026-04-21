@@ -1,0 +1,350 @@
+version: "1.0.0"
+project: sherpy-pm
+generated: "2026-04-20T12:00:00Z"
+
+business_requirements: ../requirements/business-requirements.yaml
+technical_requirements: ../requirements/technical-requirements.yaml
+
+overview: |
+  Sherpy PM — Local-first project management system with AI-assisted scheduling.
+
+  **Technical Approach:**
+  - pnpm monorepo (packages/cli, packages/api, packages/web, packages/shared)
+  - Effect-TS Layered Services for all backend domain logic
+  - @effect/sql (SQLite local / PostgreSQL cloud) — DB is sole source of truth
+  - @effect/platform-node HTTP server with RPC-style POST endpoints + WebSocket
+  - Okta OIDC SPA (PKCE) for authentication
+  - React + Vite + Tailwind + shadcn for frontend (email inbox UI paradigm)
+  - assistant-ui for per-project AI chat driving Sherpy flow pipeline
+  - AWS Bedrock via Vercel AI SDK for AI scheduling and scenario analysis
+
+  **Key Principles:**
+  - Foundation-First delivery: infrastructure → core features → advanced features → polish
+  - TDD with Vitest + @effect/vitest for all service layers
+  - Style anchors from collected patterns (SA-001 through SA-010) prevent drift
+  - Database is sole source of truth — documents are generated views from DB data
+  - No .sherpy/ files created or parsed — all data lives in DB
+
+meta:
+  ordering_strategy: foundation-first
+  ordering_rationale: |
+    Greenfield build with clear, complete requirements. Foundation-First ensures
+    infrastructure (monorepo, schemas, DB, API, auth) is solid before domain
+    services and UI are built on top. Each layer is fully tested before the next
+    begins, reducing integration risk. Sequential ordering matches the team's
+    preference for building on verified foundations.
+
+milestones:
+  - id: m0
+    name: Monorepo Scaffolding & Tooling
+    description: |
+      Initialize the pnpm workspace monorepo with all four packages (cli, api,
+      web, shared). Configure TypeScript strict mode, Biome linting/formatting,
+      Vitest with @effect/vitest helpers, and Vite for the web package. Establish
+      build scripts, dev scripts, and verify the full pipeline works end-to-end.
+
+      Deliverables:
+      - pnpm-workspace.yaml with 4 packages
+      - TypeScript strict config (base + per-package)
+      - Biome config (lint + format)
+      - Vitest config with @effect/vitest
+      - Vite + React + Tailwind scaffold for web package
+      - Root dev/build/test scripts
+    dependencies: []
+    estimated_duration: 1-2 days
+    tasks_file: milestone-m0.tasks.yaml
+    success_criteria:
+      - pnpm install succeeds with all 4 workspace packages resolved
+      - pnpm run build compiles all packages without errors
+      - pnpm test runs Vitest across all packages
+      - pnpm run lint and pnpm run format work via Biome
+      - Vite dev server starts and renders a placeholder React component
+      - TypeScript strict mode enabled with zero type errors
+
+  - id: m1
+    name: Shared Types & Database Schema
+    description: |
+      Define all Effect Schema types for the domain model, API contracts, and
+      WebSocket events in the shared package. Create SQL migrations for all 12
+      tables with indexes. Implement the migration runner service using @effect/sql
+      SqlMigrator. All schemas use Model.Class for entities and Schema.Class for
+      API types and tagged errors.
+
+      Deliverables:
+      - Effect Schema definitions for all domain types (projects, milestones,
+        tasks, people, skills, assignments, availability, documents, chat sessions,
+        tags, schedule snapshots)
+      - Model.Class entity definitions with insert/update/select variants
+      - API request/response schemas for all RPC endpoints
+      - Tagged error classes for all domain errors
+      - WebSocket event type definitions
+      - SQL migration files (001 through 003) creating all tables and indexes
+      - Migration runner service that auto-runs on daemon startup
+      - Unit tests for all schemas and integration tests for migrations
+
+      Risk: Low (well-defined schema, established patterns from style anchors)
+    dependencies: [m0]
+    estimated_duration: 2-3 days
+    tasks_file: milestone-m1.tasks.yaml
+    success_criteria:
+      - All domain type schemas compile with full type inference
+      - Model.Class entities support insert, update, and select variants
+      - API request/response schemas validate correctly in unit tests
+      - Tagged error classes work with Effect.fail and pattern matching
+      - SQL migrations run cleanly against SQLite test database
+      - All 12 tables created with correct foreign keys and indexes
+      - Migration runner detects and runs pending migrations only
+      - Schema test coverage exceeds 80%
+
+  - id: m2
+    name: API Server, Auth & CLI
+    description: |
+      Bootstrap the Effect-TS HTTP server with @effect/platform-node. Implement
+      Okta OIDC JWT validation middleware for all /api/* endpoints. Create the
+      WebSocket endpoint for real-time dashboard updates. Implement CLI start
+      and stop commands for daemon lifecycle management. Set up static asset
+      serving for the web build.
+
+      Deliverables:
+      - HTTP server bootstrap with @effect/platform-node
+      - Okta JWT validation middleware using public JWKS endpoint
+      - Health check endpoint (GET /api/health, no auth)
+      - WebSocket endpoint (/ws) with JWT authentication on connect
+      - Static asset serving for Vite build output
+      - CLI start command (spawn daemon, track PID, open browser)
+      - CLI stop command (SIGTERM, wait for graceful shutdown)
+      - API error types and response wrapper schemas
+      - Tests for auth middleware, WebSocket, and CLI commands
+
+      Risk: Medium (Okta OIDC integration, WebSocket lifecycle)
+    dependencies: [m1]
+    estimated_duration: 2-3 days
+    tasks_file: milestone-m2.tasks.yaml
+    success_criteria:
+      - API server starts and responds to health check within 3 seconds
+      - Okta JWT validation rejects requests without valid tokens
+      - Valid Okta tokens pass through to route handlers
+      - WebSocket endpoint accepts connections with valid JWT
+      - CLI start spawns daemon process and opens browser
+      - CLI stop sends SIGTERM and waits for clean shutdown
+      - Static assets served correctly for Vite build output
+      - All auth and WebSocket tests passing
+
+  - id: m3
+    name: Project & Task Domain Services
+    description: |
+      Implement the core domain services for projects, milestones, tasks, tags,
+      and documents using Effect-TS Layered Services. Each service provides CRUD
+      operations against @effect/sql with proper error handling via TaggedErrors.
+      The document adapter service generates YAML, markdown, and JSON views from
+      DB data. All services include comprehensive unit and integration tests.
+
+      Deliverables:
+      - ProjectService (create, list, get, update, pipeline status transitions)
+      - MilestoneService (create, list, get, update status)
+      - TaskService (create, list, get, update status, update effort)
+      - TagService (create, list, delete)
+      - DocumentService (generate views from DB, list by project, get by type)
+      - ChatSessionService (create, get history, append messages)
+      - RPC endpoint handlers for all project/task operations
+      - Integration tests against real SQLite test database
+
+      Risk: Low (well-established patterns from style anchors SA-001 through SA-005)
+    dependencies: [m2]
+    estimated_duration: 3-4 days
+    tasks_file: milestone-m3.tasks.yaml
+    success_criteria:
+      - All CRUD operations work for projects, milestones, tasks
+      - Pipeline status transitions follow defined state machine
+      - Document adapter generates valid YAML from DB data
+      - Chat sessions persist and retrieve messages correctly
+      - All RPC endpoints return properly validated responses
+      - Tagging and filtering work for project lists
+      - Service tests achieve 80%+ coverage
+      - Integration tests pass against real SQLite database
+
+  - id: m4
+    name: People & Resource Services
+    description: |
+      Implement domain services for people profiles, skills, assignments,
+      availability windows, and resource conflict detection. The conflict
+      detection service identifies over-allocation and competing resource
+      windows. RPC endpoints expose all operations to the frontend.
+
+      Deliverables:
+      - PersonService (create, list, get, update profile)
+      - SkillService (create, list, associate with person)
+      - AssignmentService (assign/unassign person to task, update allocation)
+      - AvailabilityService (create/update/list availability windows)
+      - ConflictService (detect over-allocation, competing resource windows)
+      - ResourceAllocationService (aggregate allocation by person or project)
+      - RPC endpoint handlers for all people/resource operations
+      - Integration tests for conflict detection logic
+
+      Risk: Low-Medium (conflict detection algorithm requires careful testing)
+    dependencies: [m3]
+    estimated_duration: 2-3 days
+    tasks_file: milestone-m4.tasks.yaml
+    success_criteria:
+      - People CRUD with skills and capacity works end-to-end
+      - Assignments link people to tasks with allocation percentages
+      - Availability windows prevent scheduling during unavailable periods
+      - Conflict detection correctly identifies over-allocation scenarios
+      - Resource allocation aggregation works by person and by project
+      - All RPC endpoints return properly validated responses
+      - Conflict detection tests cover edge cases (overlapping windows, partial)
+      - Integration tests achieve 80%+ coverage
+
+  - id: m5
+    name: Inbox Web UI
+    description: |
+      Build the email inbox layout for the React web UI. The inbox shows all
+      projects as a filterable list with status indicators, tags, and assigned
+      people. Includes Okta OIDC login flow, API client, WebSocket client for
+      real-time updates, and shadcn component integration. The inbox is the
+      primary landing page after login.
+
+      Deliverables:
+      - Okta OIDC SPA login flow (PKCE) with token management
+      - API client (typed fetch wrapper for all RPC endpoints)
+      - WebSocket client with reconnection and event dispatch
+      - Inbox layout (sidebar + project list + detail preview)
+      - Project list with pipeline status indicators and health badges
+      - Tag-based filtering and search
+      - Real-time updates via WebSocket (project status changes)
+      - shadcn component setup (Button, Input, Badge, Command, etc.)
+
+      Risk: Low-Medium (Okta SPA flow, assistant-ui integration deferred to m6)
+    dependencies: [m3]
+    estimated_duration: 3-4 days
+    tasks_file: milestone-m5.tasks.yaml
+    success_criteria:
+      - Okta login redirects and returns with valid access token
+      - Inbox displays project list with pipeline status badges
+      - Tag filtering narrows project list correctly
+      - WebSocket updates reflect in UI within 500ms of server event
+      - API client handles all project/task RPC endpoints with type safety
+      - Responsive layout works at 1280px+ viewport
+      - Unauthenticated users redirect to Okta login
+      - All components have basic unit tests
+
+  - id: m6
+    name: Project Detail, Documents & Chat
+    description: |
+      Build the project detail view showing pipeline status, milestones, tasks,
+      and generated documents. Integrate assistant-ui for per-project AI chat.
+      Implement the document viewer with syntax highlighting and PDF export.
+      The project detail view is the right panel when a project is selected in
+      the inbox.
+
+      Deliverables:
+      - Project detail view with pipeline status visualization
+      - Milestone list with task status breakdown
+      - Document viewer with YAML/markdown syntax highlighting
+      - PDF export for generated documents
+      - assistant-ui integration with per-project chat session
+      - Chat message persistence via API
+      - Task status update actions (mark in-progress, blocked, complete)
+      - Project pipeline status transitions
+
+      Risk: Medium (assistant-ui integration, document rendering)
+    dependencies: [m5, m4]
+    estimated_duration: 3-4 days
+    tasks_file: milestone-m6.tasks.yaml
+    success_criteria:
+      - Project detail shows current pipeline status with milestone breakdown
+      - Documents render with proper syntax highlighting
+      - PDF export produces downloadable documents
+      - assistant-ui chat sends/receives messages per project
+      - Chat history persists across page refreshes
+      - Task status updates propagate via WebSocket to inbox
+      - Pipeline status transitions update in real-time
+
+  - id: m7
+    name: AI Scheduling & Sherpy Flow
+    description: |
+      Implement the AI service layer using Vercel AI SDK with AWS Bedrock.
+      Build schedule generation, planning scenario comparison, what-if
+      rescheduling, and AI-generated schedule explanations. Integrate the
+      Sherpy flow orchestration through per-project chat, where AI drives
+      the planning pipeline steps conversationally.
+
+      Deliverables:
+      - AIService (Bedrock integration via Vercel AI SDK)
+      - ScheduleService (generate, save snapshots, list history)
+      - Sherpy flow orchestration through chat (guided pipeline steps)
+      - Schedule generation with constraint optimization
+      - Planning scenario creation and comparison
+      - What-if rescheduling after delays/unavailability
+      - AI-generated schedule explanations (natural language reasoning)
+      - Schedule views in the web UI
+
+      Risk: High (AI prompt engineering, complex scheduling constraints)
+    dependencies: [m6]
+    estimated_duration: 4-5 days
+    tasks_file: milestone-m7.tasks.yaml
+    success_criteria:
+      - AI chat responds with relevant project context
+      - Sherpy flow steps progress through pipeline stages via chat
+      - Schedule generation produces valid assignments respecting constraints
+      - Planning scenarios show impact on existing projects
+      - What-if reschedule recalculates dates after disruptions
+      - AI explanations provide human-readable schedule reasoning
+      - Schedule snapshots saved and retrievable
+      - Manual override of AI suggestions always available
+
+  - id: m8
+    name: Integration Testing & Polish
+    description: |
+      End-to-end integration testing of the complete system. CLI lifecycle
+      tests (start → use UI → stop). API integration tests across all service
+      boundaries. WebSocket real-time event delivery verification. Final code
+      review, performance profiling, and documentation.
+
+      Deliverables:
+      - E2E test suite covering critical user flows
+      - CLI lifecycle integration tests
+      - API cross-service integration tests
+      - WebSocket event delivery verification
+      - Performance profiling of SQLite queries and API response times
+      - Final code review and cleanup
+      - README with setup and usage instructions
+
+      Risk: Low (testing and documentation)
+    dependencies: [m7]
+    estimated_duration: 2-3 days
+    tasks_file: milestone-m8.tasks.yaml
+    success_criteria:
+      - E2E test: install → start → login → see inbox → create project → assign person
+      - CLI start/stop lifecycle reliable with no orphaned processes
+      - All API endpoints tested with valid and invalid inputs
+      - WebSocket events deliver within 200ms of data change
+      - SQLite queries return in under 100ms for typical dataset
+      - No lint errors, no type errors, all tests green
+      - README documents setup, configuration, and usage
+
+project_metadata:
+  total_estimated_duration: 22-33 days
+  parallel_opportunities:
+    - "m4 (People/Resource Services) can run in parallel with m5 (Inbox UI) after m3 completes"
+  critical_path:
+    - m0 (scaffolding) → m1 (types/DB) → m2 (API/auth) → m3 (project services)
+    - m3 → m5 (UI) → m6 (detail/chat) → m7 (AI scheduling) → m8 (polish)
+  risk_mitigation: |
+    m0-m2: Low risk — standard tooling and infrastructure setup
+    m3-m4: Low risk — well-established patterns from style anchors
+    m5-m6: Medium risk — Okta SPA flow and assistant-ui integration require testing
+    m7: High risk — AI scheduling is complex; start with constrained scenarios
+    m8: Low risk — testing and documentation only
+  success_metrics: |
+    - All functional requirements (FR-1 through FR-14) implemented and tested
+    - Inbox UI displays projects with real-time status updates
+    - Per-project chat drives Sherpy flow pipeline
+    - AI scheduling produces valid, explainable schedules
+    - All tests pass with 80%+ coverage on backend services
+    - CLI lifecycle reliable with clean startup and shutdown
+  rollback_strategy: |
+    Each milestone builds on verified foundations. If a milestone introduces
+    issues, revert to the previous milestone's verified state. Database
+    migrations are additive only (no breaking schema changes). Frontend
+    changes are isolated to the web package.

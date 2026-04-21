@@ -1,0 +1,540 @@
+milestone: m0
+name: "Monorepo Scaffolding & Tooling"
+generated: "2026-04-20T12:00:00Z"
+
+style_anchor_refs:
+  - SA-001
+  - SA-008
+  - SA-010
+
+global_constraints:
+  allowed_patterns:
+    - "Use pnpm workspaces for monorepo package management"
+    - "Use TypeScript strict mode with ESM module resolution (Node16/Nodenext)"
+    - "Use Biome for all linting and formatting (replaces ESLint + Prettier)"
+    - "Use Vitest with @effect/vitest for test framework"
+    - "Use Vite for frontend build tooling"
+    - "Define all types with Effect Schema where applicable"
+  forbidden_patterns:
+    - "CommonJS require/module.exports (use ESM imports)"
+    - "Any type assertions (as unknown as T) without Schema validation"
+    - "Separate ESLint or Prettier configs (Biome handles both)"
+    - "npm or yarn (use pnpm exclusively)"
+    - "Relative imports across package boundaries (use workspace: protocol)"
+  tdd_required: true
+  max_task_duration_minutes: 90
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete
+      - Development environment running (pnpm install successful)
+      - Required style anchors reviewed
+  - stage: pre-commit
+    commands:
+      - pnpm run lint
+      - pnpm run typecheck
+      - pnpm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint errors
+      - No type errors
+      - Code formatted via Biome
+  - stage: milestone-completion
+    criteria:
+      - All milestone success criteria met
+      - pnpm run build succeeds for all packages
+      - pnpm test passes across all packages
+      - Vite dev server starts and renders placeholder
+
+tasks:
+  - id: m0-001
+    name: "Initialize pnpm workspace with package structure"
+    description: |
+      Create the pnpm monorepo root with pnpm-workspace.yaml, root package.json,
+      and all four workspace packages (cli, api, web, shared) with minimal
+      package.json files and src/index.ts entry points.
+    estimate_minutes: 45
+    type: config
+    dependencies: []
+    files:
+      create:
+        - pnpm-workspace.yaml
+        - package.json
+        - packages/cli/package.json
+        - packages/cli/src/index.ts
+        - packages/api/package.json
+        - packages/api/src/index.ts
+        - packages/web/package.json
+        - packages/web/src/main.tsx
+        - packages/shared/package.json
+        - packages/shared/src/index.ts
+        - code-reviews/.gitkeep
+    instructions: |
+      **Objective:**
+      Initialize the pnpm workspace monorepo with four packages.
+
+      **Implementation Steps:**
+      1. Create `pnpm-workspace.yaml` defining packages: ["packages/*"]
+      2. Create root `package.json` with:
+         - name: "sherpy-pm"
+         - private: true
+         - scripts: dev, build, test, lint, format, typecheck
+         - devDependencies: typescript, vitest, @effect/vitest, @biomejs/biome
+      3. Create each package with:
+         - packages/cli: name "@sherpy/cli", bin field pointing to dist
+         - packages/api: name "@sherpy/api"
+         - packages/web: name "@sherpy/web"
+         - packages/shared: name "@sherpy/shared"
+      4. Each package gets src/index.ts (or .tsx for web) with a placeholder export
+      5. Run `pnpm install` to resolve workspace dependencies
+
+      **Constraints:**
+      - ONLY use: pnpm for package management, ESM module format
+      - Each package.json must have "type": "module"
+      - Set Node.js engine to >=23.0.0
+
+      **Success Criteria:**
+      - `pnpm install` succeeds with all 4 workspace packages resolved
+      - `pnpm ls --depth 0` shows all 4 packages
+      - No workspace resolution errors
+
+  - id: m0-002
+    name: "Configure TypeScript strict mode with base config"
+    description: |
+      Create tsconfig.base.json with strict mode enabled and ESM module resolution.
+      Each package extends the base config with package-specific settings.
+    estimate_minutes: 30
+    type: config
+    dependencies: [m0-001]
+    files:
+      create:
+        - tsconfig.base.json
+        - packages/cli/tsconfig.json
+        - packages/api/tsconfig.json
+        - packages/web/tsconfig.json
+        - packages/shared/tsconfig.json
+    instructions: |
+      **Objective:**
+      Configure TypeScript strict mode across all packages.
+
+      **Implementation Steps:**
+      1. Create `tsconfig.base.json` with:
+         - compilerOptions: strict: true, module: "Node16", moduleResolution: "Node16",
+           target: "ES2022", lib: ["ES2022"], esModuleInterop: true,
+           skipLibCheck: true, forceConsistentCasingInFileNames: true,
+           resolveJsonModule: true, declaration: true, declarationMap: true,
+           sourceMap: true
+         - exclude: ["node_modules", "dist"]
+      2. Each package tsconfig.json extends "../tsconfig.base.json"
+      3. Set outDir: "./dist" and rootDir: "./src" per package
+      4. Web package uses "jsx": "react-jsx" and "lib": ["ES2022", "DOM", "DOM.Iterable"]
+      5. Shared package adds "paths" for internal imports if needed
+
+      **Constraints:**
+      - ONLY use: TypeScript strict mode, Node16 module resolution
+      - NEVER use: "any" type, implicit any, or relaxed strictness options
+      - All packages must extend the base config
+
+      **Success Criteria:**
+      - `tsc --noEmit` passes in each package (with placeholder files)
+      - strict: true is active (verify with intentional type error)
+
+  - id: m0-003
+    name: "Configure Biome linter and formatter"
+    description: |
+      Set up Biome as the all-in-one linter and formatter for the monorepo.
+      Configure rules for TypeScript, React (JSX), and JSON files.
+    estimate_minutes: 30
+    type: config
+    dependencies: [m0-001]
+    files:
+      create:
+        - biome.json
+    instructions: |
+      **Objective:**
+      Configure Biome for consistent linting and formatting across all packages.
+
+      **Implementation Steps:**
+      1. Create `biome.json` with:
+         - formatter: indentStyle: "space", indentWidth: 2, lineWidth: 100
+         - linter: enabled: true, with recommended rules
+         - javascript: formatter: quoteStyle: "double", semicolons: "always"
+         - organizeImports: enabled: true
+         - files: include: ["packages/*/src/**"], ignore: ["**/dist/**", "**/node_modules/**"]
+      2. Add scripts to root package.json:
+         - "lint": "biome check ."
+         - "format": "biome check --write ."
+         - "lint:fix": "biome check --apply ."
+      3. Run `pnpm run format` on existing files to verify
+
+      **Constraints:**
+      - ONLY use: Biome for both linting AND formatting
+      - NEVER use: ESLint, Prettier, or separate formatting tools
+      - Configure for TypeScript, JSX, and JSON file types
+
+      **Success Criteria:**
+      - `pnpm run lint` succeeds on existing placeholder files
+      - `pnpm run format` applies consistent formatting
+      - No conflicts between Biome and TypeScript compiler
+
+  - id: m0-004
+    name: "Configure Vitest with @effect/vitest helpers"
+    description: |
+      Set up Vitest as the test runner with @effect/vitest helpers for
+      Effect-native testing patterns. Configure per-package test discovery.
+    estimate_minutes: 30
+    type: config
+    dependencies: [m0-002]
+    files:
+      create:
+        - vitest.config.ts
+      modify:
+        - package.json
+    instructions: |
+      **Objective:**
+      Configure Vitest for testing across all workspace packages.
+
+      **Implementation Steps:**
+      1. Create root `vitest.config.ts` with:
+         - test: globals: true, environment: "node"
+         - include: ["packages/*/src/**/*.test.ts", "packages/*/src/**/*.test.tsx"]
+         - coverage: provider: "v8", reporter: ["text", "lcov"]
+      2. Add @effect/vitest to root devDependencies
+      3. Add "test" script to root package.json: "vitest run"
+      4. Add "test:watch" script: "vitest"
+      5. Create a placeholder test in packages/shared to verify setup:
+         - src/__tests__/setup.test.ts with a basic passing test
+      6. Run `pnpm test` to verify
+
+      **Constraints:**
+      - ONLY use: Vitest with @effect/vitest helpers
+      - Follow testing patterns from **SA-008** for Effect-native test structure
+      - Test files co-located with source (not in separate test/ directory)
+
+      **Success Criteria:**
+      - `pnpm test` discovers and runs the placeholder test
+      - @effect/vitest helpers available (it.effect, it.scoped)
+      - Coverage reporting configured
+
+  - id: m0-005
+    name: "Create shared package with base exports"
+    description: |
+      Set up the shared package structure with directories for schemas, types,
+      and events. Create barrel exports and verify cross-package imports work.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m0-001]
+    files:
+      create:
+        - packages/shared/src/schemas/index.ts
+        - packages/shared/src/types/index.ts
+        - packages/shared/src/events/index.ts
+      modify:
+        - packages/shared/src/index.ts
+    instructions: |
+      **Objective:**
+      Establish the shared package directory structure for schemas, types, and events.
+
+      **Implementation Steps:**
+      1. Create directory structure:
+         - src/schemas/ — Effect Schema definitions (placeholder index.ts)
+         - src/types/ — Shared TypeScript types (placeholder index.ts)
+         - src/events/ — WebSocket event types (placeholder index.ts)
+      2. Each index.ts exports an empty object or placeholder type
+      3. Update src/index.ts to re-export from all three directories
+      4. Verify other packages can import from @sherpy/shared
+
+      **Constraints:**
+      - ONLY use: Effect Schema for all runtime-validated types
+      - Follow **SA-006** patterns for schema organization
+      - Follow **SA-007** patterns for Schema.Class definitions
+      - NEVER use: plain interfaces for types that need runtime validation
+
+      **Success Criteria:**
+      - Directory structure matches technical requirements layout
+      - Cross-package import works: api package imports from @sherpy/shared
+      - TypeScript compiles without errors
+
+  - id: m0-006
+    name: "Create API package scaffold with Effect dependencies"
+    description: |
+      Set up the API package with all Effect-TS dependencies and directory
+      structure for services, API routes, database, and auth modules.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m0-005]
+    files:
+      create:
+        - packages/api/src/services/index.ts
+        - packages/api/src/api/index.ts
+        - packages/api/src/api/routes/index.ts
+        - packages/api/src/api/websocket.ts
+        - packages/api/src/db/index.ts
+        - packages/api/src/db/migrations/index.ts
+        - packages/api/src/auth/index.ts
+      modify:
+        - packages/api/package.json
+        - packages/api/src/index.ts
+    instructions: |
+      **Objective:**
+      Create the API package scaffold with Effect-TS dependencies.
+
+      **Implementation Steps:**
+      1. Add dependencies to packages/api/package.json:
+         - effect, @effect/platform, @effect/platform-node
+         - @effect/sql, @effect/sql-libsql, @effect/schema
+         - @sherpy/shared (workspace:*)
+      2. Create directory structure matching technical requirements:
+         - src/services/ — domain services (project/, milestone/, task/, person/, schedule/, ai/)
+         - src/api/routes/ — RPC endpoint handlers
+         - src/api/websocket.ts — WS event handling
+         - src/db/migrations/ — SQL migration files
+         - src/auth/ — Okta OIDC JWT validation
+      3. Each directory gets an index.ts barrel export
+      4. src/index.ts exports the server bootstrap function
+
+      **Constraints:**
+      - ONLY use: Effect-TS ecosystem packages
+      - Follow **SA-001** for service directory organization
+      - Follow **SA-004** for API route structure
+
+      **Success Criteria:**
+      - All Effect dependencies installed and resolve correctly
+      - Directory structure matches technical requirements layout
+      - TypeScript compiles the scaffold without errors
+
+  - id: m0-007
+    name: "Create CLI package scaffold"
+    description: |
+      Set up the CLI package with command structure and daemon process
+      management imports. Define the bin entry point for global installation.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m0-005]
+    files:
+      create:
+        - packages/cli/src/commands/start.ts
+        - packages/cli/src/commands/stop.ts
+        - packages/cli/src/daemon.ts
+      modify:
+        - packages/cli/package.json
+        - packages/cli/src/index.ts
+    instructions: |
+      **Objective:**
+      Create the CLI package with command structure for start/stop.
+
+      **Implementation Steps:**
+      1. Update packages/cli/package.json:
+         - Add "bin" field: { "sherpy": "./dist/index.js" }
+         - Add dependencies: @sherpy/shared (workspace:*)
+      2. Create command files with placeholder implementations:
+         - src/commands/start.ts — will spawn API daemon
+         - src/commands/stop.ts — will send SIGTERM to daemon
+         - src/daemon.ts — will manage PID tracking
+      3. src/index.ts parses process.argv and routes to commands
+      4. Use process.exit codes: 0 for success, 1 for error
+
+      **Constraints:**
+      - ONLY use: Node.js built-in child_process for daemon management
+      - Keep CLI thin — delegate all logic to the API daemon
+      - NEVER use: heavy CLI frameworks (use simple arg parsing)
+
+      **Success Criteria:**
+      - CLI compiles and can be linked with `pnpm link --global`
+      - `sherpy` command is recognized after linking
+      - Placeholder start/stop commands execute without crashing
+
+  - id: m0-008
+    name: "Create web package scaffold with Vite + React + Tailwind"
+    description: |
+      Set up the web package with Vite, React 19, Tailwind CSS, and shadcn
+      component library. Configure Vite for development proxy to API and
+      production build output that the API daemon serves.
+    estimate_minutes: 60
+    type: config
+    dependencies: [m0-005]
+    files:
+      create:
+        - packages/web/vite.config.ts
+        - packages/web/tailwind.config.ts
+        - packages/web/postcss.config.js
+        - packages/web/index.html
+        - packages/web/src/App.tsx
+        - packages/web/src/main.css
+      modify:
+        - packages/web/package.json
+        - packages/web/src/main.tsx
+    instructions: |
+      **Objective:**
+      Set up Vite + React + Tailwind + shadcn for the web package.
+
+      **Implementation Steps:**
+      1. Add dependencies to packages/web/package.json:
+         - react, react-dom
+         - tailwindcss, postcss, autoprefixer
+         - @sherpy/shared (workspace:*)
+         - Dev: @vitejs/plugin-react, vite, @types/react, @types/react-dom
+      2. Create vite.config.ts:
+         - plugins: [react()]
+         - build: outDir: "dist" (API daemon serves this)
+         - server: proxy /api and /ws to localhost:API_PORT
+      3. Create tailwind.config.ts with content paths for src/**/*.{ts,tsx}
+      4. Create postcss.config.js with tailwindcss and autoprefixer plugins
+      5. Create index.html with root div and script entry
+      6. Create src/main.css with @tailwind base/components/utilities
+      7. Create src/App.tsx with a placeholder "Sherpy PM" component
+      8. Update src/main.tsx to render App into root
+
+      **Constraints:**
+      - ONLY use: Vite for build tooling, React 19, Tailwind CSS
+      - shadcn setup deferred to m5 (just prepare the base structure)
+      - NEVER use: Create React App, webpack, or other bundlers
+      - Vite dev server proxies API requests to the backend
+
+      **Success Criteria:**
+      - `pnpm --filter @sherpy/web dev` starts Vite dev server
+      - Placeholder component renders in browser
+      - Tailwind utility classes work (test with a styled div)
+      - Build output goes to packages/web/dist/
+
+  - id: m0-009
+    name: "Add root dev, build, and test scripts"
+    description: |
+      Create root-level scripts that orchestrate across all workspace packages
+      for development, building, testing, and quality checks.
+    estimate_minutes: 30
+    type: config
+    dependencies: [m0-006, m0-007, m0-008]
+    files:
+      modify:
+        - package.json
+    instructions: |
+      **Objective:**
+      Wire up root-level scripts for the full development workflow.
+
+      **Implementation Steps:**
+      1. Update root package.json scripts:
+         - "dev": runs API daemon with hot reload + Vite dev server concurrently
+         - "dev:api": "pnpm --filter @sherpy/api dev"
+         - "dev:web": "pnpm --filter @sherpy/web dev"
+         - "build": "pnpm -r run build" (builds all packages in dependency order)
+         - "test": "vitest run"
+         - "test:watch": "vitest"
+         - "lint": "biome check ."
+         - "format": "biome check --write ."
+         - "typecheck": "pnpm -r run typecheck"
+      2. Each package gets its own build/typecheck script in its package.json
+      3. Add "precommit" script that runs lint + typecheck + test
+
+      **Constraints:**
+      - ONLY use: pnpm workspace commands for cross-package scripts
+      - Build order must respect workspace dependencies (shared first)
+
+      **Success Criteria:**
+      - `pnpm run build` compiles all packages in correct order
+      - `pnpm test` runs tests across all packages
+      - `pnpm run lint` checks all packages with Biome
+      - `pnpm run typecheck` validates types across all packages
+
+  - id: m0-010
+    name: "Verify full build pipeline end-to-end"
+    description: |
+      Run all quality gates to verify the scaffolding works correctly.
+      Create a minimal test in each package to confirm test infrastructure.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m0-009]
+    files:
+      create:
+        - packages/shared/src/__tests__/setup.test.ts
+        - packages/api/src/__tests__/setup.test.ts
+        - packages/cli/src/__tests__/setup.test.ts
+      modify:
+        - packages/web/src/App.tsx
+    instructions: |
+      **Objective:**
+      Verify the entire build pipeline works end-to-end across all packages.
+
+      **Implementation Steps:**
+      1. Create a passing test in each package:
+         - shared: test that placeholder export exists
+         - api: test that Effect is importable
+         - cli: test that command structure is defined
+      2. Run `pnpm run build` — verify all packages compile
+      3. Run `pnpm test` — verify all tests pass
+      4. Run `pnpm run lint` — verify Biome passes
+      5. Run `pnpm run typecheck` — verify TypeScript strict passes
+      6. Start web dev server: verify placeholder renders at localhost
+      7. Fix any issues found during verification
+
+      **Constraints:**
+      - Follow **SA-008** for Effect-native test patterns
+      - Tests should be minimal (just verify infrastructure)
+
+      **Success Criteria:**
+      - All four quality gate commands pass cleanly
+      - No warnings or errors in any pipeline step
+      - Web dev server renders placeholder component
+
+  - id: m0-011
+    name: "Comprehensive code review for scaffolding"
+    description: |
+      Review all scaffolded code for consistency, correct configuration,
+      and alignment with technical requirements.
+    estimate_minutes: 45
+    type: code-review
+    dependencies: [m0-010]
+    files:
+      create:
+        - code-reviews/2026-04-20-1-code-review.yaml
+      touch_only:
+        - pnpm-workspace.yaml
+        - tsconfig.base.json
+        - biome.json
+        - vitest.config.ts
+        - package.json
+        - packages/cli/package.json
+        - packages/api/package.json
+        - packages/web/package.json
+        - packages/shared/package.json
+    instructions: |
+      **Objective:**
+      Review all scaffolding code for quality and consistency.
+
+      **Review Checklist:**
+      1. **Configuration Consistency:**
+         - [ ] TypeScript strict mode active in all packages
+         - [ ] Biome configured for TypeScript, JSX, JSON
+         - [ ] Vitest configured with @effect/vitest
+         - [ ] Vite configured for React + Tailwind
+         - [ ] ESM module resolution consistent across packages
+
+      2. **Package Structure:**
+         - [ ] All 4 packages have correct names and dependencies
+         - [ ] Workspace protocol used for internal dependencies
+         - [ ] Build outputs configured correctly (dist/ directories)
+         - [ ] CLI bin entry point configured
+
+      3. **Build Pipeline:**
+         - [ ] Root scripts orchestrate all packages correctly
+         - [ ] Build order respects workspace dependencies
+         - [ ] All quality gates (lint, typecheck, test) pass
+
+      4. **Alignment:**
+         - [ ] Directory structure matches technical requirements
+         - [ ] Package naming follows @sherpy/* convention
+         - [ ] Node.js 23+ engine requirement set
+
+      **Output:** Create code-reviews/2026-04-20-1-code-review.yaml with findings.
+
+      **Constraints:**
+      - ONLY review scaffolding files from this milestone
+      - Verify alignment with technical-requirements.yaml project structure
+
+      **Success Criteria:**
+      - Code review file created with complete analysis
+      - No critical issues found
+      - Ready to proceed to m1

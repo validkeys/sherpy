@@ -1,0 +1,498 @@
+project: Sherpy PM
+version: "1.0.0"
+generated: "2026-04-20T10:47:00Z"
+
+overview:
+  problem: |
+    Sherpy currently creates detailed implementation plans but has no mechanism to track,
+    manage, or schedule work across multiple projects after planning is complete. Teams and
+    individuals juggle multiple projects across repositories with no unified visibility into
+    workload, scheduling conflicts, or resource allocation. Planning documents are scattered
+    across codebases and rot after creation. Scheduling developers across projects and
+    balancing workloads is done manually in spreadsheets or by gut feel. Higher-ups lack
+    visibility into why schedules are the way they are.
+
+  value_proposition: |
+    Sherpy PM transforms Sherpy from a planning-only tool into a full lifecycle project
+    management system. It provides a single source of truth for all active projects, delivers
+    AI-optimized scheduling across a portfolio of projects, and lives where developers work —
+    as a local-first tool with a rich web UI. Tech leads can create plans with AI, see all
+    active initiatives and timelines, track resource allocation by developer or project,
+    handle delays and re-prioritizations easily, and run planning scenarios for new projects
+    given current resource constraints.
+
+  scope:
+    in_scope:
+      - Global Node.js CLI that manages a local API daemon lifecycle (start/stop)
+      - Local SQLite database (via @effect/sqlite-libsql) for all project data
+      - Local API daemon (Effect-TS) serving a REST/WebSocket API on localhost
+      - React web UI using Tailwind, shadcn, and assistant-ui for rich interaction
+      - Project registration from .sherpy/{project-id}-{slug} folders in repos
+      - Relative path references to planning documents stored in the database
+      - Milestone and task status tracking (in-progress, blocked, complete)
+      - People profiles with skills and capacity
+      - Task-to-person assignments with time allocation
+      - Resource conflict detection (over-allocation, competing resource windows)
+      - AI-assisted schedule generation via AWS Bedrock (Vercel AI SDK)
+      - Planning scenario comparison for new projects with different developer configurations
+      - What-if rescheduling when projects slip or developers become unavailable
+      - Stakeholder-ready schedule explanations with AI-generated reasoning
+      - Real-time dashboard updates via WebSocket
+      - Offline-first architecture (sync-ready for future)
+
+    out_of_scope:
+      - Web UI hosted in the cloud (v1 is local-only)
+      - Cloud database or cloud sync between machines
+      - Multi-user real-time collaboration
+      - Advanced reporting (Gantt charts, burndown charts, time tracking)
+      - Integration with external tools (Jira, GitHub, Slack)
+      - Authentication system (localhost-only binding, single-user)
+      - Mobile applications
+      - Custom field builder or advanced permissions
+
+personas:
+  - name: Morgan (Tech Lead / Engineering Manager)
+    description: |
+      A tech lead or engineering manager who oversees multiple projects across several
+      repositories. Responsible for planning work, allocating developers, managing
+      stakeholder expectations, and ensuring projects ship on time. Spends significant
+      time in terminals and code editors. Needs to justify schedule decisions to
+      higher-ups with data-backed reasoning.
+    goals:
+      - Create new project plans using AI-assisted Sherpy tools
+      - See all active initiatives and their status and timelines in one place
+      - View resource allocations by developer or project and estimate completion dates
+      - Handle delays and re-prioritizations easily through the UI
+      - Run planning scenarios to see how new projects fit given current resource constraints
+      - Provide higher-ups with clear, data-backed explanations for current schedules
+    pain_points:
+      - Sherpy plans are static files that rot after creation with no progress tracking
+      - Each project is siloed in its own repo with no cross-project visibility
+      - Scheduling developers across projects is manual and error-prone
+      - No systematic way to detect resource conflicts or over-allocation
+      - Higher-ups lack visibility into schedule reasoning, leading to trust issues
+      - Responding to delays or re-prioritizations requires rebuilding schedules from scratch
+
+  - name: Riley (Senior Developer)
+    description: |
+      A senior developer who works on multiple projects simultaneously. Needs to understand
+      priorities, know what to work on next, and communicate progress without excessive
+      status meetings. Wants clarity on how their time is allocated across projects.
+    goals:
+      - See personal task queue across all projects
+      - Understand priorities and why certain tasks are scheduled first
+      - Update task status without leaving the workflow
+      - Flag when blocked or when estimates need adjustment
+    pain_points:
+      - Unclear what to work on next when juggling multiple projects
+      - No visibility into how personal capacity is allocated
+      - Status updates require manual reporting that nobody reads
+
+use_cases:
+  - name: Project Registration and Tracking
+    actor: Morgan (Tech Lead / Engineering Manager)
+    description: |
+      Morgan runs the Sherpy flow to plan a new project. The CLI saves all planning
+      documents into .sherpy/{project-id}-{slug} in the repo. Morgan then runs
+      `sherpy start` which launches the API daemon and opens the web UI. The new
+      project appears in the dashboard with its milestones, tasks, and timeline
+      parsed from the planning documents. Morgan can now track progress against
+      the original plan.
+    outcome: |
+      All planning documents are consolidated in .sherpy/ and the project is
+      immediately visible in the dashboard with structured milestones and tasks
+      ready for assignment and tracking.
+
+  - name: AI-Assisted Schedule Generation
+    actor: Morgan (Tech Lead / Engineering Manager)
+    description: |
+      Morgan opens the web UI and navigates to the scheduling view. They select
+      all active projects and available developers. The AI analyzes project
+      priorities, developer skills, availability windows, and dependency chains
+      to produce an optimal schedule. Morgan reviews the recommendations, makes
+      adjustments, and commits the schedule. Assignments are reflected across
+      all project dashboards.
+    outcome: |
+      An optimized schedule is generated in seconds instead of hours of manual
+      planning. Resource conflicts are avoided and throughput is maximized.
+
+  - name: Planning Scenario for New Project
+    actor: Morgan (Tech Lead / Engineering Manager)
+    description: |
+      A new project request comes in. Morgan creates a planning scenario in the
+      web UI, inputting the new project's scope and trying different developer
+      configurations. The AI shows how the new project would impact existing
+      schedules — which projects slip, by how much, and what the trade-offs are.
+      Morgan uses this to decide whether to take the project and how to staff it.
+    outcome: |
+      Data-backed decision on whether and how to take on new work, with clear
+      visibility into impact on existing commitments.
+
+  - name: What-If Rescheduling After Delay
+    actor: Morgan (Tech Lead / Engineering Manager)
+    description: |
+      A key developer goes on unexpected leave and a project slips. Morgan opens
+      the web UI, marks the developer as unavailable, and triggers a reschedule.
+      The AI recalculates the optimal schedule across all affected projects and
+      shows the impact — revised completion dates, reassignment recommendations,
+      and risks. Morgan accepts the new schedule and stakeholders are automatically
+      updated with the reasoning.
+    outcome: |
+      Schedule adjustments are made in minutes instead of days. Stakeholders
+      receive clear, AI-generated explanations for the changes.
+
+  - name: Stakeholder Schedule Reporting
+    actor: Morgan (Tech Lead / Engineering Manager)
+    description: |
+      Morgan's director asks for a status update on all projects. Morgan opens
+      the web UI dashboard showing all active projects, their health status,
+      resource allocation, and timeline projections. The AI generates a
+      natural-language summary explaining current priorities, why certain
+      projects are scheduled the way they are, and any risks. Morgan shares
+      this with the director.
+    outcome: |
+      Higher-ups get clear, data-backed schedule explanations. Trust increases
+      because decisions are transparent and traceable.
+
+functional_requirements:
+  - id: FR-1
+    category: CLI & Daemon Management
+    description: |
+      Global Node.js CLI with commands: `sherpy start` (launch API daemon, serve
+      React app, open browser), `sherpy stop` (graceful shutdown). CLI manages
+      the daemon process lifecycle and ensures SQLite is initialized with the
+      correct schema on first run.
+    priority: high
+    rationale: |
+      The CLI is the entry point for the entire system. It must reliably start
+      and stop the local API and web UI.
+
+  - id: FR-2
+    category: Data Model
+    description: |
+      SQLite database (via @effect/sqlite-libsql) with tables for: projects,
+      milestones, tasks, people, skills, assignments, and scheduling snapshots.
+      Projects contain milestones, milestones contain tasks. People have skills
+      and capacity. Assignments link people to tasks with time allocation and dates.
+    priority: high
+    rationale: |
+      The data model is the foundation. A clean relational schema enables all
+      downstream features — tracking, scheduling, and reporting.
+
+  - id: FR-3
+    category: Project Registration
+    description: |
+      System discovers and registers projects from .sherpy/{project-id}-{slug}
+      folders. Parses planning documents (milestones.yaml, tasks files,
+      timeline.yaml, requirements) and populates the database. Stores relative
+      paths to all planning documents for reference.
+    priority: high
+    rationale: |
+      Project registration is the bridge between planning and tracking. Without
+      it, the system has no data to manage or schedule.
+
+  - id: FR-4
+    category: API Layer
+    description: |
+      Effect-TS based REST API bound to 127.0.0.1 providing CRUD for all entities,
+      WebSocket endpoint for real-time dashboard updates, and endpoints for
+      triggering AI scheduling operations. API is the sole interface to SQLite.
+    priority: high
+    rationale: |
+      The API layer enforces data consistency and provides the WebSocket channel
+      for real-time UI updates. Effect-TS ensures type-safe, composable operations.
+
+  - id: FR-5
+    category: Web UI - Dashboard
+    description: |
+      React web UI with Tailwind and shadcn components showing: all active projects
+      with status indicators (on track, at risk, delayed), timeline visualization,
+      and project health summaries. Real-time updates via WebSocket.
+    priority: high
+    rationale: |
+      The dashboard provides the cross-project visibility that doesn't exist today.
+      It's the primary landing page for the tool.
+
+  - id: FR-6
+    category: Web UI - Resource Allocation
+    description: |
+      Views showing resource allocation by developer and by project. Displays
+      capacity utilization, over-allocation warnings, and estimated project
+      completion dates based on current assignments.
+    priority: high
+    rationale: |
+      Resource visibility is critical for the tech lead persona to understand
+      workload distribution and identify bottlenecks.
+
+  - id: FR-7
+    category: Web UI - Task & Milestone Tracking
+    description: |
+      Views for updating milestone and task status (pending, in-progress, blocked,
+      complete), updating actual vs estimated effort, and flagging blockers.
+      Changes propagate in real-time via WebSocket.
+    priority: high
+    rationale: |
+      Without status updates, plans rot. This keeps the system's data alive and
+      accurate for scheduling and reporting.
+
+  - id: FR-8
+    category: AI Scheduling
+    description: |
+      AI-assisted schedule generation via AWS Bedrock (Vercel AI SDK). Accepts
+      inputs: available people, skills, availability windows, project priorities,
+      task dependencies. Produces optimal task assignments and schedule that
+      maximizes throughput while respecting constraints. Results surfaced through
+      assistant-ui chat interface.
+    priority: high
+    rationale: |
+      AI scheduling is the key differentiator. It transforms manual, error-prone
+      scheduling into an optimized, data-driven process.
+
+  - id: FR-9
+    category: AI Scheduling
+    description: |
+      Planning scenario comparison for new projects. User inputs new project scope
+      and tries different developer configurations. AI shows impact on existing
+      schedules — which projects slip, by how much, and trade-offs. Allows
+      data-backed go/no-go decisions.
+    priority: high
+    rationale: |
+      Scenario planning is how tech leads decide whether to take on new work.
+      Without it, they're guessing at impact.
+
+  - id: FR-10
+    category: AI Scheduling
+    description: |
+      What-if rescheduling when projects slip or developers become unavailable.
+      AI recalculates optimal schedule across all affected projects and shows
+      revised dates, reassignment recommendations, and risks.
+    priority: medium
+    rationale: |
+      Delays and disruptions are inevitable. Fast rescheduling minimizes their
+      impact and keeps stakeholders informed.
+
+  - id: FR-11
+    category: AI Scheduling
+    description: |
+      AI-generated natural-language explanations for schedule decisions. Explains
+      why tasks are assigned to specific people, why certain projects are
+      prioritized, and what the key risks are. Designed for sharing with
+      higher-ups.
+    priority: medium
+    rationale: |
+      Stakeholder trust requires transparency. AI-generated explanations give
+      higher-ups confidence that schedule decisions are reasoned, not arbitrary.
+
+  - id: FR-12
+    category: Resource Management
+    description: |
+      Resource conflict detection. System warns when a developer is over-allocated
+      (exceeds capacity) or when two projects compete for the same resource
+      window. Warnings surfaced in dashboard and scheduling views.
+    priority: high
+    rationale: |
+      Prevents the common failure mode of silently over-committing developers,
+      which leads to burnout and missed deadlines.
+
+  - id: FR-13
+    category: Resource Management
+    description: |
+      People profiles with skills, capacity (hours/week), availability windows
+      (PTO, other commitments), and current assignment history. Used as input
+      for AI scheduling and conflict detection.
+    priority: high
+    rationale: |
+      Accurate people data is essential for AI scheduling to produce meaningful
+      recommendations. Skills-based matching improves assignment quality.
+
+  - id: FR-14
+    category: Planning Integration
+    description: |
+      The Sherpy planning flow is invocable through the PM system. The API
+      declares the output location (.sherpy/{project-id}-{slug}) when calling
+      Claude via Bedrock. No changes needed to existing Sherpy skills.
+    priority: medium
+    rationale: |
+      Seamless integration between planning and tracking ensures plans are
+      immediately trackable. Controlling the output location via API keeps
+      skills unchanged.
+
+non_functional_requirements:
+  performance:
+    - All local SQLite queries must return in <100ms for typical dataset (10-50 projects)
+    - AI scheduling calls may take 5-15 seconds and must show progress indicator
+    - WebSocket updates must propagate to UI within 200ms of data change
+    - Web UI initial load must complete within 2 seconds
+    - API server startup must complete within 3 seconds
+
+  security:
+    - API binds to 127.0.0.1 only (no network exposure)
+    - No authentication required for v1 (single-user local)
+    - SQLite file uses standard filesystem permissions
+    - AWS credentials managed through standard AWS credential chain
+
+  usability:
+    - First-time setup (install + start) to seeing projects in UI within 5 minutes
+    - AI scheduling interactions use assistant-ui for natural conversation flow
+    - Dashboard provides at-a-glance project health without drilling in
+    - All schedule changes are reversible (no destructive operations without confirmation)
+
+  reliability:
+    - SQLite provides ACID compliance for all data operations
+    - Graceful daemon shutdown on `sherpy stop` or SIGTERM (no data corruption)
+    - If AI scheduling fails, system degrades gracefully (manual scheduling still works)
+    - Database schema migrations must be backward-compatible
+
+  maintainability:
+    - Backend built entirely with Effect-TS for type-safe, composable service architecture
+    - Frontend uses latest React with Tailwind, shadcn, and assistant-ui
+    - Clear separation between CLI, API, and UI layers
+    - All AI interactions go through a single service layer (easy to swap providers)
+
+  observability:
+    - Structured logging for all API operations and AI calls
+    - Health check endpoint for API daemon (/health)
+    - AI call duration and token usage tracked for cost monitoring
+
+success_criteria:
+  - criterion: End-to-end planning workflow
+    metric: Ability to create a new project plan using Sherpy AI tools
+    target: New project plans created and registered in the system with zero manual data entry
+
+  - criterion: Cross-project visibility
+    metric: Ability to see all active initiatives with status and timelines
+    target: All registered projects visible on a single dashboard with real-time status
+
+  - criterion: Resource allocation visibility
+    metric: Ability to see allocations by developer or project and estimate completion
+    target: Resource utilization and estimated completion dates available for every project and developer
+
+  - criterion: Schedule adaptability
+    metric: Ability to handle delays and re-prioritizations via the UI
+    target: Full schedule recalcation triggered and completed in under 30 seconds
+
+  - criterion: New project feasibility
+    metric: Ability to see how new work fits given current resource constraints
+    target: Planning scenarios produce impact analysis comparing multiple staffing options
+
+constraints:
+  technical:
+    - Must be a Node.js application (CLI + API daemon)
+    - Backend fully built using Effect-TS with @effect/sqlite-libsql for SQLite
+    - Frontend uses latest React with Tailwind, shadcn, and assistant-ui
+    - AI integration exclusively through AWS Bedrock using Vercel AI SDK
+    - Reference Effect patterns from ~/Sites/ai-use-repos/effect and ~/Sites/ai-use-repos/EffectPatterns
+    - No external databases or cloud services beyond AWS Bedrock
+    - API binds to 127.0.0.1 only
+
+  business:
+    - Ship ASAP — highest priority is getting something usable quickly
+    - Single-user, local-first for v1
+    - Existing Sherpy skills remain unchanged — integration controlled via API
+
+  operational:
+    - SQLite database stored in user's local filesystem
+    - Daemon process managed by CLI (start/stop)
+    - No containerization or deployment infrastructure required
+
+dependencies:
+  internal:
+    - Existing Sherpy planning flow skills (milestones.yaml, task files, timeline.yaml format)
+    - Effect-TS patterns from ~/Sites/ai-use-repos/effect and ~/Sites/ai-use-repos/EffectPatterns
+
+  external:
+    - AWS Bedrock API for AI scheduling and scenario analysis
+    - Vercel AI SDK for Bedrock integration
+    - "'@effect/sqlite-libsql' for SQLite access"
+    - assistant-ui library for React AI chat interface
+    - shadcn/ui component library
+
+timeline:
+  phase: MVP
+  duration: ASAP — vertical slice first, then expand
+  milestones:
+    - Vertical slice: register a project, see it in UI, assign a person, view dashboard
+    - Full data model and API layer complete
+    - Web UI with dashboard and resource allocation views
+    - AI-assisted schedule generation integrated
+    - Planning scenario comparison for new projects
+    - What-if rescheduling and stakeholder reporting
+
+assumptions:
+  - Users already use or will use Sherpy for project planning; the tool manages planned work
+  - AWS Bedrock remains available and cost-effective for individual use
+  - Local-first, single-user is acceptable for v1 — users are okay with data on their machine
+  - The tech lead persona is the primary user; other personas are secondary
+  - SQLite is sufficient for the data volumes of a single user managing 10-50 projects
+  - Effect-TS team is proficient enough to build efficiently with it
+  - assistant-ui provides sufficient AI chat UX primitives for scheduling interactions
+
+risks:
+  - risk: |
+      AI scheduling accuracy is insufficient, producing poor or unrealistic
+      schedules that erode user trust. Complex multi-project, multi-constraint
+      optimization is a hard problem and early versions may struggle with
+      nuanced trade-offs.
+    probability: high
+    impact: high
+    mitigation: |
+      Start with constrained, well-defined scheduling problems (e.g., single
+      project, 3-5 developers). Build prompt templates iteratively with
+      real project data. Allow manual overrides of all AI suggestions. Add
+      confidence scoring to AI outputs. Collect feedback on schedule quality
+      to improve prompts over time.
+
+  - risk: |
+      Scope creep delays shipping. The vision includes CLI, API, React UI,
+      real-time updates, AI scheduling, scenario planning — a lot for an
+      initial release.
+    probability: medium
+    impact: medium
+    mitigation: |
+      Strictly enforce vertical-slice delivery. Ship the first slice (register
+      project, see it, assign someone) before building anything else. Each
+      subsequent feature is a separate, shippable increment.
+
+  - risk: |
+      Effect-TS with libsql is less mature than standard SQLite drivers,
+      potentially causing unexpected issues with migrations, transactions,
+      or performance.
+    probability: low
+    impact: medium
+    mitigation: |
+      Validate Effect-TS + libsql with a small prototype early in the vertical
+      slice. Reference ~/Sites/ai-use-repos patterns. Keep database operations
+      simple in v1 (no complex queries that push driver limits).
+
+future_enhancements:
+  - Cloud sync for multi-machine access to project data
+  - Multi-user collaboration with shared project views
+  - Integration with GitHub for automatic progress tracking from PRs
+  - Integration with Slack for status notifications
+  - Gantt chart and burndown chart visualizations
+  - Historical velocity tracking and forecasting
+  - Custom reporting and export (PDF, markdown)
+  - Budget and cost tracking per project
+  - Mobile-responsive web UI
+  - Plugin system for custom scheduling algorithms
+
+notes: |
+  **Architecture Overview:**
+  - CLI layer: Global Node.js command that manages daemon lifecycle
+  - API layer: Effect-TS HTTP server on 127.0.0.1 with REST + WebSocket
+  - Data layer: SQLite via @effect/sqlite-libsql, accessed only through API
+  - AI layer: AWS Bedrock via Vercel AI SDK, all AI interactions through single service
+  - UI layer: React + Tailwind + shadcn + assistant-ui served by the API daemon
+
+  **Key Design Decisions:**
+  - Planning documents live in .sherpy/{project-id}-{slug} within each repo
+  - The API declares output location when invoking Sherpy planning flow
+  - No changes to existing Sherpy skills required
+  - All AI interactions use conversational UX via assistant-ui
+  - Real-time updates via WebSocket keep UI in sync
+
+  **Vertical Slice Definition:**
+  The first shippable increment is: register a project from .sherpy/ folder,
+  parse its planning docs into the database, display it in the web UI dashboard,
+  create a person profile, assign them to a task, and see the assignment reflected.
+  Everything else builds on this foundation.

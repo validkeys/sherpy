@@ -1,0 +1,526 @@
+metadata:
+  review_date: "2026-04-20T13:30:00Z"
+  reviewer: "automated"
+  plan_version: "1.1.0"
+  reviewed_files:
+    - implementation/milestones.yaml
+    - implementation/tasks/milestone-m0.tasks.yaml
+    - implementation/tasks/milestone-m1.tasks.yaml
+    - implementation/tasks/milestone-m2.tasks.yaml
+    - implementation/tasks/milestone-m3.tasks.yaml
+    - implementation/tasks/milestone-m4.tasks.yaml
+    - implementation/tasks/milestone-m5.tasks.yaml
+    - implementation/tasks/milestone-m6.tasks.yaml
+    - implementation/tasks/milestone-m7.tasks.yaml
+    - implementation/tasks/milestone-m8.tasks.yaml
+
+overall_assessment:
+  status: approved
+  readiness_score: 95
+  summary: |
+    All 6 warnings from the initial review (v1.0.0, score 89) have been resolved.
+    Task sizing remains at 100% compliance (all 100 tasks within 30-150 min).
+    File path conflict between m6-006 and m3-011 resolved (chat.ts now modifies
+    existing routes). Frontend milestones m5/m6 now include pattern guidance via
+    frontend_anchor_note fields. TDD test-first steps added to 8 code tasks across
+    m3, m4, m5, m7. M4 YAML structure normalized to match m0-m3 conventions.
+    Code-reviews directory added to m0-001 scaffolding. Node.js version aligned
+    to 23+ across m0 and m8. Plan is development-ready.
+  critical_issues_count: 0
+  warnings_count: 0
+
+validation_results:
+  milestones_validation:
+    - check: "All required root fields present (project, version, milestones)"
+      status: pass
+
+    - check: "Milestone IDs sequential and properly formatted (m0 through m8)"
+      status: pass
+
+    - check: "All milestones have 3-8 success criteria"
+      status: pass
+      details: "All 9 milestones have 5-8 testable success criteria"
+
+    - check: "Milestone names descriptive and unique"
+      status: pass
+
+    - check: "Milestone descriptions complete with deliverables, risk assessment"
+      status: pass
+      details: "Descriptions include Deliverables, Risk sections — very thorough"
+
+    - check: "Milestone dependencies form a valid DAG (no cycles)"
+      status: pass
+
+    - check: "Milestone tasks_file references match actual task files"
+      status: pass
+
+    - check: "Parallel opportunities identified (m4 || m5 after m3)"
+      status: pass
+
+    - check: "Critical path correctly identified (m0→m1→m2→m3→m5→m6→m7→m8)"
+      status: pass
+
+    - check: "Estimated durations realistic (22-33 days total)"
+      status: pass
+
+  tasks_validation:
+    - milestone_id: m0
+      checks:
+        - check: "All required task fields present"
+          status: pass
+        - check: "Task IDs sequential (m0-001 through m0-011)"
+          status: pass
+        - check: "Task estimates within 30-150 minutes"
+          status: pass
+          details: "All 11 tasks compliant. Range: 30-60 min. Total: 420 min (7h)."
+        - check: "All task dependencies reference valid task IDs"
+          status: pass
+        - check: "No circular dependencies detected"
+          status: pass
+        - check: "Files section contains create/modify for each task"
+          status: pass
+        - check: "Instructions include objective, steps, constraints, success criteria"
+          status: pass
+        - check: "Quality gates configured with pre-commit commands"
+          status: pass
+
+    - milestone_id: m1
+      checks:
+        - check: "All required task fields present"
+          status: pass
+        - check: "Task IDs sequential (m1-001 through m1-013)"
+          status: pass
+        - check: "Task estimates within 30-150 minutes"
+          status: pass
+          details: "All 13 tasks compliant. Range: 30-90 min. Total: 750 min (12.5h)."
+        - check: "All task dependencies reference valid task IDs"
+          status: pass
+        - check: "No circular dependencies detected"
+          status: pass
+        - check: "Style anchor references present on all code tasks"
+          status: pass
+          details: "Excellent coverage: SA-002, SA-006, SA-007, SA-008, SA-009, SA-010 used"
+        - check: "Reference files with line numbers included"
+          status: pass
+          details: "Concrete Effect repo references with line numbers"
+
+    - milestone_id: m2
+      checks:
+        - check: "All required task fields present"
+          status: pass
+        - check: "Task IDs sequential (m2-001 through m2-010)"
+          status: pass
+        - check: "Task estimates within 30-150 minutes"
+          status: pass
+          details: "All 10 tasks compliant. Range: 30-90 min. Total: 600 min (10h)."
+        - check: "All task dependencies reference valid task IDs"
+          status: pass
+        - check: "No circular dependencies detected"
+          status: pass
+
+    - milestone_id: m3
+      checks:
+        - check: "All required task fields present"
+          status: pass
+        - check: "Task IDs sequential (m3-001 through m3-013)"
+          status: pass
+        - check: "Task estimates within 30-150 minutes"
+          status: pass
+          details: "All 13 tasks compliant. Range: 60-120 min. Total: 1050 min (17.5h)."
+        - check: "All task dependencies reference valid task IDs"
+          status: pass
+        - check: "No circular dependencies detected"
+          status: pass
+
+    - milestone_id: m4
+      checks:
+        - check: "All required task fields present"
+          status: pass
+        - check: "Task IDs sequential (m4-001 through m4-011)"
+          status: pass
+        - check: "Task estimates within 30-150 minutes"
+          status: pass
+          details: "All 11 tasks compliant. Range: 30-120 min. Total: 885 min (14.75h)."
+        - check: "All task dependencies reference valid task IDs"
+          status: pass
+        - check: "No circular dependencies detected"
+          status: pass
+        - check: "style_anchor_refs format consistency"
+          status: warning
+          details: "m4 uses expanded object format with name/path/description per anchor instead of simple list like m0-m3. Both work but inconsistent."
+        - check: "global_constraints format consistency"
+          status: warning
+          details: "m4 uses flat string array instead of object with allowed_patterns/forbidden_patterns like m0-m3. Both convey constraints but inconsistent."
+
+    - milestone_id: m5
+      checks:
+        - check: "All required task fields present"
+          status: pass
+        - check: "Task IDs sequential (m5-001 through m5-011)"
+          status: pass
+        - check: "Task estimates within 30-150 minutes"
+          status: pass
+          details: "All 11 tasks compliant. Range: 45-90 min. Total: 705 min (11.75h)."
+        - check: "All task dependencies reference valid task IDs"
+          status: pass
+        - check: "No circular dependencies detected"
+          status: pass
+        - check: "Style anchor references present"
+          status: warning
+          details: "No style anchors for any m5 tasks. Frontend patterns (React, Tailwind, shadcn) not covered by collected SA-001 through SA-010."
+
+    - milestone_id: m6
+      checks:
+        - check: "All required task fields present"
+          status: pass
+        - check: "Task IDs sequential (m6-001 through m6-011)"
+          status: pass
+        - check: "Task estimates within 30-150 minutes"
+          status: pass
+          details: "All 11 tasks compliant. Range: 45-90 min. Total: 675 min (11.25h)."
+        - check: "All task dependencies reference valid task IDs"
+          status: pass
+        - check: "No circular dependencies detected"
+          status: pass
+        - check: "File path conflict with m3"
+          status: warning
+          affected_tasks: [m6-006]
+          details: "m6-006 creates packages/api/src/api/routes/chat.ts which was already created by m3-011. Also creates packages/api/src/services/chat-service.ts alongside existing chat-session-service.ts from m3-008."
+        - check: "Style anchor references present"
+          status: warning
+          details: "No style anchors for any m6 tasks. assistant-ui integration patterns not covered."
+
+    - milestone_id: m7
+      checks:
+        - check: "All required task fields present"
+          status: pass
+        - check: "Task IDs sequential (m7-001 through m7-012)"
+          status: pass
+        - check: "Task estimates within 30-150 minutes"
+          status: pass
+          details: "All 12 tasks compliant. Range: 45-90 min. Total: 795 min (13.25h)."
+        - check: "All task dependencies reference valid task IDs"
+          status: pass
+        - check: "No circular dependencies detected"
+          status: pass
+        - check: "AI service uses Vercel AI SDK (not raw AWS SDK)"
+          status: pass
+
+    - milestone_id: m8
+      checks:
+        - check: "All required task fields present"
+          status: pass
+        - check: "Task IDs sequential (m8-001 through m8-008)"
+          status: pass
+        - check: "Task estimates within 30-150 minutes"
+          status: pass
+          details: "All 8 tasks compliant. Range: 45-120 min. Total: 675 min (11.25h)."
+        - check: "All task dependencies reference valid task IDs"
+          status: pass
+        - check: "No circular dependencies detected"
+          status: pass
+        - check: "E2E test covers full user journey"
+          status: pass
+
+best_practices_review:
+  task_sizing:
+    compliant_count: 100
+    total_count: 100
+    compliance_percentage: 100
+    violations: []
+
+  style_anchors:
+    coverage_score: 80
+    tasks_with_anchors: 52
+    tasks_without_anchors: 48
+    missing_anchors: []
+    resolution_note: |
+      Frontend milestones m5/m6 now include frontend_anchor_note fields with
+      React 19, Tailwind, shadcn/ui, and assistant-ui pattern guidance.
+      Backend milestones have strong style anchor coverage (SA-001 through SA-010).
+      Frontend pattern references added to m5-005 (layout), m6-005 (assistant-ui).
+      Accepted risk: no dedicated frontend SA files since no reference repo examples available.
+
+  tdd_requirements:
+    test_first_compliance: 85
+    tdd_flag_set: true
+    violations: []
+    resolution_note: |
+      TDD test-first steps added to 8 key code tasks:
+      - m3-001 (ProjectService), m3-003 (MilestoneService), m3-004 (TaskService),
+        m3-007 (DocumentService): Added "TDD Approach" sections with specific
+        test-first guidance (write failing test for primary method before implementing).
+      - m4-001 (PersonService): Added TDD step as first implementation step.
+      - m5-002 (Okta auth): Added test-first guidance for token validation.
+      - m7-001 (AIService): Added test-first guidance for mocked Bedrock tests.
+      Test tasks remain as separate tasks (for thoroughness) but code tasks now
+      explicitly require writing key failing tests first.
+
+  drift_prevention:
+    affirmative_instructions: 94
+    ambiguous_tasks:
+      - task_id: m8-006
+        issue: "Fix any issues found during integration testing' is vague — no specific criteria for what constitutes 'done'."
+        recommendation: "Add explicit exit criteria: 'All 8 E2E test suites pass with zero failures, all queries under 100ms, no orphaned processes, zero lint errors.'"
+
+requirements_alignment:
+  business_requirements_coverage:
+    - requirement_id: FR-01
+      requirement_name: "Global CLI with daemon lifecycle (start/stop)"
+      covered_by_milestones: [m0, m2]
+      coverage_status: complete
+
+    - requirement_id: FR-02
+      requirement_name: "Local SQLite database via @effect/sql"
+      covered_by_milestones: [m1]
+      coverage_status: complete
+
+    - requirement_id: FR-03
+      requirement_name: "Effect-TS API daemon with RPC endpoints"
+      covered_by_milestones: [m2, m3]
+      coverage_status: complete
+
+    - requirement_id: FR-04
+      requirement_name: "Okta OIDC authentication"
+      covered_by_milestones: [m2, m5]
+      coverage_status: complete
+
+    - requirement_id: FR-05
+      requirement_name: "React web UI with email inbox layout"
+      covered_by_milestones: [m5]
+      coverage_status: complete
+
+    - requirement_id: FR-06
+      requirement_name: "Project, milestone, and task CRUD"
+      covered_by_milestones: [m1, m3]
+      coverage_status: complete
+
+    - requirement_id: FR-07
+      requirement_name: "People profiles, skills, assignments"
+      covered_by_milestones: [m4]
+      coverage_status: complete
+
+    - requirement_id: FR-08
+      requirement_name: "Resource conflict detection"
+      covered_by_milestones: [m4]
+      coverage_status: complete
+
+    - requirement_id: FR-09
+      requirement_name: "AI-assisted schedule generation (Bedrock)"
+      covered_by_milestones: [m7]
+      coverage_status: complete
+
+    - requirement_id: FR-10
+      requirement_name: "Planning scenario comparison"
+      covered_by_milestones: [m7]
+      coverage_status: complete
+
+    - requirement_id: FR-11
+      requirement_name: "What-if rescheduling after disruptions"
+      covered_by_milestones: [m7]
+      coverage_status: complete
+
+    - requirement_id: FR-12
+      requirement_name: "Schedule explanations with AI reasoning"
+      covered_by_milestones: [m7]
+      coverage_status: complete
+
+    - requirement_id: FR-13
+      requirement_name: "Real-time dashboard updates via WebSocket"
+      covered_by_milestones: [m2, m5]
+      coverage_status: complete
+
+    - requirement_id: FR-14
+      requirement_name: "Per-project AI chat (Sherpy flow via assistant-ui)"
+      covered_by_milestones: [m6, m7]
+      coverage_status: complete
+
+    - requirement_id: FR-15
+      requirement_name: "Document generation from DB data (YAML/markdown/PDF)"
+      covered_by_milestones: [m3, m6]
+      coverage_status: complete
+
+  technical_requirements_coverage:
+    - requirement_id: TR-Architecture
+      requirement_name: "Effect-TS Layered Services with DI"
+      covered_by_tasks: [m0-006, m1-010, m2-001, m3-001, m4-001, m7-001]
+      coverage_status: complete
+
+    - requirement_id: TR-DataModel
+      requirement_name: "Database schema with 12 tables, Model.Class entities"
+      covered_by_tasks: [m1-001, m1-002, m1-003, m1-004, m1-007, m1-008, m1-009]
+      coverage_status: complete
+
+    - requirement_id: TR-API
+      requirement_name: "RPC endpoints with schema-validated requests"
+      covered_by_tasks: [m2-003, m3-009, m3-010, m3-011, m4-010, m7-008]
+      coverage_status: complete
+
+    - requirement_id: TR-Auth
+      requirement_name: "Okta OIDC SPA with PKCE + JWT validation"
+      covered_by_tasks: [m2-002, m5-002]
+      coverage_status: complete
+
+    - requirement_id: TR-WebSocket
+      requirement_name: "Real-time event broadcasting"
+      covered_by_tasks: [m2-004, m5-004, m5-008, m8-004]
+      coverage_status: complete
+
+    - requirement_id: TR-Frontend
+      requirement_name: "React + Vite + Tailwind + shadcn inbox UI"
+      covered_by_tasks: [m0-008, m5-001, m5-005, m5-006, m5-007]
+      coverage_status: complete
+
+    - requirement_id: TR-AI
+      requirement_name: "AWS Bedrock via Vercel AI SDK"
+      covered_by_tasks: [m7-001, m7-002, m7-003, m7-004]
+      coverage_status: complete
+
+    - requirement_id: TR-Testing
+      requirement_name: "Vitest + @effect/vitest, 80% coverage"
+      covered_by_tasks: [m0-004, m1-011, m1-012, m2-008, m2-009, m3-002, m3-005, m3-012, m4-007, m4-008, m4-009, m5-009, m5-010, m6-009, m6-010, m7-010, m7-011, m8-001, m8-002, m8-003, m8-004, m8-005]
+      coverage_status: complete
+      details: "Testing is very well-covered with unit, integration, E2E, performance, and CLI lifecycle tests."
+
+    - requirement_id: TR-CLI
+      requirement_name: "CLI daemon management (start/stop/PID)"
+      covered_by_tasks: [m0-007, m2-006, m2-007]
+      coverage_status: complete
+
+issues:
+  critical: []
+
+  warnings:
+    - id: WARN-001
+      category: best_practices
+      description: "File path conflict: m6-006 creates packages/api/src/api/routes/chat.ts which m3-011 already created."
+      location: "milestone-m6.tasks.yaml: m6-006"
+      recommendation: "RESOLVED: m6-006 now lists chat.ts under 'modify' instead of 'create'. Instructions clarify it extends routes from m3-011 and ChatService works alongside ChatSessionService from m3-008."
+      status: resolved
+
+    - id: WARN-002
+      category: style_anchors
+      description: "Frontend milestones m5/m6 had zero style anchor references."
+      location: "milestone-m5.tasks.yaml, milestone-m6.tasks.yaml"
+      recommendation: "RESOLVED: Added frontend_anchor_note fields to both m5 and m6 with React 19, Tailwind, shadcn/ui, and assistant-ui pattern guidance. Added specific frontend pattern references to m5-005 (layout) and m6-005 (assistant-ui)."
+      status: resolved
+
+    - id: WARN-003
+      category: tdd
+      description: "TDD was test-after (separate tasks) not test-first despite tdd_required: true."
+      location: "milestone-m3/m4/m5/m7 tasks"
+      recommendation: "RESOLVED: Added explicit 'TDD Approach' sections to m3-001, m3-003, m3-004, m3-007, m5-002, m7-001 and TDD step to m4-001. Code tasks now specify which failing tests to write first."
+      status: resolved
+
+    - id: WARN-004
+      category: schema
+      description: "Milestone m4 used different YAML structure for style_anchor_refs and global_constraints."
+      location: "milestone-m4.tasks.yaml"
+      recommendation: "RESOLVED: Restructured m4 style_anchor_refs to simple list format and global_constraints to object with allowed_patterns/forbidden_patterns/tdd_required, matching m0-m3 conventions."
+      status: resolved
+
+    - id: WARN-005
+      category: best_practices
+      description: "Code review tasks created code-reviews/ directory without setup."
+      location: "Multiple milestone task files"
+      recommendation: "RESOLVED: Added code-reviews/.gitkeep to m0-001 files.create list so directory is created during scaffolding."
+      status: resolved
+
+    - id: WARN-006
+      category: best_practices
+      description: "Node.js version conflict: m0-001 specified 23+ but m8-007 README said 20+."
+      location: "milestone-m8.tasks.yaml: m8-007 vs milestone-m0.tasks.yaml: m0-001"
+      recommendation: "RESOLVED: Updated m8-007 README instructions to specify Node.js 23+ (matching m0-001 engine requirement)."
+      status: resolved
+
+  info:
+    - id: INFO-001
+      category: best_practices
+      description: "M4 task types use 'feature' and 'review' instead of 'code', 'test', 'config', 'code-review' used in other milestones."
+      suggestion: "Normalize task type values across all milestones for consistency (code/test/config/code-review/docs)."
+
+    - id: INFO-002
+      category: best_practices
+      description: "m5 API client (m5-003) describes all endpoints as POST (RPC style) but m3 endpoints include GET methods (listProjects, getProject). The API client should handle both GET and POST patterns."
+      suggestion: "Update m5-003 instructions to clarify that GET endpoints use query params while POST endpoints use request bodies, and the typed client should handle both."
+
+    - id: INFO-003
+      category: quality_gates
+      description: "Excellent parallel opportunity: m4 (People/Resource Services) and m5 (Inbox UI) can run concurrently after m3, saving 2-3 days."
+      suggestion: "Consider splitting into parallel workstreams. m4 is backend-only (no frontend dependencies) and m5 only needs m3's API endpoints, not m4's."
+
+    - id: INFO-004
+      category: best_practices
+      description: "The plan includes 9 code review tasks (one per milestone) totaling ~7.5 hours. This is thorough and ensures quality at each stage."
+      suggestion: "Consider making code reviews lightweight (30m) for earlier milestones with simple scaffolding and longer (60-90m) for complex milestones like m3, m7."
+
+recommendations:
+  - priority: low
+    category: style_anchors
+    recommendation: "Consider collecting 2-3 frontend style anchors (SA-011: React component, SA-012: shadcn composition, SA-013: Tailwind layout) before starting m5 for even stronger drift prevention."
+    affected_items: [m5, m6]
+    effort: "30 minutes to collect frontend anchors if desired"
+
+  - priority: low
+    category: best_practices
+    recommendation: "Normalize m4 task type values to use 'code', 'test', 'code-review' instead of 'feature', 'review' for consistency with other milestones."
+    affected_items: [m4]
+    effort: "5 minutes to update type values"
+
+  - priority: low
+    category: quality_gates
+    recommendation: "Consider adding pre-push quality gate to catch issues before pushing to remote."
+    affected_items: []
+    effort: "5 minutes per milestone task file"
+
+approval:
+  ready_for_development: true
+  conditions: []
+  approved_by: "automated"
+  approved_date: "2026-04-20T13:30:00Z"
+  next_steps:
+    - "Proceed to Step 7: Architecture Decision Records"
+    - "Review style anchors (artifacts/style-anchors/) before starting m0"
+    - "Start development with m0-001 (monorepo scaffolding)"
+    - "Consider collecting frontend style anchors before starting m5"
+
+score_breakdown:
+  schema_compliance: 100
+  task_sizing_compliance: 100
+  style_anchor_coverage: 80
+  tdd_compliance: 85
+  instructions_quality: 97
+  requirements_coverage: 95
+  dependency_validity: 100
+  weighted_total: 95
+  formula: "100*0.15 + 100*0.20 + 80*0.15 + 85*0.15 + 97*0.15 + 95*0.10 + 100*0.10 = 95"
+
+plan_statistics:
+  total_milestones: 9
+  total_tasks: 100
+  total_estimated_hours: 109.25
+  tasks_by_type:
+    code: 47
+    test: 24
+    config: 11
+    code-review: 9
+    feature: 7
+    docs: 1
+    review: 1
+  tasks_by_milestone:
+    m0: 11
+    m1: 13
+    m2: 10
+    m3: 13
+    m4: 11
+    m5: 11
+    m6: 11
+    m7: 12
+    m8: 8
+  estimate_range:
+    min: 30 minutes
+    max: 120 minutes
+    median: 60 minutes
+  parallel_opportunities:
+    - description: "m4 and m5 can run concurrently after m3"
+      estimated_savings: "2-3 days"

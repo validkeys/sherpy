@@ -1,0 +1,702 @@
+milestone: m1
+name: "Shared Types & Database Schema"
+generated: "2026-04-20T12:00:00Z"
+
+style_anchor_refs:
+  - SA-001
+  - SA-002
+  - SA-006
+  - SA-007
+  - SA-008
+  - SA-009
+  - SA-010
+
+global_constraints:
+  allowed_patterns:
+    - "Use Schema.Struct and Schema.Literal for domain type definitions (SA-006)"
+    - "Use Schema.Class for API request/response types and tagged errors (SA-007)"
+    - "Use Model.Class for database entity definitions with insert/update variants (SA-002)"
+    - "Use Schema.TaggedError for all error types with _tag discriminant"
+    - "Use Effect.gen for composing async operations in services"
+    - "Use SqlMigrator for migration management (SA-010)"
+  forbidden_patterns:
+    - "Plain TypeScript interfaces for types needing runtime validation"
+    - "Type assertions (as) on external data — use Schema.decodeUnknown"
+    - "Throwing exceptions — use Effect.fail with TaggedErrors"
+    - "Database-specific SQL — write queries compatible with both SQLite and PostgreSQL"
+    - "Enum types — use Schema.Literal unions instead"
+  tdd_required: true
+  max_task_duration_minutes: 120
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete
+      - pnpm run build passes for shared and api packages
+      - SQLite test database accessible
+      - Style anchors SA-002, SA-006, SA-007 reviewed
+  - stage: pre-commit
+    commands:
+      - pnpm run lint
+      - pnpm run typecheck
+      - pnpm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint errors
+      - No type errors
+      - Schema types provide full type inference
+  - stage: milestone-completion
+    criteria:
+      - All 12 database tables created by migrations
+      - All Model.Class entities support CRUD variant schemas
+      - All API schemas validate correctly
+      - Migration runner detects and runs pending migrations
+      - Schema test coverage exceeds 80%
+
+tasks:
+  - id: m1-001
+    name: "Define project and milestone domain schemas"
+    description: |
+      Create Effect Schema definitions for Project and Milestone domain types
+      using Model.Class with insert, update, and select variants. Include
+      pipeline status enum, priority levels, and proper field constraints.
+    estimate_minutes: 60
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/shared/src/schemas/project.ts
+        - packages/shared/src/schemas/milestone.ts
+    style_anchor_refs:
+      - SA-002
+      - SA-006
+    instructions: |
+      **Objective:**
+      Define Project and Milestone domain models using Model.Class.
+
+      **Style Anchors:**
+      Follow these established patterns:
+      - See `artifacts/style-anchors/SA-002.md` — Model.Class with makeRepository
+      - See `artifacts/style-anchors/SA-006.md` — Effect Schema domain types
+
+      Reference files:
+      - `~/Sites/ai-use-repos/effect/packages/sql/src/Model.ts:82-157` — Model.Class definition pattern
+      - `~/Sites/ai-use-repos/EffectPatterns/packages/pipeline-state/src/schemas.ts:1-234` — domain schema patterns
+
+      **Implementation Steps:**
+      1. Create `packages/shared/src/schemas/project.ts`:
+         - PipelineStatus: Schema.Literal union of all pipeline stages (intake through archived)
+         - Priority: Schema.Literal("low", "medium", "high", "critical")
+         - Project model using Model.Class with fields:
+           id, slug, name, description, pipelineStatus, assignedPeople (JSON array),
+           tags (JSON array), priority, createdAt (DateTimeInsert), updatedAt (DateTimeUpdate)
+         - Use Model.Generated for id field
+         - Use Model.JsonFromString for assignedPeople and tags arrays
+      2. Create `packages/shared/src/schemas/milestone.ts`:
+         - MilestoneStatus: Schema.Literal("pending", "in-progress", "blocked", "complete")
+         - Milestone model using Model.Class with fields:
+           id, projectId, name, description, status, orderIndex,
+           estimatedDays, acceptanceCriteria, createdAt, updatedAt
+      3. Export all types and schemas from each file
+      4. Update schemas/index.ts barrel export
+
+      **Constraints:**
+      - ONLY use: Model.Class, Schema.Literal, Schema.Struct
+      - Follow **SA-002** for Model.Class structure with variant schemas
+      - Follow **SA-006** for Schema.Literal enum patterns
+      - NEVER use: TypeScript enum keyword or plain interfaces
+      - Include proper JSDoc for all exported types
+
+      **Success Criteria:**
+      - Project and Milestone models compile with full type inference
+      - insert.make(), update.make() constructors available
+      - Schema.decodeUnknown validates valid and rejects invalid data
+
+  - id: m1-002
+    name: "Define task and assignment domain schemas"
+    description: |
+      Create Model.Class definitions for Task and Assignment entities with
+      status enums, effort tracking, and allocation percentages.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m1-001]
+    files:
+      create:
+        - packages/shared/src/schemas/task.ts
+        - packages/shared/src/schemas/assignment.ts
+    style_anchor_refs:
+      - SA-002
+      - SA-006
+    instructions: |
+      **Objective:**
+      Define Task and Assignment domain models using Model.Class.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-002.md` — Model.Class pattern
+      - See `artifacts/style-anchors/SA-006.md` — Schema.Literal patterns
+
+      **Implementation Steps:**
+      1. Create `packages/shared/src/schemas/task.ts`:
+         - TaskStatus: Schema.Literal("pending", "in-progress", "blocked", "complete")
+         - Task model: id, milestoneId, projectId, name, description, status,
+           priority, estimatedHours, actualHours, orderIndex, createdAt, updatedAt
+      2. Create `packages/shared/src/schemas/assignment.ts`:
+         - AssignmentStatus: Schema.Literal("planned", "active", "completed", "cancelled")
+         - Assignment model: id, taskId, personId, allocationPercentage,
+           startDate, endDate, status, createdAt, updatedAt
+
+      **Constraints:**
+      - ONLY use: Model.Class for entity definitions
+      - Follow **SA-002** for Model.Generated id fields
+      - NEVER use: number for percentage without Schema.Number.pipe(Schema.between(0, 100))
+
+      **Success Criteria:**
+      - Task and Assignment models compile with full type inference
+      - Status enums validated at runtime via Schema.Literal
+
+  - id: m1-003
+    name: "Define people, skills, and availability schemas"
+    description: |
+      Create Model.Class definitions for Person, Skill, PersonSkill junction,
+      and AvailabilityWindow entities. Include capacity tracking and proficiency levels.
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/shared/src/schemas/person.ts
+        - packages/shared/src/schemas/skill.ts
+        - packages/shared/src/schemas/availability.ts
+    style_anchor_refs:
+      - SA-002
+      - SA-006
+    instructions: |
+      **Objective:**
+      Define Person, Skill, PersonSkill, and AvailabilityWindow models.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-002.md` — Model.Class pattern
+      - See `artifacts/style-anchors/SA-006.md` — Schema patterns
+
+      **Implementation Steps:**
+      1. Create person.ts: Person model (id, name, email, oktaUserId,
+         capacityHoursPerWeek, createdAt, updatedAt)
+      2. Create skill.ts: Skill model (id, name, category), PersonSkill
+         junction model (personId, skillId, proficiency with Literals:
+         beginner/intermediate/advanced/expert)
+      3. Create availability.ts: AvailabilityWindow model (id, personId,
+         startDate, endDate, type with Literals: pto/other-project/training/unavailable,
+         description, createdAt)
+
+      **Constraints:**
+      - ONLY use: Model.Class, Schema.Literal
+      - PersonSkill PRIMARY KEY is composite (personId, skillId)
+      - Follow **SA-002** for junction table pattern
+
+      **Success Criteria:**
+      - All people-related models compile with type inference
+      - Proficiency and availability type enums validated
+
+  - id: m1-004
+    name: "Define document, chat, and supporting schemas"
+    description: |
+      Create Model.Class definitions for Document, ChatSession, Tag, and
+      ScheduleSnapshot entities. Include document format and type enums.
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/shared/src/schemas/document.ts
+        - packages/shared/src/schemas/chat-session.ts
+        - packages/shared/src/schemas/tag.ts
+        - packages/shared/src/schemas/schedule-snapshot.ts
+    style_anchor_refs:
+      - SA-002
+      - SA-006
+    instructions: |
+      **Objective:**
+      Define Document, ChatSession, Tag, and ScheduleSnapshot models.
+
+      **Implementation Steps:**
+      1. Create document.ts: Document model (id, projectId, documentType,
+         format: yaml/markdown/json, content, version, createdAt, updatedAt)
+         with UNIQUE constraint on (projectId, documentType, version)
+      2. Create chat-session.ts: ChatSession model (id, projectId,
+         messages as JSON, contextType, createdAt, updatedAt)
+      3. Create tag.ts: Tag model (id, name unique, color hex)
+      4. Create schedule-snapshot.ts: ScheduleSnapshot model (id, projectId,
+         name, type: full/scenario/what-if, parameters JSON, result JSON,
+         reasoning, createdAt)
+      5. Update schemas/index.ts to re-export all schemas
+
+      **Constraints:**
+      - ONLY use: Model.Class with Model.JsonFromString for JSON columns
+      - Follow **SA-002** for entity structure
+      - Document content stored as TEXT (not parsed)
+
+      **Success Criteria:**
+      - All remaining entity models compile
+      - JSON columns use Model.JsonFromString for type safety
+      - schemas/index.ts barrel exports all schemas
+
+  - id: m1-005
+    name: "Define API request/response schemas and tagged errors"
+    description: |
+      Create Schema.Class definitions for all API request and response types.
+      Create TaggedError classes for all domain error types (NotFound, Conflict,
+      ValidationError, etc.) with HTTP status annotations.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m1-001, m1-002, m1-003, m1-004]
+    files:
+      create:
+        - packages/shared/src/schemas/api/project-api.ts
+        - packages/shared/src/schemas/api/person-api.ts
+        - packages/shared/src/schemas/api/schedule-api.ts
+        - packages/shared/src/schemas/api/chat-api.ts
+        - packages/shared/src/schemas/api/document-api.ts
+        - packages/shared/src/schemas/api/errors.ts
+        - packages/shared/src/schemas/api/index.ts
+    style_anchor_refs:
+      - SA-007
+    instructions: |
+      **Objective:**
+      Define all API request/response schemas and error types.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-007.md` — Schema.Class and TaggedError patterns
+
+      Reference files:
+      - `~/Sites/ai-use-repos/effect/packages/platform-node/test/HttpApi.test.ts:353-368` — TaggedError with HTTP status
+
+      **Implementation Steps:**
+      1. Create errors.ts with TaggedError classes:
+         - NotFoundError (404) — entity not found
+         - ConflictError (409) — duplicate resource, resource conflict
+         - ValidationError (400) — schema validation failure
+         - UnauthorizedError (401) — missing or invalid JWT
+         - ForbiddenError (403) — insufficient permissions (future)
+         - InternalError (500) — unexpected server error
+         - Each with HttpApiSchema.annotations({ status: N })
+      2. Create project-api.ts:
+         - CreateProjectRequest/Response, ListProjectsRequest/Response,
+           GetProjectRequest/Response, UpdateProjectRequest/Response
+      3. Create person-api.ts:
+         - CreatePersonRequest/Response, ListPeopleRequest/Response,
+           UpdatePersonRequest/Response, AssignPersonRequest/Response,
+           UnassignPersonRequest/Response
+      4. Create schedule-api.ts:
+         - GenerateScheduleRequest/Response, CreateScenarioRequest/Response,
+           WhatIfRescheduleRequest/Response, ListScheduleSnapshotsRequest/Response
+      5. Create chat-api.ts:
+         - ChatRequest/Response, GetChatHistoryRequest/Response
+      6. Create document-api.ts:
+         - GetDocumentsRequest/Response, GetDocumentRequest/Response,
+           ExportDocumentRequest/Response
+      7. Create api/index.ts barrel export
+
+      **Constraints:**
+      - ONLY use: Schema.Class for request/response types
+      - ONLY use: Schema.TaggedError for error types with _tag discriminant
+      - Follow **SA-007** for Schema.Class and TaggedError patterns
+      - NEVER use: Plain classes or type assertions
+      - Every request schema must validate its payload fields
+
+      **Success Criteria:**
+      - All API schemas compile with full type inference
+      - TaggedErrors work with Effect.fail and pattern matching
+      - Error types include HTTP status annotations for API layer
+
+  - id: m1-006
+    name: "Define WebSocket event types"
+    description: |
+      Create Schema.Struct definitions for all WebSocket event types used
+      for real-time dashboard updates. Events are dispatched by the server
+      and consumed by the frontend WebSocket client.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m1-001]
+    files:
+      create:
+        - packages/shared/src/events/ws-events.ts
+        - packages/shared/src/events/index.ts
+    style_anchor_refs:
+      - SA-006
+    instructions: |
+      **Objective:**
+      Define all WebSocket event types for real-time updates.
+
+      **Implementation Steps:**
+      1. Create events/ws-events.ts with event schemas:
+         - ProjectUpdated, ProjectPipelineStatusChanged
+         - TaskStatusChanged
+         - ScheduleGenerated
+         - AssignmentCreated, AssignmentUpdated
+         - ConflictDetected
+         - DocumentGenerated
+         - ChatMessage
+      2. Each event includes: type (literal string discriminator), timestamp,
+         and event-specific payload
+      3. Create WsEvent union type from all event schemas
+      4. Create events/index.ts barrel export
+
+      **Constraints:**
+      - ONLY use: Schema.Struct with Schema.Literal for event types
+      - Follow **SA-006** for schema organization
+      - Each event type has a unique string literal discriminator
+
+      **Success Criteria:**
+      - All event types compile with type inference
+      - Events can be discriminated by their type field
+      - WsEvent union covers all event types
+
+  - id: m1-007
+    name: "Create SQL migration 001 — core tables"
+    description: |
+      Write the first SQL migration creating projects, milestones, tasks,
+      and tags tables with proper foreign keys, cascading deletes, and
+      indexes. Must be compatible with both SQLite and PostgreSQL.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m1-001, m1-002, m1-004]
+    files:
+      create:
+        - packages/api/src/db/migrations/001_core_tables.sql
+    style_anchor_refs:
+      - SA-010
+    instructions: |
+      **Objective:**
+      Create the first SQL migration for core tables.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-010.md` — Migration runner patterns
+
+      Reference files:
+      - `~/Sites/ai-use-repos/effect/packages/sql/src/Migrator.ts:73-351` — migration structure
+
+      **Implementation Steps:**
+      1. Create `001_core_tables.sql` with:
+         - projects table (all fields from technical requirements data model)
+         - milestones table with FK to projects, ON DELETE CASCADE
+         - tasks table with FK to milestones and projects, ON DELETE CASCADE
+         - tags table with unique name constraint
+      2. Add indexes:
+         - idx_projects_pipeline_status ON projects(pipeline_status, updated_at DESC)
+         - idx_milestones_project ON milestones(project_id, order_index)
+         - idx_tasks_milestone ON tasks(milestone_id, order_index)
+         - idx_tasks_project ON tasks(project_id, status)
+      3. Use CREATE TABLE IF NOT EXISTS for idempotency
+      4. Use TEXT for all date columns (ISO 8601)
+      5. Use JSON-compatible TEXT for JSON columns (tags, assignedPeople)
+
+      **Constraints:**
+      - ONLY use: SQL compatible with both SQLite and PostgreSQL
+      - NEVER use: database-specific features (RETURNING, SERIAL, etc.)
+      - Use TEXT PRIMARY KEY (IDs are generated in application code)
+      - All foreign keys use ON DELETE CASCADE
+      - Follow **SA-010** for migration file naming convention
+
+      **Success Criteria:**
+      - Migration SQL parses without syntax errors
+      - Tables created with correct columns, types, and constraints
+      - Indexes created for query optimization
+      - Foreign keys enforce referential integrity
+
+  - id: m1-008
+    name: "Create SQL migration 002 — people and resource tables"
+    description: |
+      Write the second SQL migration creating people, skills, person_skills,
+      assignments, and availability_windows tables with proper foreign keys
+      and indexes.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m1-003, m1-007]
+    files:
+      create:
+        - packages/api/src/db/migrations/002_people_resources.sql
+    style_anchor_refs:
+      - SA-010
+    instructions: |
+      **Objective:**
+      Create the second SQL migration for people and resource tables.
+
+      **Implementation Steps:**
+      1. Create `002_people_resources.sql` with:
+         - people table (id, name, email unique, okta_user_id unique,
+           capacity_hours_per_week, created_at, updated_at)
+         - skills table (id, name unique, category)
+         - person_skills junction table (person_id, skill_id, proficiency,
+           PRIMARY KEY (person_id, skill_id))
+         - assignments table (id, task_id, person_id, allocation_percentage,
+           start_date, end_date, status, created_at, updated_at)
+         - availability_windows table (id, person_id, start_date, end_date,
+           type, description, created_at)
+      2. Add indexes:
+         - idx_assignments_person ON assignments(person_id, status)
+         - idx_assignments_task ON assignments(task_id)
+         - idx_availability_person ON availability_windows(person_id, start_date, end_date)
+
+      **Constraints:**
+      - ONLY use: SQL compatible with SQLite and PostgreSQL
+      - person_skills composite PRIMARY KEY enforces uniqueness
+      - All foreign keys use ON DELETE CASCADE
+      - Follow **SA-010** for migration naming
+
+      **Success Criteria:**
+      - All people/resource tables created correctly
+      - Junction table enforces composite primary key
+      - Indexes support common query patterns
+
+  - id: m1-009
+    name: "Create SQL migration 003 — documents, chat, schedules"
+    description: |
+      Write the third SQL migration creating documents, chat_sessions,
+      and schedule_snapshots tables with proper constraints and indexes.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m1-004, m1-007]
+    files:
+      create:
+        - packages/api/src/db/migrations/003_documents_chat_schedules.sql
+    style_anchor_refs:
+      - SA-010
+    instructions: |
+      **Objective:**
+      Create the third SQL migration for documents, chat, and schedules.
+
+      **Implementation Steps:**
+      1. Create `003_documents_chat_schedules.sql` with:
+         - documents table (id, project_id, document_type, format,
+           content, version, created_at, updated_at)
+           UNIQUE (project_id, document_type, version)
+         - chat_sessions table (id, project_id, messages, context_type,
+           created_at, updated_at)
+         - schedule_snapshots table (id, project_id, name, type,
+           parameters, result, reasoning, created_at)
+      2. Add indexes:
+         - idx_documents_project ON documents(project_id, document_type)
+         - idx_documents_project_version ON documents(project_id, document_type, version DESC)
+         - idx_chat_sessions_project ON chat_sessions(project_id, updated_at DESC)
+
+      **Constraints:**
+      - ONLY use: SQL compatible with SQLite and PostgreSQL
+      - Documents UNIQUE constraint on (project_id, document_type, version)
+      - Follow **SA-010** for migration naming
+
+      **Success Criteria:**
+      - All remaining tables created correctly
+      - Document version uniqueness enforced
+      - Chat sessions indexable by project and recency
+
+  - id: m1-010
+    name: "Create migration runner service"
+    description: |
+      Implement the database migration runner service using @effect/sql
+      SqlMigrator. The service auto-runs pending migrations on daemon startup
+      and tracks applied migrations in a management table.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m1-007, m1-008, m1-009]
+    files:
+      create:
+        - packages/api/src/db/migration-runner.ts
+      modify:
+        - packages/api/src/db/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-010
+    instructions: |
+      **Objective:**
+      Create the migration runner service using Effect-TS patterns.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+      - See `artifacts/style-anchors/SA-010.md` — SqlMigrator patterns
+
+      Reference files:
+      - `~/Sites/ai-use-repos/effect/packages/sql/src/Migrator.ts:73-351` — SqlMigrator implementation
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/db/migration-runner.ts`:
+         - Define MigrationRunnerService using Effect.Service pattern (**SA-001**)
+         - Use SqlMigrator.make() with fromGlob loader (**SA-010**)
+         - Load migrations from `./migrations/*.sql` glob pattern
+         - Configure migration tracking table name (e.g., "_migrations")
+         - Wrap migration execution in sql.withTransaction
+      2. Create a SqliteLive layer that provides:
+         - SqlClient connected to ~/.sherpy/sherpy.db
+         - Auto-creates ~/.sherpy/ directory if missing
+         - Runs migrations on Layer initialization
+      3. Export MigrationRunnerLive layer with full dependency chain
+      4. Update db/index.ts to export the migration runner
+
+      **Constraints:**
+      - ONLY use: SqlMigrator from @effect/sql for migration management
+      - Follow **SA-001** for service Layer pattern
+      - Follow **SA-010** for SqlMigrator configuration
+      - NEVER use: custom migration tracking — use SqlMigrator built-in
+
+      **Success Criteria:**
+      - Migration runner service created with Effect.Service pattern
+      - SqliteLive layer connects to local database file
+      - Migrations run automatically when layer is provided
+      - Re-running does not apply already-applied migrations
+
+  - id: m1-011
+    name: "Add unit tests for domain schemas"
+    description: |
+      Write comprehensive unit tests for all domain schemas, Model.Class
+      definitions, API schemas, and tagged errors. Verify validation
+      rules, variant schemas, and error construction.
+    estimate_minutes: 90
+    type: test
+    dependencies: [m1-005, m1-006]
+    files:
+      create:
+        - packages/shared/src/schemas/project.test.ts
+        - packages/shared/src/schemas/milestone.test.ts
+        - packages/shared/src/schemas/task.test.ts
+        - packages/shared/src/schemas/assignment.test.ts
+        - packages/shared/src/schemas/person.test.ts
+        - packages/shared/src/schemas/api/errors.test.ts
+    style_anchor_refs:
+      - SA-008
+    instructions: |
+      **Objective:**
+      Test all domain schemas with comprehensive coverage.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-008.md` — @effect/vitest patterns
+
+      **Implementation Steps:**
+      1. Create test files for each schema module
+      2. For each Model.Class entity, test:
+         - Valid data passes Schema.decodeUnknown
+         - Invalid data fails with descriptive errors
+         - insert.make() creates insert variant
+         - update.make() creates update variant
+         - Required fields enforced, optional fields allow undefined
+      3. For Schema.Literal enums, test:
+         - Each valid value accepted
+         - Invalid values rejected
+      4. For TaggedErrors, test:
+         - Construction with new ErrorType({...})
+         - _tag discriminant set correctly
+         - Effect.fail produces correct error type
+      5. For API schemas, test:
+         - Request validation accepts valid payloads
+         - Request validation rejects missing/invalid fields
+
+      **Constraints:**
+      - ONLY use: Vitest with @effect/vitest helpers
+      - Follow **SA-008** for test patterns (it.effect, etc.)
+      - NEVER use: real database in unit tests
+
+      **Success Criteria:**
+      - All schema tests pass
+      - Coverage exceeds 80% for schema files
+      - Both valid and invalid cases tested for each schema
+
+  - id: m1-012
+    name: "Add integration tests for migrations"
+    description: |
+      Test that all SQL migrations run correctly against a real SQLite
+      test database. Verify table creation, indexes, constraints, and
+      idempotency.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m1-010]
+    files:
+      create:
+        - packages/api/src/db/migrations.test.ts
+    style_anchor_refs:
+      - SA-008
+      - SA-009
+    instructions: |
+      **Objective:**
+      Verify all migrations run correctly against real SQLite.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-008.md` — @effect/vitest patterns
+      - See `artifacts/style-anchors/SA-009.md` — SQL testing with temp databases
+
+      Reference files:
+      - `~/Sites/ai-use-repos/effect/packages/sql-sqlite-node/test/Resolver.test.ts:1-177` — temp DB testing
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/db/migrations.test.ts`
+      2. Use `it.scoped` with temp directory and SQLite client (**SA-009**)
+      3. Test cases:
+         - All migrations run without errors on fresh database
+         - All 12 tables exist after migrations
+         - Indexes created correctly (verify with PRAGMA index_list)
+         - Foreign key constraints enforced (try insert without parent)
+         - UNIQUE constraints enforced (duplicate slug, email)
+         - Running migrations again is idempotent (no errors)
+         - CHECK constraints enforced (invalid status values rejected)
+      4. Use `fs.makeTempDirectoryScoped()` for test isolation
+
+      **Constraints:**
+      - ONLY use: real SQLite test database with temp directory
+      - Follow **SA-009** for SQL integration testing pattern
+      - Clean up temp directories after tests
+
+      **Success Criteria:**
+      - All migration tests pass against real SQLite
+      - Table count matches expected (12 tables)
+      - Constraints and indexes verified
+      - Tests run in isolation (no cross-test pollution)
+
+  - id: m1-013
+    name: "Comprehensive code review for schemas and database"
+    description: |
+      Review all schema definitions, migrations, and migration runner for
+      consistency, correctness, and alignment with technical requirements.
+    estimate_minutes: 60
+    type: code-review
+    dependencies: [m1-011, m1-012]
+    files:
+      create:
+        - code-reviews/2026-04-20-2-code-review.yaml
+      touch_only:
+        - packages/shared/src/schemas/**/*.ts
+        - packages/shared/src/events/**/*.ts
+        - packages/api/src/db/**/*.ts
+        - packages/api/src/db/migrations/*.sql
+    instructions: |
+      **Objective:**
+      Review all schema and database code from this milestone.
+
+      **Review Checklist:**
+      1. **Schema Consistency:**
+         - [ ] All domain types use Model.Class or Schema.Class
+         - [ ] Status enums use Schema.Literal (not TypeScript enum)
+         - [ ] All entities have createdAt/updatedAt timestamps
+         - [ ] JSON columns use Model.JsonFromString
+
+      2. **Migration Quality:**
+         - [ ] All 12 tables from technical requirements present
+         - [ ] Foreign keys with ON DELETE CASCADE
+         - [ ] Indexes match technical requirements
+         - [ ] SQL compatible with both SQLite and PostgreSQL
+
+      3. **API Schema Completeness:**
+         - [ ] Request schemas validate all required fields
+         - [ ] Response schemas match expected API contracts
+         - [ ] TaggedErrors have correct HTTP status annotations
+         - [ ] All endpoints from technical requirements covered
+
+      4. **Testing:**
+         - [ ] Schema tests cover valid and invalid cases
+         - [ ] Migration tests verify all constraints
+         - [ ] Coverage exceeds 80% for schema files
+
+      **Output:** Create code-reviews/2026-04-20-2-code-review.yaml with findings.
+
+      **Success Criteria:**
+      - Code review file created with complete analysis
+      - No critical issues found
+      - Ready to proceed to m2

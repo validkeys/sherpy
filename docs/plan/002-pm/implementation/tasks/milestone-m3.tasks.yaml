@@ -1,0 +1,933 @@
+milestone: m3
+name: "Project & Task Domain Services"
+generated: "2026-04-20T12:00:00Z"
+
+style_anchor_refs:
+  - SA-001
+  - SA-002
+  - SA-003
+  - SA-004
+  - SA-005
+  - SA-008
+  - SA-009
+
+global_constraints:
+  allowed_patterns:
+    - "Use Effect.Service with Layer for all domain services (SA-001)"
+    - "Use Model.Class with makeRepository for database entity access (SA-002)"
+    - "Use SqlResolver for batched and custom query patterns (SA-003)"
+    - "Use @effect/sql SqlClient for all database operations (SA-002)"
+    - "Use Effect.gen for composing async operations in services (SA-001)"
+    - "Use Schema.TaggedError for all service error types"
+    - "Use HttpApiGroup + HttpApiEndpoint for RPC endpoint definitions (SA-004)"
+    - "Use HttpApiBuilder.group for handler implementations (SA-005)"
+  forbidden_patterns:
+    - "Async/await — use Effect.gen for composition"
+    - "Throwing exceptions — use Effect.fail with TaggedErrors"
+    - "Raw SQL strings without SqlResolver or repository methods"
+    - "Direct database access outside of service layers"
+    - "Business logic in HTTP handlers — delegate to services"
+    - "Type assertions (as) on external data — use Schema.decodeUnknown"
+  tdd_required: true
+  max_task_duration_minutes: 150
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete
+      - Database migrations run successfully (m1 complete)
+      - API server bootstrap available (m2 complete)
+      - Style anchors SA-001, SA-002, SA-003 reviewed
+  - stage: pre-commit
+    commands:
+      - pnpm run lint
+      - pnpm run typecheck
+      - pnpm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint or type errors
+      - Services use Effect.Service pattern consistently
+      - All errors use TaggedError pattern
+  - stage: milestone-completion
+    criteria:
+      - All CRUD services implement create, read, update operations
+      - DocumentService generates YAML, markdown, and JSON views from DB
+      - ChatSessionService persists per-project chat history
+      - All RPC endpoints return schema-validated responses
+      - Integration tests pass against real SQLite
+      - No async/await or thrown exceptions in service code
+
+tasks:
+  - id: m3-001
+    name: "Implement ProjectService with CRUD operations"
+    description: |
+      Create the ProjectService using Effect.Service with Layer. Implement
+      create, list (with filtering by pipeline status, priority, and search),
+      get by ID/slug, and update operations. Use Model.makeRepository for
+      basic CRUD and SqlResolver for filtered list queries.
+    estimate_minutes: 90
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/api/src/services/project-service.ts
+      modify:
+        - packages/api/src/services/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-002
+      - SA-003
+    instructions: |
+      **Objective:**
+      Implement the ProjectService with full CRUD and filtered listing.
+
+      **TDD Approach:** Write failing tests for ProjectService.create and
+      ProjectService.list before implementing. Follow red-green-refactor:
+      failing test → minimal implementation → pass → refactor.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+      - See `artifacts/style-anchors/SA-002.md` — Model.Class with makeRepository
+      - See `artifacts/style-anchors/SA-003.md` — SqlResolver for batched/custom queries
+
+      Reference files:
+      - `~/Sites/ai-use-repos/effect/packages/sql/src/Model.ts:82-157` — makeRepository pattern
+      - `~/Sites/ai-use-repos/effect/packages/sql/src/Resolver.ts` — SqlResolver patterns
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/project-service.ts`:
+         - Define ProjectService using Effect.Service pattern (**SA-001**)
+         - Create Layer using SqlClient + repository dependencies
+         - Build Project repository using Model.makeRepository from Project model (**SA-002**)
+         - Implement methods:
+           - create(input: CreateProjectInput): Effect<Project, NotFoundError | ValidationError>
+           - list(filters: ProjectFilters): Effect<ReadonlyArray<Project>>
+           - get(id: string): Effect<Project, NotFoundError>
+           - getBySlug(slug: string): Effect<Project, NotFoundError>
+           - update(id: string, input: UpdateProjectInput): Effect<Project, NotFoundError | ValidationError>
+         - Use SqlResolver for list queries with optional filters (**SA-003**):
+           - Filter by pipelineStatus, priority, search term on name/description
+           - ORDER BY updated_at DESC with LIMIT/OFFSET pagination
+         - Use Effect.gen for all method implementations
+         - Generate slug from name if not provided (lowercase, hyphens, strip special chars)
+      2. Update `packages/api/src/services/index.ts`:
+         - Export ProjectService and ProjectServiceLive layer
+         - Ensure barrel export is clean
+
+      **Constraints:**
+      - ONLY use: Effect.Service + Layer for service definition (**SA-001**)
+      - ONLY use: Model.makeRepository for basic CRUD (**SA-002**)
+      - ONLY use: SqlResolver for filtered list queries (**SA-003**)
+      - ONLY use: Effect.gen for composing operations — no async/await
+      - ALL errors must be TaggedErrors (NotFoundError, ValidationError)
+      - NEVER throw exceptions — use Effect.fail
+
+      **Success Criteria:**
+      - ProjectService exports Effect.Service with typed methods
+      - Layer provides service via Effect.provide
+      - list() supports filtering by status, priority, and search
+      - slug generation normalizes project names
+      - All methods return typed Effects with proper error channels
+
+  - id: m3-002
+    name: "Add unit tests for ProjectService"
+    description: |
+      Write comprehensive unit tests for ProjectService covering all CRUD
+      operations, filtering, slug generation, and error cases. Use @effect/vitest
+      with a real SQLite test database for integration-style unit tests.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m3-001]
+    files:
+      create:
+        - packages/api/src/services/project-service.test.ts
+    style_anchor_refs:
+      - SA-008
+      - SA-009
+    instructions: |
+      **Objective:**
+      Test all ProjectService methods with comprehensive coverage.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-008.md` — @effect/vitest test patterns
+      - See `artifacts/style-anchors/SA-009.md` — SQL testing with temp databases
+
+      Reference files:
+      - `~/Sites/ai-use-repos/effect/packages/sql-sqlite-node/test/Resolver.test.ts:1-177` — temp DB testing
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/project-service.test.ts`
+      2. Set up test infrastructure (**SA-009**):
+         - Use it.scoped with temp directory and SQLite client
+         - Provide SqlClient + MigrationRunner layers in beforeEach
+         - Run migrations before each test suite for clean schema
+      3. Test cases using it.effect (**SA-008**):
+         - create: valid project persists and returns with generated slug
+         - create: missing required fields fails with ValidationError
+         - create: duplicate slug fails with ConflictError
+         - list: returns all projects ordered by updated_at DESC
+         - list: filters by pipelineStatus correctly
+         - list: filters by priority correctly
+         - list: search term matches name and description
+         - list: pagination with limit and offset works
+         - get: returns project by ID
+         - get: non-existent ID fails with NotFoundError
+         - getBySlug: returns project by slug
+         - getBySlug: non-existent slug fails with NotFoundError
+         - update: partial update modifies only provided fields
+         - update: non-existent ID fails with NotFoundError
+      4. Use Effect.gen in test assertions to chain operations
+
+      **Constraints:**
+      - ONLY use: @effect/vitest with it.effect and it.scoped (**SA-008**)
+      - ONLY use: real SQLite temp database for tests (**SA-009**)
+      - Clean up temp directories after each test
+      - Each test is isolated — no cross-test state leakage
+
+      **Success Criteria:**
+      - All ProjectService test cases pass
+      - Coverage exceeds 80% for project-service.ts
+      - Both happy path and error cases tested
+      - No test state leaks between test cases
+
+  - id: m3-003
+    name: "Implement MilestoneService with CRUD operations"
+    description: |
+      Create the MilestoneService using Effect.Service with Layer. Implement
+      create, list by project, get, update, and reorder operations. Milestones
+      belong to projects and are ordered within each project by orderIndex.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-001]
+    files:
+      create:
+        - packages/api/src/services/milestone-service.ts
+      modify:
+        - packages/api/src/services/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-002
+    instructions: |
+      **Objective:**
+      Implement the MilestoneService with full CRUD and ordering.
+
+      **TDD Approach:** Write failing test for MilestoneService.create before
+      implementing. Test the reorder atomic operation before implementing
+      sql.withTransaction logic.
+
+      **Style Anchors:**
+      1. Create `packages/api/src/services/milestone-service.ts`:
+         - Define MilestoneService using Effect.Service pattern (**SA-001**)
+         - Create Layer with SqlClient dependency
+         - Build Milestone repository using Model.makeRepository (**SA-002**)
+         - Implement methods:
+           - create(input): Effect<Milestone, NotFoundError | ValidationError>
+             - Validate projectId exists (query projects table)
+             - Set orderIndex to max+1 within project if not provided
+           - listByProject(projectId): Effect<ReadonlyArray<Milestone>>
+             - ORDER BY order_index ASC
+           - get(id): Effect<Milestone, NotFoundError>
+           - update(id, input): Effect<Milestone, NotFoundError | ValidationError>
+             - Support status changes (pending → in-progress → complete, etc.)
+             - Support acceptanceCriteria updates
+           - reorder(projectId, milestoneIds): Effect<ReadonlyArray<Milestone>>
+             - Accept ordered array of milestone IDs
+             - Update orderIndex for each to match array position
+             - Validate all IDs belong to the specified project
+      2. Update services/index.ts barrel export
+
+      **Constraints:**
+      - ONLY use: Effect.Service + Layer (**SA-001**)
+      - ONLY use: Model.makeRepository for CRUD (**SA-002**)
+      - ONLY use: Effect.gen — no async/await
+      - Verify projectId exists before creating milestone
+      - Reorder operation must be atomic (use sql.withTransaction)
+      - ALL errors use TaggedErrors
+
+      **Success Criteria:**
+      - MilestoneService exports Effect.Service with typed methods
+      - listByProject returns milestones in correct order
+      - reorder atomically updates all orderIndex values
+      - Status transitions validated at service level
+
+  - id: m3-004
+    name: "Implement TaskService with CRUD and status updates"
+    description: |
+      Create the TaskService using Effect.Service with Layer. Implement CRUD
+      operations plus status update with validation, priority changes, and
+      effort tracking. Tasks belong to milestones and projects.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m3-001]
+    files:
+      create:
+        - packages/api/src/services/task-service.ts
+      modify:
+        - packages/api/src/services/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-002
+    instructions: |
+      **Objective:**
+      Implement the TaskService with CRUD, status updates, and effort tracking.
+
+      **TDD Approach:** Write failing tests for TaskService.create and
+      TaskService.updateStatus before implementing. Test status transition
+      validation (no invalid transitions) first.
+
+      **Style Anchors:**
+      1. Create `packages/api/src/services/task-service.ts`:
+         - Define TaskService using Effect.Service pattern (**SA-001**)
+         - Create Layer with SqlClient dependency
+         - Build Task repository using Model.makeRepository (**SA-002**)
+         - Implement methods:
+           - create(input): Effect<Task, NotFoundError | ValidationError>
+             - Validate milestoneId exists and belongs to projectId
+             - Set orderIndex to max+1 within milestone if not provided
+           - listByMilestone(milestoneId): Effect<ReadonlyArray<Task>>
+             - ORDER BY order_index ASC
+           - listByProject(projectId, filters?): Effect<ReadonlyArray<Task>>
+             - Optional filter by status, priority
+             - ORDER BY priority DESC, order_index ASC
+           - get(id): Effect<Task, NotFoundError>
+           - update(id, input): Effect<Task, NotFoundError | ValidationError>
+             - Support partial updates (name, description, priority, estimatedHours)
+           - updateStatus(id, status): Effect<Task, NotFoundError | ValidationError>
+             - Validate status transitions (no backwards from complete to in-progress)
+             - Set actualHours on completion if estimatedHours was set
+           - reorder(milestoneId, taskIds): Effect<ReadonlyArray<Task>>
+             - Same pattern as milestone reorder — atomic orderIndex update
+           - bulkUpdateStatus(taskIds, status): Effect<ReadonlyArray<Task>>
+             - Update status for multiple tasks at once
+             - Use sql.withTransaction for atomicity
+      2. Update services/index.ts barrel export
+
+      **Constraints:**
+      - ONLY use: Effect.Service + Layer (**SA-001**)
+      - ONLY use: Model.makeRepository for CRUD (**SA-002**)
+      - ONLY use: Effect.gen — no async/await
+      - Validate milestoneId/projectId relationship before create
+      - Status transitions validated — no invalid transitions allowed
+      - Bulk operations use sql.withTransaction for atomicity
+      - ALL errors use TaggedErrors
+
+      **Success Criteria:**
+      - TaskService exports Effect.Service with typed methods
+      - Status transition validation prevents invalid state changes
+      - List queries return tasks in correct sort order
+      - Bulk status update is atomic
+
+  - id: m3-005
+    name: "Add tests for MilestoneService and TaskService"
+    description: |
+      Write comprehensive tests for both MilestoneService and TaskService
+      covering CRUD, ordering, status transitions, and error cases. Use
+      @effect/vitest with real SQLite test databases.
+    estimate_minutes: 90
+    type: test
+    dependencies: [m3-003, m3-004]
+    files:
+      create:
+        - packages/api/src/services/milestone-service.test.ts
+        - packages/api/src/services/task-service.test.ts
+    style_anchor_refs:
+      - SA-008
+      - SA-009
+    instructions: |
+      **Objective:**
+      Test MilestoneService and TaskService with comprehensive coverage.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-008.md` — @effect/vitest patterns
+      - See `artifacts/style-anchors/SA-009.md` — SQL testing with temp databases
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/milestone-service.test.ts`:
+         - Set up temp SQLite + migrations (**SA-009**)
+         - Seed a test project in beforeEach for FK constraints
+         - Test cases:
+           - create: persists milestone with auto orderIndex
+           - create: validates projectId exists (NotFoundError on missing)
+           - listByProject: returns milestones ordered by orderIndex
+           - get: returns milestone by ID
+           - get: NotFoundError for non-existent ID
+           - update: modifies name, description, status, acceptanceCriteria
+           - reorder: atomically updates orderIndex for all milestones
+           - reorder: validates all IDs belong to same project
+      2. Create `packages/api/src/services/task-service.test.ts`:
+         - Set up temp SQLite + migrations (**SA-009**)
+         - Seed test project + milestone in beforeEach
+         - Test cases:
+           - create: persists task with auto orderIndex
+           - create: validates milestoneId exists
+           - create: validates milestoneId belongs to projectId
+           - listByMilestone: returns tasks ordered by orderIndex
+           - listByProject: returns tasks with optional status/priority filters
+           - updateStatus: valid transitions work (pending → in-progress → complete)
+           - updateStatus: invalid transitions fail with ValidationError
+           - reorder: atomically updates orderIndex within milestone
+           - bulkUpdateStatus: updates multiple tasks atomically
+           - bulkUpdateStatus: rolls back all on any failure
+
+      **Constraints:**
+      - ONLY use: @effect/vitest with it.effect (**SA-008**)
+      - ONLY use: real SQLite temp databases (**SA-009**)
+      - Seed parent entities (project, milestone) before task tests
+      - Each test is isolated with fresh database
+
+      **Success Criteria:**
+      - All milestone and task service tests pass
+      - Coverage exceeds 80% for both service files
+      - Status transition validation tested for all valid/invalid paths
+      - Reorder operations verified to be atomic
+
+  - id: m3-006
+    name: "Implement TagService for tag management"
+    description: |
+      Create the TagService using Effect.Service with Layer. Implement tag
+      CRUD and tag assignment/removal for projects. Tags are global entities
+      with unique names, referenced by projects via JSON array columns.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-001]
+    files:
+      create:
+        - packages/api/src/services/tag-service.ts
+      modify:
+        - packages/api/src/services/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-002
+    instructions: |
+      **Objective:**
+      Implement the TagService for tag management and assignment.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+      - See `artifacts/style-anchors/SA-002.md` — Model.Class with makeRepository
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/tag-service.ts`:
+         - Define TagService using Effect.Service pattern (**SA-001**)
+         - Build Tag repository using Model.makeRepository (**SA-002**)
+         - Implement methods:
+           - create(name: string, color: string): Effect<Tag, ConflictError | ValidationError>
+             - Validate name uniqueness (UNIQUE constraint on tags table)
+             - Validate color is valid hex (#RRGGBB format)
+           - list(): Effect<ReadonlyArray<Tag>>
+             - ORDER BY name ASC
+           - get(id: string): Effect<Tag, NotFoundError>
+           - update(id: string, input: { name?, color? }): Effect<Tag, NotFoundError | ConflictError>
+           - remove(id: string): Effect<void, NotFoundError>
+             - Remove tag from all projects that reference it in tags JSON array
+           - assignToProject(tagId: string, projectId: string): Effect<Project, NotFoundError>
+             - Add tag ID to project's tags JSON array (if not already present)
+             - Use Effect.gen to read project, modify tags array, update
+           - removeFromProject(tagId: string, projectId: string): Effect<Project, NotFoundError>
+             - Remove tag ID from project's tags JSON array
+           - getProjectTags(projectId: string): Effect<ReadonlyArray<Tag>>
+             - Read project's tags array, then fetch all matching Tag entities
+      2. Update services/index.ts barrel export
+
+      **Constraints:**
+      - ONLY use: Effect.Service + Layer (**SA-001**)
+      - ONLY use: Model.makeRepository (**SA-002**)
+      - ONLY use: Effect.gen — no async/await
+      - Tags are global — not scoped to projects
+      - Project.tags is a JSON array of tag IDs stored via Model.JsonFromString
+      - ALL errors use TaggedErrors
+
+      **Success Criteria:**
+      - TagService exports Effect.Service with typed methods
+      - Tag name uniqueness enforced at service level
+      - assignToProject adds tag to project's tags array idempotently
+      - getProjectTags resolves tag IDs to full Tag entities
+
+  - id: m3-007
+    name: "Implement DocumentService for generating views from DB"
+    description: |
+      Create the DocumentService that generates document views (YAML, markdown,
+      JSON) from database data. Documents are NOT stored in the DB as source —
+      they are generated views assembled from project, milestone, task, and tag
+      data. The service also persists generated documents for version history.
+    estimate_minutes: 120
+    type: code
+    dependencies: [m3-003, m3-004]
+    files:
+      create:
+        - packages/api/src/services/document-service.ts
+      modify:
+        - packages/api/src/services/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-003
+    instructions: |
+      **Objective:**
+      Implement DocumentService that generates views from DB data in multiple formats.
+
+      **TDD Approach:** Write failing test for generateProjectPlan('yaml') before
+      implementing. Test that generated content reflects current DB state by
+      modifying data and regenerating.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+      - See `artifacts/style-anchors/SA-003.md` — SqlResolver for custom queries
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/document-service.ts`:
+         - Define DocumentService using Effect.Service pattern (**SA-001**)
+         - Build Document repository using Model.makeRepository for persistence
+         - Inject ProjectService, MilestoneService, TaskService as dependencies
+         - Implement generation methods:
+           - generateProjectPlan(projectId, format: "yaml" | "markdown" | "json"):
+             Effect<Document, NotFoundError>
+             - Fetch project, milestones (ordered), tasks per milestone, tags
+             - Assemble data into structured format
+             - Render to requested format:
+               - yaml: Serialize to YAML string (use js-yaml or similar)
+               - markdown: Render as structured markdown with headers, tables
+               - json: JSON.stringify with pretty printing
+             - Persist generated document to documents table
+             - Increment version (or set to 1 for first generation)
+           - getDocument(projectId, documentType): Effect<Document, NotFoundError>
+             - Fetch latest version of a document
+           - listDocuments(projectId): Effect<ReadonlyArray<Document>>
+             - List all documents for a project, latest first
+           - getDocumentVersion(projectId, documentType, version): Effect<Document, NotFoundError>
+             - Fetch specific version of a document
+         - Use SqlResolver for document version queries (**SA-003**):
+           - Find latest version: ORDER BY version DESC LIMIT 1
+           - Batch document fetches by projectId
+      2. Update services/index.ts barrel export
+
+      **Constraints:**
+      - ONLY use: Effect.Service + Layer (**SA-001**)
+      - ONLY use: Effect.gen — no async/await
+      - Documents are GENERATED VIEWS — DB is the source of truth
+      - Document content is assembled fresh from current DB state on each generate
+      - Persisted documents are for version history, not source data
+      - Format rendering must produce valid output for each type
+      - ALL errors use TaggedErrors
+
+      **Success Criteria:**
+      - DocumentService exports Effect.Service with typed methods
+      - generateProjectPlan produces valid YAML, markdown, and JSON
+      - Documents persisted with auto-incrementing version numbers
+      - Document content reflects current DB state at generation time
+      - getDocument returns latest version by default
+
+  - id: m3-008
+    name: "Implement ChatSessionService for per-project chat history"
+    description: |
+      Create the ChatSessionService using Effect.Service with Layer. Manage
+      chat sessions per project including creating sessions, appending messages,
+      retrieving history, and managing context types.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-001]
+    files:
+      create:
+        - packages/api/src/services/chat-session-service.ts
+      modify:
+        - packages/api/src/services/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-002
+    instructions: |
+      **Objective:**
+      Implement ChatSessionService for managing per-project chat history.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+      - See `artifacts/style-anchors/SA-002.md` — Model.Class with makeRepository
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/chat-session-service.ts`:
+         - Define ChatSessionService using Effect.Service pattern (**SA-001**)
+         - Build ChatSession repository using Model.makeRepository (**SA-002**)
+         - Implement methods:
+           - create(projectId: string, contextType: string): Effect<ChatSession, NotFoundError>
+             - Validate projectId exists
+             - Initialize with empty messages array
+             - contextType describes the chat context (e.g., "project-planning", "task-estimation")
+           - addMessage(sessionId: string, role: "user" | "assistant" | "system", content: string):
+             Effect<ChatSession, NotFoundError>
+             - Append message to messages JSON array
+             - Update updatedAt timestamp
+           - getHistory(sessionId: string): Effect<ChatSession, NotFoundError>
+             - Return full session with all messages
+           - listByProject(projectId: string): Effect<ReadonlyArray<ChatSession>>
+             - Return all sessions for a project, most recent first
+             - ORDER BY updated_at DESC
+           - delete(sessionId: string): Effect<void, NotFoundError>
+             - Remove chat session
+      2. Define ChatMessage schema (used within messages JSON array):
+         - role: Schema.Literal("user", "assistant", "system")
+         - content: Schema.String
+         - timestamp: Schema.String (ISO 8601)
+      3. Update services/index.ts barrel export
+
+      **Constraints:**
+      - ONLY use: Effect.Service + Layer (**SA-001**)
+      - ONLY use: Model.makeRepository (**SA-002**)
+      - ONLY use: Effect.gen — no async/await
+      - Messages stored as JSON array in chat_sessions.messages column
+      - Use Model.JsonFromString for messages column with ChatMessage array schema
+      - projectId validated before creating session
+      - ALL errors use TaggedErrors
+
+      **Success Criteria:**
+      - ChatSessionService exports Effect.Service with typed methods
+      - Messages appended to session without overwriting existing messages
+      - Chat sessions scoped to projects
+      - listByProject returns sessions ordered by recency
+
+  - id: m3-009
+    name: "Implement Project RPC endpoint handlers"
+    description: |
+      Create the HTTP API group for project endpoints with RPC-style handlers.
+      Implement createProject, listProjects, getProject, and updateProject
+      endpoints that delegate to ProjectService. Define endpoints with
+      schema-validated requests and responses.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m3-002, m3-006]
+    files:
+      create:
+        - packages/api/src/api/routes/projects.ts
+      modify:
+        - packages/api/src/server.ts
+    style_anchor_refs:
+      - SA-004
+      - SA-005
+    instructions: |
+      **Objective:**
+      Create project RPC endpoint handlers with schema-validated requests.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-004.md` — HttpApiGroup + HttpApiEndpoint definitions
+      - See `artifacts/style-anchors/SA-005.md` — HttpApiBuilder handler implementations
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/api/routes/projects.ts`:
+         - Define HttpApiGroup.make("projects") with endpoints (**SA-004**):
+           - POST /api/projects — createProject
+             - Request: CreateProjectRequest schema (name, description, priority, tags)
+             - Response: CreateProjectResponse schema
+             - Handler: delegate to ProjectService.create, return result
+           - GET /api/projects — listProjects
+             - Request: query params (pipelineStatus, priority, search, limit, offset)
+             - Response: ListProjectsResponse schema (array of projects)
+             - Handler: delegate to ProjectService.list with filters
+           - GET /api/projects/:projectId — getProject
+             - Request: path param projectId
+             - Response: GetProjectResponse schema
+             - Handler: delegate to ProjectService.get
+           - PATCH /api/projects/:projectId — updateProject
+             - Request: path param projectId + UpdateProjectRequest body
+             - Response: UpdateProjectResponse schema
+             - Handler: delegate to ProjectService.update
+         - Implement handlers using HttpApiBuilder.group (**SA-005**):
+           - Use Effect.gen to access ProjectService via Effect.service(ProjectService)
+           - Extract validated request params/body from handler context
+           - Delegate to service methods
+           - Return schema-validated responses
+      2. Update `packages/api/src/server.ts`:
+         - Register projects group with the main HttpApi
+         - Ensure ProjectServiceLive layer is provided
+
+      **Constraints:**
+      - ONLY use: HttpApiGroup + HttpApiEndpoint for route definitions (**SA-004**)
+      - ONLY use: HttpApiBuilder.group for handler implementations (**SA-005**)
+      - ALL endpoints require authentication (from m2 middleware)
+      - Handlers must NOT contain business logic — delegate to ProjectService
+      - Request/response schemas must match api/project-api.ts from m1
+      - ALL errors use TaggedErrors with HTTP status annotations
+
+      **Success Criteria:**
+      - All four project endpoints defined with schema validation
+      - Handlers delegate to ProjectService correctly
+      - Responses conform to API schema definitions
+      - Authentication enforced on all project endpoints
+
+  - id: m3-010
+    name: "Implement Task and Milestone RPC endpoint handlers"
+    description: |
+      Create HTTP API groups for milestone and task endpoints with RPC-style
+      handlers. Implement CRUD endpoints plus task status updates, milestone
+      reordering, and bulk task operations. All handlers delegate to services.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m3-005, m3-009]
+    files:
+      create:
+        - packages/api/src/api/routes/milestones.ts
+        - packages/api/src/api/routes/tasks.ts
+      modify:
+        - packages/api/src/server.ts
+    style_anchor_refs:
+      - SA-004
+      - SA-005
+    instructions: |
+      **Objective:**
+      Create milestone and task RPC endpoint handlers.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-004.md` — HttpApiGroup + HttpApiEndpoint definitions
+      - See `artifacts/style-anchors/SA-005.md` — HttpApiBuilder handler implementations
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/api/routes/milestones.ts`:
+         - Define HttpApiGroup.make("milestones") with endpoints (**SA-004**):
+           - POST /api/projects/:projectId/milestones — createMilestone
+           - GET /api/projects/:projectId/milestones — listMilestones
+           - GET /api/milestones/:milestoneId — getMilestone
+           - PATCH /api/milestones/:milestoneId — updateMilestone
+           - PUT /api/projects/:projectId/milestones/reorder — reorderMilestones
+         - Implement handlers using HttpApiBuilder.group (**SA-005**)
+      2. Create `packages/api/src/api/routes/tasks.ts`:
+         - Define HttpApiGroup.make("tasks") with endpoints (**SA-004**):
+           - POST /api/milestones/:milestoneId/tasks — createTask
+             - Validate milestoneId belongs to projectId in request
+           - GET /api/milestones/:milestoneId/tasks — listTasksByMilestone
+           - GET /api/projects/:projectId/tasks — listTasksByProject
+             - Optional query params: status, priority
+           - GET /api/tasks/:taskId — getTask
+           - PATCH /api/tasks/:taskId — updateTask
+           - PATCH /api/tasks/:taskId/status — updateTaskStatus
+             - Request body: { status: TaskStatus }
+           - PUT /api/milestones/:milestoneId/tasks/reorder — reorderTasks
+           - PATCH /api/tasks/bulk/status — bulkUpdateTaskStatus
+             - Request body: { taskIds: string[], status: TaskStatus }
+         - Implement handlers using HttpApiBuilder.group (**SA-005**)
+      3. Update `packages/api/src/server.ts`:
+         - Register milestones and tasks groups with main HttpApi
+         - Ensure MilestoneServiceLive and TaskServiceLive layers provided
+
+      **Constraints:**
+      - ONLY use: HttpApiGroup + HttpApiEndpoint (**SA-004**)
+      - ONLY use: HttpApiBuilder.group (**SA-005**)
+      - Handlers delegate to services — no business logic in handlers
+      - ALL endpoints require authentication
+      - Bulk operations use proper schema validation
+      - ALL errors use TaggedErrors with HTTP status annotations
+
+      **Success Criteria:**
+      - All milestone endpoints (5) and task endpoints (8) defined
+      - Handlers correctly delegate to MilestoneService and TaskService
+      - updateTaskStatus validates status transitions via service
+      - Bulk status update endpoint accepts array of task IDs
+      - Reorder endpoints accept ordered array of IDs
+
+  - id: m3-011
+    name: "Implement Document and Chat RPC endpoint handlers"
+    description: |
+      Create HTTP API groups for document and chat endpoints. Document endpoints
+      handle generating and retrieving project documents. Chat endpoints handle
+      creating sessions, sending messages, and retrieving history.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-007, m3-008, m3-009]
+    files:
+      create:
+        - packages/api/src/api/routes/documents.ts
+        - packages/api/src/api/routes/chat.ts
+      modify:
+        - packages/api/src/server.ts
+    style_anchor_refs:
+      - SA-004
+      - SA-005
+    instructions: |
+      **Objective:**
+      Create document and chat RPC endpoint handlers.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-004.md` — HttpApiGroup + HttpApiEndpoint definitions
+      - See `artifacts/style-anchors/SA-005.md` — HttpApiBuilder handler implementations
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/api/routes/documents.ts`:
+         - Define HttpApiGroup.make("documents") with endpoints (**SA-004**):
+           - POST /api/projects/:projectId/documents/generate — generateDocument
+             - Request body: { documentType: string, format: "yaml" | "markdown" | "json" }
+             - Response: generated Document
+             - Handler delegates to DocumentService.generateProjectPlan
+           - GET /api/projects/:projectId/documents — listDocuments
+             - Response: array of Document summaries
+           - GET /api/projects/:projectId/documents/:documentType — getDocument
+             - Response: latest version of requested document type
+           - GET /api/projects/:projectId/documents/:documentType/versions/:version — getDocumentVersion
+             - Response: specific version of document
+         - Implement handlers using HttpApiBuilder.group (**SA-005**)
+      2. Create `packages/api/src/api/routes/chat.ts`:
+         - Define HttpApiGroup.make("chat") with endpoints (**SA-004**):
+           - POST /api/projects/:projectId/chat/sessions — createChatSession
+             - Request body: { contextType: string }
+           - GET /api/projects/:projectId/chat/sessions — listChatSessions
+           - GET /api/chat/sessions/:sessionId — getChatHistory
+             - Response: full session with all messages
+           - POST /api/chat/sessions/:sessionId/messages — sendMessage
+             - Request body: { role: "user", content: string }
+             - Handler delegates to ChatSessionService.addMessage
+           - DELETE /api/chat/sessions/:sessionId — deleteChatSession
+         - Implement handlers using HttpApiBuilder.group (**SA-005**)
+      3. Update `packages/api/src/server.ts`:
+         - Register documents and chat groups with main HttpApi
+         - Ensure DocumentServiceLive and ChatSessionServiceLive layers provided
+
+      **Constraints:**
+      - ONLY use: HttpApiGroup + HttpApiEndpoint (**SA-004**)
+      - ONLY use: HttpApiBuilder.group (**SA-005**)
+      - Document generate endpoint triggers generation from DB (not upload)
+      - Chat sendMessage appends to existing session
+      - ALL endpoints require authentication
+      - ALL errors use TaggedErrors with HTTP status annotations
+
+      **Success Criteria:**
+      - Document endpoints (4) and chat endpoints (5) defined
+      - Document generation produces correct format based on request
+      - Chat history preserved across multiple message sends
+      - All endpoints return schema-validated responses
+
+  - id: m3-012
+    name: "Add integration tests for all services against real SQLite"
+    description: |
+      Write comprehensive integration tests for all domain services running
+      against a real SQLite database. Test the full service stack including
+      ProjectService, MilestoneService, TaskService, TagService,
+      DocumentService, and ChatSessionService working together.
+    estimate_minutes: 120
+    type: test
+    dependencies: [m3-005, m3-006, m3-007, m3-008]
+    files:
+      create:
+        - packages/api/test/integration/service-integration.test.ts
+        - packages/api/test/integration/document-generation.test.ts
+    style_anchor_refs:
+      - SA-008
+      - SA-009
+    instructions: |
+      **Objective:**
+      Integration tests for all services working together against real SQLite.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-008.md` — @effect/vitest patterns
+      - See `artifacts/style-anchors/SA-009.md` — SQL testing with temp databases
+
+      **Implementation Steps:**
+      1. Create `packages/api/test/integration/service-integration.test.ts`:
+         - Set up temp SQLite + full Layer stack (**SA-009**)
+         - Provide all service layers together
+         - Test cross-service interactions:
+           - Create project → create milestone → create tasks → verify ordering
+           - Create tags → assign to project → get project tags → verify
+           - Create project with tags → update tag → verify project reflects change
+           - Create milestone → reorder → verify order persisted
+           - Create tasks → bulk status update → verify all updated
+           - Create project → create chat session → add messages → retrieve history
+           - Delete tag → verify removed from all projects
+           - Delete project → verify cascading deletes (milestones, tasks, sessions)
+         - Test error scenarios:
+           - Create milestone with non-existent project → NotFoundError
+           - Create task with non-existent milestone → NotFoundError
+           - Create duplicate tag name → ConflictError
+           - Update non-existent project → NotFoundError
+      2. Create `packages/api/test/integration/document-generation.test.ts`:
+         - Test document generation in all three formats:
+           - Seed project with milestones and tasks
+           - Generate YAML document → verify valid YAML structure
+           - Generate markdown document → verify markdown format
+           - Generate JSON document → verify valid JSON structure
+         - Test version history:
+           - Generate document → version 1
+           - Modify project data → generate again → version 2
+           - Retrieve version 1 → verify original content
+           - Retrieve version 2 → verify updated content
+         - Test document listing:
+           - Generate multiple document types for same project
+           - List documents → verify all types present
+
+      **Constraints:**
+      - ONLY use: @effect/vitest with it.effect and it.scoped (**SA-008**)
+      - ONLY use: real SQLite temp databases (**SA-009**)
+      - Provide full Layer stack (all services + SqlClient + migrations)
+      - Each test suite uses isolated temp database
+      - Clean up resources after each test
+
+      **Success Criteria:**
+      - All integration tests pass
+      - Cross-service interactions verified
+      - Document generation produces valid YAML, markdown, JSON
+      - Version history correctly tracked
+      - Cascading deletes verified
+      - No test state leaks between suites
+
+  - id: m3-013
+    name: "Comprehensive code review for domain services"
+    description: |
+      Review all domain service implementations, RPC handlers, and tests for
+      quality, correctness, and alignment with technical requirements and
+      style anchors.
+    estimate_minutes: 60
+    type: code-review
+    dependencies: [m3-009, m3-010, m3-011, m3-012]
+    files:
+      create:
+        - code-reviews/2026-04-20-4-code-review.yaml
+      touch_only:
+        - packages/api/src/services/project-service.ts
+        - packages/api/src/services/milestone-service.ts
+        - packages/api/src/services/task-service.ts
+        - packages/api/src/services/tag-service.ts
+        - packages/api/src/services/document-service.ts
+        - packages/api/src/services/chat-session-service.ts
+        - packages/api/src/api/routes/projects.ts
+        - packages/api/src/api/routes/milestones.ts
+        - packages/api/src/api/routes/tasks.ts
+        - packages/api/src/api/routes/documents.ts
+        - packages/api/src/api/routes/chat.ts
+        - packages/api/test/integration/service-integration.test.ts
+        - packages/api/test/integration/document-generation.test.ts
+    instructions: |
+      **Objective:**
+      Review all domain services, RPC handlers, and tests from this milestone.
+
+      **Review Checklist:**
+      1. **Service Quality:**
+         - [ ] All services use Effect.Service with Layer pattern (SA-001)
+         - [ ] All services use Model.makeRepository for CRUD (SA-002)
+         - [ ] Custom queries use SqlResolver where appropriate (SA-003)
+         - [ ] No async/await anywhere — all Effect.gen
+         - [ ] No thrown exceptions — all TaggedErrors
+         - [ ] Services properly composed via Layer dependency injection
+
+      2. **RPC Handler Quality:**
+         - [ ] All endpoints use HttpApiGroup + HttpApiEndpoint (SA-004)
+         - [ ] All handlers use HttpApiBuilder.group (SA-005)
+         - [ ] Handlers contain NO business logic — only delegation to services
+         - [ ] All request/response schemas validated
+         - [ ] Authentication enforced on all endpoints (except health)
+
+      3. **Domain Logic:**
+         - [ ] FK relationships validated before inserts (projectId, milestoneId)
+         - [ ] Status transition validation prevents invalid state changes
+         - [ ] Reorder operations are atomic (sql.withTransaction)
+         - [ ] Document generation reflects current DB state (not stale data)
+         - [ ] Tag management handles JSON array updates correctly
+
+      4. **Testing:**
+         - [ ] Unit tests cover all service methods
+         - [ ] Integration tests verify cross-service interactions
+         - [ ] Document generation tests cover all three formats
+         - [ ] Error cases tested for all services
+         - [ ] Test coverage exceeds 80% for all service files
+
+      **Output:** Create code-reviews/2026-04-20-4-code-review.yaml with findings.
+
+      **Success Criteria:**
+      - No critical issues found
+      - All services follow Effect-TS patterns consistently
+      - Handler-to-service delegation is clean
+      - Ready to proceed to m4

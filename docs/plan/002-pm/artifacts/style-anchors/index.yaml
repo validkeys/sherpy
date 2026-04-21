@@ -1,0 +1,213 @@
+version: "1.0.0"
+project: sherpy-pm
+generated: "2026-04-20"
+technical_requirements_ref: ../requirements/technical-requirements.yaml
+
+categories:
+  - id: services
+    name: Effect-TS Services
+    description: "Layer-based service patterns with dependency injection using Effect.Service"
+    anchors:
+      - SA-001
+
+  - id: data-access
+    name: Data Access Layer
+    description: "@effect/sql patterns for database operations — Model, SqlResolver, Migrations"
+    anchors:
+      - SA-002
+      - SA-003
+      - SA-010
+
+  - id: api
+    name: HTTP API Layer
+    description: "@effect/platform HttpApi patterns for RPC-style endpoints with schema validation"
+    anchors:
+      - SA-004
+      - SA-005
+
+  - id: validation
+    name: Schema Validation
+    description: "Effect Schema patterns for domain types, API contracts, and error types"
+    anchors:
+      - SA-006
+      - SA-007
+
+  - id: testing
+    name: Testing
+    description: "@effect/vitest patterns for unit, integration, and property-based testing"
+    anchors:
+      - SA-008
+      - SA-009
+
+anchors:
+  - code: SA-001
+    name: Effect.Service with Layer-based Dependency Injection
+    file: SA-001-effect-service-layer.md
+    category: services
+    source:
+      repository: "~/Sites/ai-use-repos/EffectPatterns"
+      path: "packages/toolkit/src/services/database.ts"
+      lines: "52-170"
+    applies_to:
+      - "packages/api/src/services/**"
+    tags: [effect, service, layer, dependency-injection]
+
+  - code: SA-002
+    name: "@effect/sql Model.Class with makeRepository"
+    file: SA-002-sql-model-repository.md
+    category: data-access
+    source:
+      repository: "~/Sites/ai-use-repos/effect"
+      path: "packages/sql/src/Model.ts"
+      lines: "82-157, 684-838"
+    applies_to:
+      - "packages/shared/src/schemas/**"
+      - "packages/api/src/services/**"
+    tags: [effect, sql, model, repository, crud]
+
+  - code: SA-003
+    name: SqlResolver for Batched and Custom Queries
+    file: SA-003-sql-resolver-patterns.md
+    category: data-access
+    source:
+      repository: "~/Sites/ai-use-repos/effect"
+      path: "packages/sql-pg/examples/resolver.ts"
+      lines: "1-87"
+    applies_to:
+      - "packages/api/src/services/**"
+    tags: [effect, sql, resolver, batching, data-loader]
+
+  - code: SA-004
+    name: HttpApi with HttpApiGroup and HttpApiEndpoint
+    file: SA-004-http-api-definition.md
+    category: api
+    source:
+      repository: "~/Sites/ai-use-repos/effect"
+      path: "packages/platform-node/examples/api.ts"
+      lines: "1-122"
+    applies_to:
+      - "packages/api/src/api/routes/**"
+    tags: [effect, platform, http, api, routing, openapi]
+
+  - code: SA-005
+    name: HttpApiBuilder Handler Implementation
+    file: SA-005-http-api-handler.md
+    category: api
+    source:
+      repository: "~/Sites/ai-use-repos/effect"
+      path: "packages/platform-node/test/HttpApi.test.ts"
+      lines: "556-673"
+    applies_to:
+      - "packages/api/src/api/routes/**"
+    tags: [effect, platform, http, handler, implementation]
+
+  - code: SA-006
+    name: Effect Schema Domain Types
+    file: SA-006-schema-domain-types.md
+    category: validation
+    source:
+      repository: "~/Sites/ai-use-repos/EffectPatterns"
+      path: "packages/pipeline-state/src/schemas.ts"
+      lines: "1-234"
+    applies_to:
+      - "packages/shared/src/schemas/**"
+      - "packages/shared/src/types/**"
+    tags: [effect, schema, validation, domain-types]
+
+  - code: SA-007
+    name: Schema.Class for API Domain Types
+    file: SA-007-schema-class-api-types.md
+    category: validation
+    source:
+      repository: "~/Sites/ai-use-repos/effect"
+      path: "packages/platform-node/test/HttpApi.test.ts"
+      lines: "353-368"
+    applies_to:
+      - "packages/shared/src/schemas/**"
+      - "packages/api/src/errors/**"
+    tags: [effect, schema, class, tagged-error, api]
+
+  - code: SA-008
+    name: "@effect/vitest Test Patterns"
+    file: SA-008-vitest-test-patterns.md
+    category: testing
+    source:
+      repository: "~/Sites/ai-use-repos/effect"
+      path: "packages/vitest/test/index.test.ts"
+      lines: "1-245"
+    applies_to:
+      - "packages/api/test/**"
+      - "packages/shared/test/**"
+      - "packages/cli/test/**"
+    tags: [effect, vitest, testing, layer, property]
+
+  - code: SA-009
+    name: SQL Testing with @effect/vitest
+    file: SA-009-sql-testing.md
+    category: testing
+    source:
+      repository: "~/Sites/ai-use-repos/effect"
+      path: "packages/sql-sqlite-node/test/Resolver.test.ts"
+      lines: "1-177"
+    applies_to:
+      - "packages/api/test/**"
+    tags: [effect, vitest, sql, sqlite, integration]
+
+  - code: SA-010
+    name: Database Migration Runner
+    file: SA-010-migration-runner.md
+    category: data-access
+    source:
+      repository: "~/Sites/ai-use-repos/effect"
+      path: "packages/sql/src/Migrator.ts"
+      lines: "73-351"
+    applies_to:
+      - "packages/api/src/db/**"
+    tags: [effect, sql, migration, schema]
+
+usage_matrix:
+  by_architecture_pattern:
+    effect-layered-services:
+      - SA-001
+      - SA-002
+      - SA-004
+      - SA-005
+      - SA-008
+    sql-data-access:
+      - SA-002
+      - SA-003
+      - SA-010
+      - SA-009
+    http-api:
+      - SA-004
+      - SA-005
+      - SA-007
+    schema-validation:
+      - SA-006
+      - SA-007
+      - SA-002
+
+  by_task_type:
+    code:
+      - SA-001
+      - SA-002
+      - SA-003
+      - SA-006
+      - SA-007
+    test:
+      - SA-008
+      - SA-009
+    api:
+      - SA-004
+      - SA-005
+      - SA-007
+    config:
+      - SA-010
+
+meta:
+  total_anchors: 10
+  total_categories: 5
+  collection_date: "2026-04-20"
+  source_repositories:
+    - "~/Sites/ai-use-repos/effect"
+    - "~/Sites/ai-use-repos/EffectPatterns"

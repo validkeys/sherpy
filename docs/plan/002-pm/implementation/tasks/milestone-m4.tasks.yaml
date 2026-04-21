@@ -1,0 +1,668 @@
+milestone: m4
+name: "People & Resource Services"
+generated: "2026-04-20T12:00:00Z"
+dependencies: [m3]
+
+style_anchor_refs:
+  - SA-001
+  - SA-002
+  - SA-003
+  - SA-004
+  - SA-005
+  - SA-008
+  - SA-009
+
+global_constraints:
+  allowed_patterns:
+    - "Use Effect.Service with Layer for all service definitions (SA-001)"
+    - "Use Model.makeRepository for all entity CRUD operations (SA-002)"
+    - "Use SqlResolver for batched, joined, or aggregate queries (SA-003)"
+    - "Use HttpApiGroup + HttpApiEndpoint for API definitions (SA-004)"
+    - "Use HttpApiBuilder.group for handler implementations (SA-005)"
+    - "Use @effect/vitest for tests with it.effect and it.scoped (SA-008)"
+    - "Use SqlClient.test for SQL-backed tests with seeded data (SA-009)"
+    - "Use Effect.gen for composing async operations — no async/await"
+    - "Use Schema.TaggedError for all error types with _tag discriminant"
+  forbidden_patterns:
+    - "Async/await — use Effect.gen for composition"
+    - "Thrown exceptions — use Effect.fail with TaggedErrors"
+    - "Raw SQL strings without SqlResolver or repository methods"
+    - "Direct database access outside of service layers"
+    - "Any types — all function signatures must have explicit input and return types"
+    - "N+1 queries — use SqlResolver for joins and aggregates"
+    - "Catching and swallowing TaggedErrors — let them propagate"
+  tdd_required: true
+  max_task_duration_minutes: 120
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete
+      - pnpm run build passes for api package
+      - SQLite test database accessible
+      - Style anchors SA-001, SA-002, SA-003 reviewed
+  - stage: pre-commit
+    commands:
+      - pnpm run lint
+      - pnpm run typecheck
+      - pnpm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint errors
+      - No type errors
+      - Services use Effect.Service pattern consistently
+  - stage: milestone-completion
+    criteria:
+      - All CRUD services implement create, read, update operations
+      - ConflictService detects over-allocation and competing resource windows
+      - ResourceAllocationService aggregates by person and project via SQL
+      - All RPC endpoints return schema-validated responses
+      - Integration tests pass against real SQLite
+      - Every public service method has at least one test case
+
+tasks:
+  - id: m4-001
+    name: "PersonService with CRUD"
+    description: |
+      Implement the PersonService providing create, list, get, and update operations for the
+      `people` table. This is the foundational service for the People & Resource domain,
+      used by every subsequent service in this milestone.
+    estimate_minutes: 60
+    type: feature
+    dependencies: []
+    files:
+      create:
+        - "packages/api/src/services/people/PersonService.ts"
+        - "packages/api/src/services/people/index.ts"
+      modify: []
+      touch_only: []
+    style_anchor_refs: [SA-001, SA-002]
+    instructions:
+      objective: |
+        Create PersonService as an Effect.Service with a Layer that provides CRUD operations
+        (create, list, get, update) for the Person entity against the `people` table.
+      style_anchors:
+        - ref: SA-001
+          guidance: |
+            Define PersonService using Effect.Service<PersonService, never, PersonService.Service>.
+            Create a PersonServiceLive Layer that uses Model.makeRepository for data access.
+            Inject the Person repository as a dependency of the Layer.
+        - ref: SA-002
+          guidance: |
+            Use the Person Model.Class (defined in m1) with Model.makeRepository to get
+            a type-safe repository. Use repo.insert, repo.findById, repo.findAll, and repo.update
+            for the four CRUD methods. All methods return Effect with appropriate TaggedErrors.
+      implementation_steps:
+        - "Write failing test for PersonService.create with valid input (TDD — test first, see SA-008)."
+        - "Create packages/api/src/services/people/ directory."
+        - "Import the Person Model.Class from the models layer (m1)."
+        - "Define PersonService tag and interface with methods: create, list, get, update."
+        - "Create PersonServiceLive Layer using Effect.gen to construct the repository via Model.makeRepository(Person)."
+        - "Implement create(data) — validate input with Schema, call repo.insert, return the created Person."
+        - "Implement list(filters?) — call repo.findAll with optional where clauses, return ReadonlyArray<Person>."
+        - "Implement get(id) — call repo.findById, yield PersonNotFoundError if not found, return Person."
+        - "Implement update(id, data) — verify existence via get, call repo.update with merged fields, return Person."
+        - "Define PersonNotFoundError as a TaggedError for not-found cases."
+        - "Define PersonValidationError as a TaggedError for schema validation failures."
+        - "Export PersonService, PersonServiceLive, PersonNotFoundError, and PersonValidationError from index.ts."
+      constraints:
+        - "Use Effect.gen for all method bodies — no async/await."
+        - "All errors must be TaggedErrors yielded via Effect_yieldError."
+        - "Input validation must use Schema.decodeUnknown before database writes."
+        - "Never catch and swallow errors — let them propagate."
+      success_criteria:
+        - "PersonService is defined as Effect.Service with a Layer."
+        - "All four CRUD methods are implemented and return typed Effects."
+        - "PersonNotFoundError and PersonValidationError are defined as TaggedErrors."
+        - "TypeScript compiles without errors."
+
+  - id: m4-002
+    name: "SkillService and person-skill association"
+    description: |
+      Implement the SkillService for CRUD on the `skills` table and the PersonSkillService
+      for managing associations between people and skills in the `person_skills` join table.
+    estimate_minutes: 75
+    type: feature
+    dependencies: [m4-001]
+    files:
+      create:
+        - "packages/api/src/services/people/SkillService.ts"
+        - "packages/api/src/services/people/PersonSkillService.ts"
+      modify:
+        - "packages/api/src/services/people/index.ts"
+      touch_only: []
+    style_anchor_refs: [SA-001, SA-002]
+    instructions:
+      objective: |
+        Create SkillService for managing skills (CRUD) and PersonSkillService for associating
+        skills with people (add, remove, list skills for a person, list people for a skill).
+      style_anchors:
+        - ref: SA-001
+          guidance: |
+            Define both SkillService and PersonSkillService as Effect.Service with Layers.
+            PersonSkillService depends on the PersonSkill repository.
+        - ref: SA-002
+          guidance: |
+            Use the Skill and PersonSkill Model.Classes with Model.makeRepository.
+            For the join table, use repo.insert and repo.delete for association/disassociation.
+      implementation_steps:
+        - "Import Skill and PersonSkill Model.Classes from the models layer."
+        - "Define SkillService with methods: create, list, get, update, remove."
+        - "Create SkillServiceLive Layer using Model.makeRepository(Skill)."
+        - "Implement SkillService CRUD methods following the same pattern as PersonService."
+        - "Define SkillNotFoundError and SkillValidationError TaggedErrors."
+        - "Define PersonSkillService with methods: addSkill(personId, skillId), removeSkill(personId, skillId), listSkillsForPerson(personId), listPeopleForSkill(skillId)."
+        - "Create PersonSkillServiceLive Layer using Model.makeRepository(PersonSkill)."
+        - "Implement addSkill — call repo.insert with { personId, skillId }."
+        - "Implement removeSkill — call repo.delete with the composite key."
+        - "Implement listSkillsForPerson — use SqlResolver (SA-003) to join person_skills with skills filtered by personId."
+        - "Implement listPeopleForSkill — use SqlResolver to join person_skills with people filtered by skillId."
+        - "Define PersonSkillAlreadyExistsError and PersonSkillNotFoundError TaggedErrors."
+        - "Export all new services and errors from index.ts."
+      constraints:
+        - "Join queries (listSkillsForPerson, listPeopleForSkill) MUST use SqlResolver, not Model.makeRepository findAll with manual filtering."
+        - "All methods use Effect.gen — no async/await."
+        - "All errors are TaggedErrors."
+      success_criteria:
+        - "SkillService provides full CRUD for skills."
+        - "PersonSkillService manages person-skill associations."
+        - "Join queries use SqlResolver."
+        - "TypeScript compiles without errors."
+
+  - id: m4-003
+    name: "AssignmentService (assign/unassign person to task, update allocation)"
+    description: |
+      Implement the AssignmentService for assigning people to tasks, unassigning them, and
+      updating allocation percentages. Includes listing assignments by person, by task, and
+      by project.
+    estimate_minutes: 90
+    type: feature
+    dependencies: [m4-001]
+    files:
+      create:
+        - "packages/api/src/services/people/AssignmentService.ts"
+      modify:
+        - "packages/api/src/services/people/index.ts"
+      touch_only: []
+    style_anchor_refs: [SA-001, SA-002, SA-003]
+    instructions:
+      objective: |
+        Create AssignmentService as an Effect.Service with a Layer that provides assignment
+        lifecycle operations: assign, unassign, updateAllocation, listByPerson, listByTask,
+        and listByProject.
+      style_anchors:
+        - ref: SA-001
+          guidance: |
+            Define AssignmentService using Effect.Service with a Layer.
+            The Layer depends on the Assignment repository from Model.makeRepository.
+        - ref: SA-002
+          guidance: |
+            Use the Assignment Model.Class with Model.makeRepository for basic CRUD operations
+            (insert, findById, delete, update).
+        - ref: SA-003
+          guidance: |
+            Use SqlResolver for listByPerson, listByTask, and listByProject — these require
+            joins with the people, tasks, and projects tables respectively to return enriched data.
+      implementation_steps:
+        - "Import Assignment Model.Class from the models layer."
+        - "Define AssignmentService tag and interface with methods: assign, unassign, updateAllocation, listByPerson, listByTask, listByProject."
+        - "Create AssignmentServiceLive Layer using Model.makeRepository(Assignment)."
+        - "Implement assign(personId, taskId, allocation) — validate allocation is 1-100, call repo.insert."
+        - "Implement unassign(assignmentId) — verify existence, call repo.delete."
+        - "Implement updateAllocation(assignmentId, allocation) — verify existence, validate allocation, call repo.update."
+        - "Implement listByPerson(personId) — use SqlResolver to query assignments joined with tasks where personId matches."
+        - "Implement listByTask(taskId) — use SqlResolver to query assignments joined with people where taskId matches."
+        - "Implement listByProject(projectId) — use SqlResolver to query assignments joined with tasks and people where projectId matches."
+        - "Define AssignmentNotFoundError, AssignmentAlreadyExistsError, and InvalidAllocationError TaggedErrors."
+        - "Export AssignmentService, AssignmentServiceLive, and all errors from index.ts."
+      constraints:
+        - "Allocation must be validated as an integer between 1 and 100 inclusive."
+        - "listByPerson, listByTask, listByProject MUST use SqlResolver with proper joins — not N+1 queries."
+        - "All methods use Effect.gen."
+        - "All errors are TaggedErrors."
+      success_criteria:
+        - "AssignmentService supports assign, unassign, updateAllocation, and three list methods."
+        - "List methods return enriched data via SqlResolver joins."
+        - "Allocation validation is enforced."
+        - "TypeScript compiles without errors."
+
+  - id: m4-004
+    name: "AvailabilityService (create/update/list windows)"
+    description: |
+      Implement the AvailabilityService for managing availability windows — time periods
+      during which a person is available (or unavailable) for work.
+    estimate_minutes: 60
+    type: feature
+    dependencies: [m4-001]
+    files:
+      create:
+        - "packages/api/src/services/people/AvailabilityService.ts"
+      modify:
+        - "packages/api/src/services/people/index.ts"
+      touch_only: []
+    style_anchor_refs: [SA-001, SA-002]
+    instructions:
+      objective: |
+        Create AvailabilityService as an Effect.Service with a Layer that provides
+        create, update, remove, listByPerson, and listOverlapping operations for the
+        `availability_windows` table.
+      style_anchors:
+        - ref: SA-001
+          guidance: |
+            Define AvailabilityService using Effect.Service with a Layer.
+            The Layer depends on the AvailabilityWindow repository.
+        - ref: SA-002
+          guidance: |
+            Use the AvailabilityWindow Model.Class with Model.makeRepository for CRUD.
+            Use SqlResolver for listOverlapping which requires date-range comparison.
+      implementation_steps:
+        - "Import AvailabilityWindow Model.Class from the models layer."
+        - "Define AvailabilityService tag and interface with methods: create, update, remove, listByPerson, listOverlapping."
+        - "Create AvailabilityServiceLive Layer using Model.makeRepository(AvailabilityWindow)."
+        - "Implement create(personId, startDate, endDate, status) — validate date range (start < end), call repo.insert."
+        - "Implement update(windowId, data) — verify existence, validate date range if dates changed, call repo.update."
+        - "Implement remove(windowId) — verify existence, call repo.delete."
+        - "Implement listByPerson(personId) — use repo.findAll filtered by personId."
+        - "Implement listOverlapping(personId, startDate, endDate) — use SqlResolver to find windows where date ranges overlap with the given range for the specified person."
+        - "Define AvailabilityWindowNotFoundError, InvalidDateRangeError TaggedErrors."
+        - "Export AvailabilityService, AvailabilityServiceLive, and all errors from index.ts."
+      constraints:
+        - "Date range validation: startDate MUST be strictly before endDate."
+        - "listOverlapping MUST use SqlResolver with SQL range overlap logic (start1 <= end2 AND end1 >= start2)."
+        - "All methods use Effect.gen."
+        - "All errors are TaggedErrors."
+      success_criteria:
+        - "AvailabilityService provides create, update, remove, listByPerson, and listOverlapping."
+        - "Date range validation is enforced."
+        - "Overlap detection uses proper SQL range comparison."
+        - "TypeScript compiles without errors."
+
+  - id: m4-005
+    name: "ConflictService — detect over-allocation and competing resource windows"
+    description: |
+      Implement the ConflictService that detects scheduling conflicts including person
+      over-allocation (total allocation > 100% in a period) and competing availability
+      windows for the same person.
+    estimate_minutes: 120
+    type: feature
+    dependencies: [m4-003, m4-004]
+    files:
+      create:
+        - "packages/api/src/services/people/ConflictService.ts"
+      modify:
+        - "packages/api/src/services/people/index.ts"
+      touch_only: []
+    style_anchor_refs: [SA-001, SA-003]
+    instructions:
+      objective: |
+        Create ConflictService as an Effect.Service with a Layer that detects two types of
+        conflicts: (1) over-allocation where a person's total assignment allocation exceeds
+        100% for overlapping task periods, and (2) availability window conflicts where a
+        person has overlapping or contradictory availability windows.
+      style_anchors:
+        - ref: SA-001
+          guidance: |
+            Define ConflictService using Effect.Service with a Layer.
+            The Layer depends on AssignmentService and AvailabilityService (not repositories directly).
+        - ref: SA-003
+          guidance: |
+            Use SqlResolver for aggregate queries — sum allocations by person within date ranges,
+            and detect overlapping windows. Do NOT load all data into memory and filter in TypeScript.
+      implementation_steps:
+        - "Define a Conflict schema with fields: type (over_allocation | availability_conflict), personId, details (array of conflicting items)."
+        - "Define ConflictService tag and interface with methods: detectOverAllocation(personId, startDate, endDate), detectAvailabilityConflicts(personId), detectAllConflictsForPerson(personId, startDate, endDate)."
+        - "Create ConflictServiceLive Layer depending on AssignmentService and AvailabilityService."
+        - "Implement detectOverAllocation — use SqlResolver to SUM allocation percentages for the person's assignments that overlap the given date range. If total > 100, return conflicts with details of each contributing assignment."
+        - "Implement detectAvailabilityConflicts — query all availability windows for the person, use SqlResolver to find pairs of windows with overlapping date ranges. Return each overlapping pair as a conflict."
+        - "Implement detectAllConflictsForPerson — combine results from both detection methods."
+        - "Return ReadonlyArray<Conflict> from all methods — empty array means no conflicts."
+        - "Export ConflictService, ConflictServiceLive, Conflict schema from index.ts."
+      constraints:
+        - "Over-allocation detection MUST use SQL aggregation (SUM), not load all assignments and sum in TypeScript."
+        - "Availability conflict detection MUST use SQL overlap comparison, not in-memory filtering."
+        - "All methods use Effect.gen."
+        - "No errors thrown for conflicts — conflicts are data returned in the result array."
+        - "Services are injected as Layer dependencies, not imported directly."
+      success_criteria:
+        - "ConflictService detects over-allocation via SQL aggregation."
+        - "ConflictService detects availability window overlaps via SQL range comparison."
+        - "detectAllConflictsForPerson combines both detection strategies."
+        - "Conflict schema is properly typed."
+        - "TypeScript compiles without errors."
+
+  - id: m4-006
+    name: "ResourceAllocationService — aggregate allocation by person and project"
+    description: |
+      Implement the ResourceAllocationService that provides aggregated views of resource
+      allocation — total allocation per person across all projects, and total allocation
+      per project broken down by person.
+    estimate_minutes: 90
+    type: feature
+    dependencies: [m4-003]
+    files:
+      create:
+        - "packages/api/src/services/people/ResourceAllocationService.ts"
+      modify:
+        - "packages/api/src/services/people/index.ts"
+      touch_only: []
+    style_anchor_refs: [SA-001, SA-003]
+    instructions:
+      objective: |
+        Create ResourceAllocationService as an Effect.Service with a Layer that provides
+        aggregated resource allocation views: allocationByPerson (total % per person),
+        allocationByProject (total % per project broken down by person), and
+        personAllocationByProject (single person's allocation across their projects).
+      style_anchors:
+        - ref: SA-001
+          guidance: |
+            Define ResourceAllocationService using Effect.Service with a Layer.
+            The Layer depends on the Assignment repository directly for aggregation queries.
+        - ref: SA-003
+          guidance: |
+            Use SqlResolver for all aggregation queries — GROUP BY person, GROUP BY project,
+            SUM allocations. Never load raw rows and aggregate in TypeScript.
+      implementation_steps:
+        - "Define PersonAllocation schema: { personId, personName, totalAllocation, assignments: ReadonlyArray<{ taskId, projectId, allocation }> }."
+        - "Define ProjectAllocation schema: { projectId, projectName, totalAllocation, people: ReadonlyArray<{ personId, personName, allocation }> }."
+        - "Define ResourceAllocationService tag and interface with methods: allocationByPerson, allocationByProject, personAllocationByProject(personId)."
+        - "Create ResourceAllocationServiceLive Layer using Model.makeRepository(Assignment) for dependency."
+        - "Implement allocationByPerson — use SqlResolver to query assignments grouped by personId with SUM(allocation), joined with people for names. Map results to PersonAllocation."
+        - "Implement allocationByProject — use SqlResolver to query assignments grouped by projectId with SUM(allocation), joined with projects for names and people for person details. Map to ProjectAllocation."
+        - "Implement personAllocationByProject — use SqlResolver to query assignments for a specific person grouped by projectId with SUM(allocation). Map to allocation breakdown."
+        - "Export ResourceAllocationService, ResourceAllocationServiceLive, and schema types from index.ts."
+      constraints:
+        - "All aggregation MUST happen in SQL via SqlResolver — no in-memory grouping or summing."
+        - "All methods use Effect.gen."
+        - "Schemas must have explicit typed definitions, not ad-hoc object shapes."
+      success_criteria:
+        - "ResourceAllocationService provides three aggregation methods."
+        - "All aggregation uses SqlResolver with SQL GROUP BY and SUM."
+        - "Return types are properly defined schemas."
+        - "TypeScript compiles without errors."
+
+  - id: m4-007
+    name: "Unit tests for PersonService and SkillService"
+    description: |
+      Write comprehensive unit tests for PersonService and SkillService covering all
+      CRUD operations, error cases, and person-skill association workflows.
+    estimate_minutes: 75
+    type: test
+    dependencies: [m4-001, m4-002]
+    files:
+      create:
+        - "packages/api/src/services/people/PersonService.test.ts"
+        - "packages/api/src/services/people/SkillService.test.ts"
+        - "packages/api/src/services/people/PersonSkillService.test.ts"
+      modify: []
+      touch_only: []
+    style_anchor_refs: [SA-008]
+    instructions:
+      objective: |
+        Write unit tests for PersonService, SkillService, and PersonSkillService using
+        @effect/vitest patterns. Cover all public methods including success paths and
+        error paths (not found, validation failure, duplicate).
+      style_anchors:
+        - ref: SA-008
+          guidance: |
+            Use @effect/vitest test() function. Structure tests with Effect.gen,
+            provide service Layers using Layer.provide, use SqlClient.test for
+            in-memory database. Use beforeEach for seed data setup.
+      implementation_steps:
+        - "Create PersonService.test.ts with a test layer providing PersonServiceLive with SqlClient.test."
+        - "Test PersonService.create — valid input creates person, invalid input yields PersonValidationError."
+        - "Test PersonService.get — existing person returns data, non-existent yields PersonNotFoundError."
+        - "Test PersonService.list — returns all people, respects filters."
+        - "Test PersonService.update — updates fields, not-found yields PersonNotFoundError."
+        - "Create SkillService.test.ts with the same test layer pattern."
+        - "Test SkillService CRUD — create, get, list, update, remove with success and error cases."
+        - "Create PersonSkillService.test.ts."
+        - "Test addSkill — creates association, duplicate yields PersonSkillAlreadyExistsError."
+        - "Test removeSkill — removes association, non-existent yields PersonSkillNotFoundError."
+        - "Test listSkillsForPerson — returns skills for given person via join."
+        - "Test listPeopleForSkill — returns people for given skill via join."
+        - "Seed test data: at least 2 people, 3 skills, and associations for join tests."
+      constraints:
+        - "Use @effect/vitest — not plain vitest or jest."
+        - "Use SqlClient.test for in-memory database — no external database dependencies."
+        - "Each test must be independent — use beforeEach or Effect.gen for setup."
+        - "Test both success and error paths."
+      success_criteria:
+        - "All PersonService methods have success and error test cases."
+        - "All SkillService methods have success and error test cases."
+        - "PersonSkillService association and join methods are tested."
+        - "All tests pass: pnpm --filter api test."
+
+  - id: m4-008
+    name: "Unit tests for AssignmentService and AvailabilityService"
+    description: |
+      Write comprehensive unit tests for AssignmentService and AvailabilityService covering
+      all assignment lifecycle operations, allocation validation, availability window CRUD,
+      and date range validation.
+    estimate_minutes: 75
+    type: test
+    dependencies: [m4-003, m4-004]
+    files:
+      create:
+        - "packages/api/src/services/people/AssignmentService.test.ts"
+        - "packages/api/src/services/people/AvailabilityService.test.ts"
+      modify: []
+      touch_only: []
+    style_anchor_refs: [SA-008]
+    instructions:
+      objective: |
+        Write unit tests for AssignmentService and AvailabilityService using @effect/vitest.
+        Cover CRUD, validation, and all list/query methods including SqlResolver-backed
+        joins and date-range queries.
+      style_anchors:
+        - ref: SA-008
+          guidance: |
+            Use @effect/vitest test() with SqlClient.test. For services that depend on
+            other services (AssignmentService), provide all dependency layers in the test.
+      implementation_steps:
+        - "Create AssignmentService.test.ts with test layer providing AssignmentServiceLive and SqlClient.test."
+        - "Test assign — creates assignment with valid allocation, rejects allocation < 1 or > 100 with InvalidAllocationError."
+        - "Test unassign — removes assignment, not-found yields AssignmentNotFoundError."
+        - "Test updateAllocation — updates allocation, validates range, not-found yields error."
+        - "Test listByPerson — returns assignments with task details for given person."
+        - "Test listByTask — returns assignments with person details for given task."
+        - "Test listByProject — returns assignments with person and task details for given project."
+        - "Create AvailabilityService.test.ts with test layer providing AvailabilityServiceLive and SqlClient.test."
+        - "Test create — creates window with valid dates, rejects end <= start with InvalidDateRangeError."
+        - "Test update — updates fields, validates date range, not-found yields error."
+        - "Test remove — removes window, not-found yields error."
+        - "Test listByPerson — returns windows for given person."
+        - "Test listOverlapping — returns windows that overlap with the given date range."
+        - "Seed test data: people, tasks (from a project), assignments, and availability windows."
+      constraints:
+        - "Use @effect/vitest — not plain vitest or jest."
+        - "Use SqlClient.test for in-memory database."
+        - "Test boundary conditions for allocation (1, 100, 0, 101) and date ranges (same day, inverted)."
+        - "All tests must be independent."
+      success_criteria:
+        - "All AssignmentService methods have success and error test cases."
+        - "Allocation boundary conditions are tested."
+        - "All AvailabilityService methods have success and error test cases."
+        - "Date range boundary conditions are tested."
+        - "All tests pass: pnpm --filter api test."
+
+  - id: m4-009
+    name: "Integration tests for ConflictService (edge cases)"
+    description: |
+      Write integration tests for ConflictService that exercise conflict detection with
+      realistic data scenarios including edge cases: exactly 100% allocation, overlapping
+      windows that share boundaries, multiple people with interwoven assignments.
+    estimate_minutes: 90
+    type: test
+    dependencies: [m4-005, m4-006]
+    files:
+      create:
+        - "packages/api/src/services/people/ConflictService.test.ts"
+        - "packages/api/src/services/people/ResourceAllocationService.test.ts"
+      modify: []
+      touch_only: []
+    style_anchor_refs: [SA-008, SA-009]
+    instructions:
+      objective: |
+        Write integration tests for ConflictService and ResourceAllocationService using
+        @effect/vitest with SqlClient.test. Test conflict detection edge cases and
+        aggregation accuracy with seeded multi-table data.
+      style_anchors:
+        - ref: SA-008
+          guidance: |
+            Use @effect/vitest test() with full Layer stacks. ConflictService depends on
+            AssignmentService and AvailabilityService — provide the complete dependency tree.
+        - ref: SA-009
+          guidance: |
+            Use SqlClient.test with seed data spanning multiple tables (people, projects,
+            tasks, assignments, availability_windows). Test SQL-backed queries against
+            real data, not mocks.
+      implementation_steps:
+        - "Create ConflictService.test.ts with full test layer stack: ConflictServiceLive + AssignmentServiceLive + AvailabilityServiceLive + SqlClient.test."
+        - "Test detectOverAllocation — person with 3 assignments totaling 150% returns over-allocation conflict."
+        - "Test detectOverAllocation — person with assignments totaling exactly 100% returns no conflicts."
+        - "Test detectOverAllocation — person with non-overlapping assignments returns no conflicts even if each is 100%."
+        - "Test detectAvailabilityConflicts — overlapping windows for same person returns conflicts."
+        - "Test detectAvailabilityConflicts — adjacent but non-overlapping windows (end1 == start2) returns no conflicts."
+        - "Test detectAvailabilityConflicts — no windows returns empty array."
+        - "Test detectAllConflictsForPerson — combines both conflict types."
+        - "Create ResourceAllocationService.test.ts with test layer stack."
+        - "Test allocationByPerson — returns correct SUM per person across all assignments."
+        - "Test allocationByProject — returns correct SUM per project with person breakdown."
+        - "Test personAllocationByProject — returns correct breakdown for a single person."
+        - "Seed rich test data: 3 people, 2 projects, 5 tasks, 8+ assignments, 5+ availability windows."
+      constraints:
+        - "Use @effect/vitest with SqlClient.test — real SQL queries, not mocks."
+        - "Test edge cases explicitly: boundary values (exactly 100%), empty states, and single-entity scenarios."
+        - "All tests must be independent with fresh seed data."
+        - "Integration tests must validate the full Layer stack works end-to-end."
+      success_criteria:
+        - "ConflictService edge cases are covered: exactly 100%, over 100%, non-overlapping, boundary dates."
+        - "ResourceAllocationService aggregation accuracy is verified."
+        - "Tests use real SQL via SqlClient.test, not mocks."
+        - "All tests pass: pnpm --filter api test."
+
+  - id: m4-010
+    name: "People and resource RPC endpoint handlers"
+    description: |
+      Create HTTP API endpoint definitions and handlers for all people and resource services.
+      Define HttpApiGroups for people, skills, assignments, availability, conflicts, and
+      resource allocation, then implement handlers that delegate to the service layers.
+    estimate_minutes: 120
+    type: feature
+    dependencies: [m4-001, m4-002, m4-003, m4-004, m4-005, m4-006]
+    files:
+      create:
+        - "packages/api/src/api/routes/peopleApi.ts"
+        - "packages/api/src/api/routes/skillsApi.ts"
+        - "packages/api/src/api/routes/assignmentsApi.ts"
+        - "packages/api/src/api/routes/availabilityApi.ts"
+        - "packages/api/src/api/routes/conflictsApi.ts"
+        - "packages/api/src/api/routes/resourceAllocationApi.ts"
+      modify:
+        - "packages/api/src/api/routes/index.ts"
+      touch_only: []
+    style_anchor_refs: [SA-004, SA-005]
+    instructions:
+      objective: |
+        Define HttpApiGroups and HttpApiEndpoints for people, skills, assignments, availability,
+        conflicts, and resource allocation. Implement handlers using HttpApiBuilder.handlers
+        that delegate to the corresponding services.
+      style_anchors:
+        - ref: SA-004
+          guidance: |
+            Define each API group using HttpApiGroup with a tag (e.g., "People", "Skills").
+            Define endpoints using HttpApiEndpoint with method, path, request schema, and
+            response schema. Use Schema.Struct for request/response types. Group related
+            endpoints together.
+        - ref: SA-005
+          guidance: |
+            Implement handlers using HttpApiBuilder.handlers for each group. Each handler
+            calls the corresponding service method and returns the result. Use Effect.gen
+            in handlers. Provide the handler Layer with all required service Layers.
+      implementation_steps:
+        - "Create peopleApi.ts — define PeopleApi HttpApiGroup with endpoints: POST /people (create), GET /people (list), GET /people/:id (get), PUT /people/:id (update)."
+        - "Create skillsApi.ts — define SkillsApi HttpApiGroup with endpoints: POST /skills (create), GET /skills (list), GET /skills/:id (get), PUT /skills/:id (update), DELETE /skills/:id (remove)."
+        - "Add person-skill endpoints to skillsApi or a separate PersonSkillsApi: POST /people/:personId/skills (addSkill), DELETE /people/:personId/skills/:skillId (removeSkill), GET /people/:personId/skills (listSkillsForPerson)."
+        - "Create assignmentsApi.ts — define AssignmentsApi with endpoints: POST /assignments (assign), DELETE /assignments/:id (unassign), PATCH /assignments/:id (updateAllocation), GET /people/:personId/assignments (listByPerson), GET /tasks/:taskId/assignments (listByTask), GET /projects/:projectId/assignments (listByProject)."
+        - "Create availabilityApi.ts — define AvailabilityApi with endpoints: POST /people/:personId/availability (create), PATCH /availability/:id (update), DELETE /availability/:id (remove), GET /people/:personId/availability (listByPerson), GET /people/:personId/availability/overlapping (listOverlapping with query params)."
+        - "Create conflictsApi.ts — define ConflictsApi with endpoints: GET /people/:personId/conflicts (detectAllConflictsForPerson with query params for date range)."
+        - "Create resourceAllocationApi.ts — define ResourceAllocationApi with endpoints: GET /allocations/by-person (allocationByPerson), GET /allocations/by-project (allocationByProject), GET /people/:personId/allocations/by-project (personAllocationByProject)."
+        - "Implement handlers for each group using HttpApiBuilder.handlers, delegating to the corresponding service."
+        - "Wire all handler Layers into the route index.ts."
+      constraints:
+        - "All request and response bodies must use Schema — no any or unknown."
+        - "Error responses must map TaggedErrors to appropriate HTTP status codes (404 for not found, 400 for validation, 409 for conflict/already exists)."
+        - "Handlers must use Effect.gen — no async/await."
+        - "Each API group must be a separate file for maintainability."
+        - "RESTful URL patterns: resources are nouns, actions are HTTP methods."
+      success_criteria:
+        - "All six API groups are defined with complete endpoint sets."
+        - "All handlers delegate to service methods."
+        - "Request/response schemas are fully typed."
+        - "TaggedErrors map to correct HTTP status codes."
+        - "All handler Layers are exported from the routes index."
+        - "TypeScript compiles without errors."
+
+  - id: m4-011
+    name: "Code review"
+    description: |
+      Review all code produced in milestone m4 for correctness, consistency with style anchors,
+      error handling, type safety, and test coverage. Fix any issues found.
+    estimate_minutes: 30
+    type: review
+    dependencies: [m4-007, m4-008, m4-009, m4-010]
+    files:
+      create: []
+      modify: []
+      touch_only:
+        - "packages/api/src/services/people/**"
+        - "packages/api/src/api/routes/peopleApi.ts"
+        - "packages/api/src/api/routes/skillsApi.ts"
+        - "packages/api/src/api/routes/assignmentsApi.ts"
+        - "packages/api/src/api/routes/availabilityApi.ts"
+        - "packages/api/src/api/routes/conflictsApi.ts"
+        - "packages/api/src/api/routes/resourceAllocationApi.ts"
+    style_anchor_refs: [SA-001, SA-002, SA-003, SA-004, SA-005, SA-008, SA-009]
+    instructions:
+      objective: |
+        Review all m4 code for correctness, style anchor adherence, error handling completeness,
+        type safety, and test coverage. Fix any deviations or bugs found.
+      style_anchors:
+        - ref: SA-001
+          guidance: "Verify every service uses Effect.Service with Layer, not classes or plain functions."
+        - ref: SA-002
+          guidance: "Verify Model.makeRepository is used for all CRUD — no hand-rolled SQL for basic operations."
+        - ref: SA-003
+          guidance: "Verify SqlResolver is used for all joins and aggregates — no N+1 queries or in-memory filtering."
+        - ref: SA-004
+          guidance: "Verify API groups use HttpApiGroup/HttpApiEndpoint with proper schemas."
+        - ref: SA-005
+          guidance: "Verify handlers use HttpApiBuilder.handlers and delegate to services."
+        - ref: SA-008
+          guidance: "Verify tests use @effect/vitest patterns with proper Layer provision."
+        - ref: SA-009
+          guidance: "Verify SQL-backed tests use SqlClient.test with seeded data, not mocks."
+      implementation_steps:
+        - "Run pnpm --filter api check — fix any type errors."
+        - "Run pnpm --filter api lint — fix any lint issues."
+        - "Run pnpm --filter api test — all tests must pass."
+        - "Review each service file for: Effect.gen usage, no async/await, TaggedErrors for all error cases, no swallowed errors."
+        - "Review SqlResolver queries for correctness — check JOIN conditions, WHERE clauses, GROUP BY."
+        - "Review API handlers for: correct HTTP status code mapping, complete request/response schemas."
+        - "Review tests for: coverage of all public methods, edge case testing, independent test isolation."
+        - "Check that all new files are exported from their respective index.ts barrel files."
+        - "Fix any issues found during review."
+      constraints:
+        - "Zero TypeScript errors."
+        - "Zero lint errors."
+        - "100% of tests passing."
+        - "No async/await anywhere."
+        - "No any types anywhere."
+      success_criteria:
+        - "pnpm --filter api check passes cleanly."
+        - "pnpm --filter api lint passes cleanly."
+        - "pnpm --filter api test passes with all test cases green."
+        - "All style anchor conventions are followed."
+        - "No review comments remain unresolved."

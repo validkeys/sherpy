@@ -1,0 +1,881 @@
+project: sherpy-pm
+version: "2.0.0"
+generated: "2026-04-20T11:35:00Z"
+business_requirements_ref: ./business-requirements.yaml
+
+overview: |
+  Sherpy PM is a local-first project management system with AI-assisted scheduling.
+  It runs as a global Node.js CLI that spawns an Effect-TS API daemon serving a React
+  web UI. The system is built cloud-ready from day one — using @effect/sql for
+  database abstraction (SQLite locally, PostgreSQL in cloud), Okta OIDC for auth
+  that works in both modes, and stateless API design for horizontal scaling.
+
+  The architecture is a pnpm monorepo with three main packages (cli, api, web) plus
+  a shared types package. Effect-TS layered services provide domain logic with clean
+  dependency injection. The frontend is built with Vite and served as static assets
+  by the API daemon.
+
+  **UI Paradigm:** Email inbox layout. Projects enter as new intake, users tag/assign/filter
+  them. Clicking a project shows its current status (initially tracking Sherpy flow
+  pipeline position, then manual status during active development). Per-project
+  assistant-ui chat drives the Sherpy flow steps or answers questions about project
+  documents. Documents are viewable with syntax highlighting and exportable as PDF.
+
+  **Data Paradigm:** Database is the sole source of truth. No .sherpy/ files are created
+  or parsed. The Sherpy flow chat steps write directly to the DB. Documents are
+  generated views — an adapter renders DB data into standard Sherpy document formats
+  (YAML, markdown, PDF) on demand. Net new project with no existing file-based
+  projects to migrate.
+
+architecture:
+  pattern: Effect-TS Layered Services
+  description: |
+    The system follows a layered architecture built on Effect-TS primitives (Layer,
+    Service, Effect). Domain services encapsulate business logic and are composed
+    via Effect's dependency injection layer system.
+
+    **Architecture Components:**
+
+    1. **CLI Layer** (packages/cli)
+       - Global Node.js CLI (`sherpy start` / `sherpy stop`)
+       - Spawns API daemon as detached child process
+       - Tracks PID for lifecycle management
+       - Opens browser to web UI on start
+
+    2. **API Layer** (packages/api)
+       - Effect-TS HTTP server via @effect/platform-node
+       - RPC-style POST endpoints for all operations
+       - WebSocket endpoint for real-time dashboard updates
+       - Okta OIDC JWT validation on every request
+       - Serves React static assets
+       - Auto-runs database migrations on startup
+
+    3. **Shared Types** (packages/shared)
+       - Effect Schema definitions for all API request/response types
+       - Shared domain types between CLI, API, and web packages
+       - Event types for WebSocket messages
+
+    4. **Web Layer** (packages/web)
+       - Email inbox layout with project list, tagging, filtering
+       - Project detail view showing status and documents
+       - Per-project assistant-ui chat for Sherpy flow and Q&A
+       - Document viewer with syntax highlighting
+       - PDF export for generated documents
+       - Built by Vite as static assets
+       - WebSocket client for real-time updates
+       - Okta OIDC login flow
+
+    5. **Data Layer** (@effect/sql)
+       - Database is the sole source of truth
+       - No .sherpy/ files — all data lives in DB
+       - Unified SqlClient interface
+       - Local mode: @effect/sql-libsql → ~/.sherpy/sherpy.db
+       - Cloud mode: @effect/sql-pg → RDS PostgreSQL
+       - Swap via Effect Layers driven by config/env
+       - Document adapter generates YAML/markdown/PDF views from DB data
+
+    6. **AI Layer** (packages/api internal)
+       - AWS Bedrock via Vercel AI SDK (@ai-sdk/amazon-bedrock)
+       - Structured output generation via Vercel AI SDK
+       - All AI interactions through single service
+       - Conversational UX via assistant-ui per-project
+       - Drives Sherpy flow steps through chat
+
+  components:
+    - name: CLI
+      responsibility: Daemon lifecycle management (spawn, track, stop)
+    - name: API Daemon
+      responsibility: HTTP/WS server, RPC endpoints, auth, static asset serving, document generation
+    - name: Web UI (Inbox)
+      responsibility: Project inbox, tagging, filtering, status tracking, document viewer, PDF export
+    - name: Web UI (Chat)
+      responsibility: Per-project assistant-ui chat for Sherpy flow steps and project Q&A
+    - name: Data Layer
+      responsibility: Database-agnostic persistence via @effect/sql, document adapter
+    - name: AI Service
+      responsibility: Bedrock integration, Sherpy flow orchestration, schedule generation, scenario analysis
+    - name: Shared Types
+      responsibility: Effect Schema definitions, shared domain types, WS event types
+
+technology_stack:
+  language: TypeScript
+  runtime: Node.js 23+ with ESM
+  frameworks:
+    - "Effect-TS (backend framework — Layer, Service, Effect, @effect/platform)"
+    - "React 19 (web UI)"
+    - "Vite (frontend build tool)"
+  libraries:
+    core:
+      - "@effect/platform — HTTP server, WebSocket"
+      - "@effect/platform-node — Node.js runtime for Effect platform"
+      - "@effect/sql — unified SQL client interface"
+      - "@effect/sql-libsql — SQLite driver for local mode"
+      - "@effect/sql-pg — PostgreSQL driver for cloud mode"
+      - "@effect/schema — request/response validation, type generation"
+      - "@effect/vitest — Effect-native Vitest helpers"
+      - "tailwindcss — utility-first CSS"
+      - "assistant-ui — React AI chat interface components"
+      - "shadcn/ui — accessible React component library"
+      - "ai — Vercel AI SDK core"
+      - "@ai-sdk/amazon-bedrock — Bedrock provider for Vercel AI SDK"
+    development:
+      - "typescript — strict mode"
+      - "vitest — test runner"
+      - "biome — linter + formatter"
+  package_manager: pnpm (workspaces)
+
+project_structure:
+  type: monorepo (pnpm workspaces)
+  layout: |
+    sherpy-pm/
+    ├── packages/
+    │   ├── cli/                          # Global CLI tool
+    │   │   ├── src/
+    │   │   │   ├── commands/             # start, stop commands
+    │   │   │   ├── daemon.ts             # Process management
+    │   │   │   └── index.ts
+    │   │   ├── package.json
+    │   │   └── tsconfig.json
+    │   │
+    │   ├── api/                          # Effect-TS API daemon
+    │   │   ├── src/
+    │   │   │   ├── services/             # Effect-TS Layer-based services
+    │   │   │   │   ├── project/
+    │   │   │   │   ├── milestone/
+    │   │   │   │   ├── task/
+    │   │   │   │   ├── person/
+    │   │   │   │   ├── schedule/
+    │   │   │   │   └── ai/
+    │   │   │   ├── api/                  # HTTP route definitions
+    │   │   │   │   ├── routes/           # RPC-style endpoint handlers
+    │   │   │   │   └── websocket.ts      # WS event handling
+    │   │   │   ├── db/
+    │   │   │   │   ├── migrations/       # Sequential SQL migrations
+    │   │   │   │   └── schema.ts         # Migration runner
+    │   │   │   ├── auth/                 # Okta OIDC JWT validation
+    │   │   │   └── index.ts              # Server bootstrap
+    │   │   ├── package.json
+    │   │   └── tsconfig.json
+    │   │
+    │   ├── web/                          # React web UI
+    │   │   ├── src/
+    │   │   │   ├── components/
+    │   │   │   │   ├── ui/               # shadcn components
+    │   │   │   │   ├── inbox/            # Project inbox layout, list, filtering
+    │   │   │   │   ├── project/          # Project detail, status, pipeline
+    │   │   │   │   ├── chat/             # assistant-ui per-project chat
+    │   │   │   │   ├── documents/        # Document viewer with syntax highlighting
+    │   │   │   │   ├── resources/        # People, assignments, allocation
+    │   │   │   │   └── scheduling/       # Schedule views, scenarios
+    │   │   │   ├── hooks/                # WebSocket, data fetching
+    │   │   │   ├── lib/                  # API client, WS client, auth
+    │   │   │   └── App.tsx
+    │   │   ├── index.html
+    │   │   ├── vite.config.ts
+    │   │   ├── tailwind.config.ts
+    │   │   ├── package.json
+    │   │   └── tsconfig.json
+    │   │
+    │   └── shared/                       # Shared types and schemas
+    │       ├── src/
+    │       │   ├── schemas/              # Effect Schema definitions
+    │       │   ├── types/                # Shared TypeScript types
+    │       │   └── events/               # WebSocket event types
+    │       ├── package.json
+    │       └── tsconfig.json
+    │
+    ├── pnpm-workspace.yaml
+    ├── biome.json
+    ├── tsconfig.base.json
+    └── package.json
+  key_directories:
+    - path: packages/cli/src/commands
+      purpose: CLI command implementations (start, stop)
+    - path: packages/api/src/services
+      purpose: Effect-TS layered domain services
+    - path: packages/api/src/services/ai
+      purpose: Vercel AI SDK + Bedrock integration, Sherpy flow orchestration
+    - path: packages/api/src/services/documents
+      purpose: Document adapter service (generates YAML/markdown/PDF from DB)
+    - path: packages/api/src/api/routes
+      purpose: RPC-style HTTP endpoint handlers
+    - path: packages/api/src/db/migrations
+      purpose: Sequential SQL migration files
+    - path: packages/web/src/components/inbox
+      purpose: Project inbox layout, list, tagging, filtering
+    - path: packages/web/src/components/chat
+      purpose: Per-project assistant-ui chat (Sherpy flow + Q&A)
+    - path: packages/web/src/components/documents
+      purpose: Document viewer with syntax highlighting and PDF export
+    - path: packages/shared/src/schemas
+      purpose: Effect Schema definitions for API contracts
+
+data_model:
+  strategy: Dual-mode database via @effect/sql abstraction — DB is the sole source of truth
+  database: SQLite (local) / PostgreSQL RDS (cloud)
+  schema_approach: |
+    Normalized relational schema with proper foreign keys and junction tables.
+    Designed for both SQLite and PostgreSQL compatibility via @effect/sql's
+    SqlClient interface. All queries written against the generic interface —
+    no database-specific SQL in service code.
+
+    **Key principle:** The database is the sole source of truth. No .sherpy/ files
+    are created or parsed. The Sherpy flow chat steps write directly to the DB.
+    Documents (YAML, markdown, PDF) are generated views rendered from DB data
+    by a document adapter service on demand.
+
+    **Tables:**
+
+    1. **projects** — Projects entering as new intake
+       - id: TEXT PRIMARY KEY
+       - slug: TEXT UNIQUE NOT NULL
+       - name: TEXT NOT NULL
+       - description: TEXT
+       - pipeline_status: TEXT NOT NULL DEFAULT 'intake' CHECK (pipeline_status IN ('intake', 'gap-analysis', 'business-requirements', 'technical-requirements', 'style-anchors', 'implementation-planning', 'plan-review', 'architecture-decisions', 'delivery-timeline', 'qa-test-plan', 'summaries', 'active-development', 'completed', 'archived'))
+       - assigned_people: JSON (array of person IDs — denormalized for inbox display)
+       - tags: JSON (array of tag strings)
+       - priority: TEXT DEFAULT 'medium'
+       - created_at: TEXT NOT NULL (ISO 8601)
+       - updated_at: TEXT NOT NULL
+
+    2. **milestones** — Project milestones (created during implementation planning step)
+       - id: TEXT PRIMARY KEY
+       - project_id: TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE
+       - name: TEXT NOT NULL
+       - description: TEXT
+       - status: TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in-progress', 'blocked', 'complete'))
+       - order_index: INTEGER NOT NULL
+       - estimated_days: INTEGER
+       - acceptance_criteria: TEXT
+       - created_at: TEXT NOT NULL
+       - updated_at: TEXT NOT NULL
+
+    3. **tasks** — Tasks within milestones (created during implementation planning step)
+       - id: TEXT PRIMARY KEY
+       - milestone_id: TEXT NOT NULL REFERENCES milestones(id) ON DELETE CASCADE
+       - project_id: TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE
+       - name: TEXT NOT NULL
+       - description: TEXT
+       - status: TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'in-progress', 'blocked', 'complete'))
+       - priority: TEXT DEFAULT 'medium'
+       - estimated_hours: REAL
+       - actual_hours: REAL
+       - order_index: INTEGER NOT NULL
+       - created_at: TEXT NOT NULL
+       - updated_at: TEXT NOT NULL
+
+    4. **people** — Developer profiles
+       - id: TEXT PRIMARY KEY
+       - name: TEXT NOT NULL
+       - email: TEXT UNIQUE NOT NULL
+       - okta_user_id: TEXT UNIQUE
+       - capacity_hours_per_week: INTEGER NOT NULL DEFAULT 40
+       - created_at: TEXT NOT NULL
+       - updated_at: TEXT NOT NULL
+
+    5. **skills** — Skill definitions
+       - id: TEXT PRIMARY KEY
+       - name: TEXT UNIQUE NOT NULL
+       - category: TEXT
+
+    6. **person_skills** — Person-to-skill junction
+       - person_id: TEXT NOT NULL REFERENCES people(id) ON DELETE CASCADE
+       - skill_id: TEXT NOT NULL REFERENCES skills(id) ON DELETE CASCADE
+       - proficiency: TEXT DEFAULT 'intermediate' CHECK (proficiency IN ('beginner', 'intermediate', 'advanced', 'expert'))
+       - PRIMARY KEY (person_id, skill_id)
+
+    7. **assignments** — Task-to-person assignments
+       - id: TEXT PRIMARY KEY
+       - task_id: TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE
+       - person_id: TEXT NOT NULL REFERENCES people(id) ON DELETE CASCADE
+       - allocation_percentage: INTEGER NOT NULL DEFAULT 100
+       - start_date: TEXT
+       - end_date: TEXT
+       - status: TEXT NOT NULL DEFAULT 'planned' CHECK (status IN ('planned', 'active', 'completed', 'cancelled'))
+       - created_at: TEXT NOT NULL
+       - updated_at: TEXT NOT NULL
+
+    8. **schedule_snapshots** — AI-generated schedule results
+       - id: TEXT PRIMARY KEY
+       - project_id: TEXT REFERENCES projects(id) ON DELETE CASCADE
+       - name: TEXT NOT NULL
+       - type: TEXT NOT NULL CHECK (type IN ('full', 'scenario', 'what-if'))
+       - parameters: TEXT NOT NULL (JSON — input parameters for the AI)
+       - result: TEXT NOT NULL (JSON — AI-generated schedule)
+       - reasoning: TEXT (AI-generated explanation)
+       - created_at: TEXT NOT NULL
+
+    9. **availability_windows** — People availability (PTO, commitments)
+       - id: TEXT PRIMARY KEY
+       - person_id: TEXT NOT NULL REFERENCES people(id) ON DELETE CASCADE
+       - start_date: TEXT NOT NULL
+       - end_date: TEXT NOT NULL
+       - type: TEXT NOT NULL CHECK (type IN ('pto', 'other-project', 'training', 'unavailable'))
+       - description: TEXT
+       - created_at: TEXT NOT NULL
+
+    10. **documents** — Generated planning documents (stored in DB, not files)
+        - id: TEXT PRIMARY KEY
+        - project_id: TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE
+        - document_type: TEXT NOT NULL (e.g., 'gap-analysis', 'business-requirements', 'technical-requirements', 'milestones', 'tasks', 'timeline', 'qa-test-plan', 'developer-summary', 'executive-summary')
+        - format: TEXT NOT NULL DEFAULT 'yaml' CHECK (format IN ('yaml', 'markdown', 'json'))
+        - content: TEXT NOT NULL (full document content)
+        - version: INTEGER NOT NULL DEFAULT 1
+        - created_at: TEXT NOT NULL
+        - updated_at: TEXT NOT NULL
+        - UNIQUE (project_id, document_type, version)
+
+    11. **chat_sessions** — Per-project assistant-ui chat history
+        - id: TEXT PRIMARY KEY
+        - project_id: TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE
+        - messages: TEXT NOT NULL (JSON — chat message array)
+        - context_type: TEXT (e.g., 'sherpy-flow', 'scheduling', 'general-qna')
+        - created_at: TEXT NOT NULL
+        - updated_at: TEXT NOT NULL
+
+    12. **tags** — Project tags for inbox filtering
+        - id: TEXT PRIMARY KEY
+        - name: TEXT UNIQUE NOT NULL
+        - color: TEXT (hex color for UI display)
+
+  indexes:
+    projects_by_status:
+      index: idx_projects_pipeline_status ON projects(pipeline_status, updated_at DESC)
+      purpose: Inbox filtering by pipeline status
+
+    projects_by_tag:
+      index: idx_projects_tags ON projects(tags)
+      purpose: Tag-based filtering (JSON column query)
+
+    milestones_by_project:
+      index: idx_milestones_project ON milestones(project_id, order_index)
+      purpose: Ordered milestone retrieval for a project
+
+    tasks_by_milestone:
+      index: idx_tasks_milestone ON tasks(milestone_id, order_index)
+      purpose: Ordered task retrieval within a milestone
+
+    tasks_by_project:
+      index: idx_tasks_project ON tasks(project_id, status)
+      purpose: Task queries filtered by project and status
+
+    assignments_by_person:
+      index: idx_assignments_person ON assignments(person_id, status)
+      purpose: Active assignments for a person
+
+    assignments_by_task:
+      index: idx_assignments_task ON assignments(task_id)
+      purpose: Assignments for a specific task
+
+    availability_by_person:
+      index: idx_availability_person ON availability_windows(person_id, start_date, end_date)
+      purpose: Availability lookup for scheduling
+
+    documents_by_project:
+      index: idx_documents_project ON documents(project_id, document_type)
+      purpose: Document lookup for a project
+
+    documents_by_project_version:
+      index: idx_documents_project_version ON documents(project_id, document_type, version DESC)
+      purpose: Latest version of each document type per project
+
+    chat_sessions_by_project:
+      index: idx_chat_sessions_project ON chat_sessions(project_id, updated_at DESC)
+      purpose: Chat session retrieval for a project
+
+  migrations: |
+    Effect-TS managed migrations. SQL files in packages/api/src/db/migrations/,
+    versioned sequentially (001-init-schema.sql, 002-add-availability.sql, etc.).
+    Migration runner service executes pending migrations on daemon startup.
+    Migrations must be compatible with both SQLite and PostgreSQL.
+
+api:
+  style: RPC-style (POST-based)
+  framework: "@effect/platform-node (HTTP server + WebSocket)"
+  base_url: /api
+  versioning: None for v1 (local-only, single-user tool)
+  documentation: None for v1 — Effect Schema types serve as the contract
+
+  endpoints:
+    - path: /api/createProject
+      method: POST
+      description: Create a new project (new intake in inbox)
+      auth: Okta JWT
+      schema: CreateProjectRequest / CreateProjectResponse
+
+    - path: /api/listProjects
+      method: POST
+      description: List projects with filtering by status, tags, assigned people
+      auth: Okta JWT
+      schema: ListProjectsRequest / ListProjectsResponse
+
+    - path: /api/getProject
+      method: POST
+      description: Get project details with pipeline status, milestones, tasks, documents
+      auth: Okta JWT
+      schema: GetProjectRequest / GetProjectResponse
+
+    - path: /api/updateProject
+      method: POST
+      description: Update project metadata, tags, assigned people, pipeline status
+      auth: Okta JWT
+      schema: UpdateProjectRequest / UpdateProjectResponse
+
+    - path: /api/updateTaskStatus
+      method: POST
+      description: Update a task's status (pending, in-progress, blocked, complete)
+      auth: Okta JWT
+      schema: UpdateTaskStatusRequest / UpdateTaskStatusResponse
+
+    - path: /api/listPeople
+      method: POST
+      description: List all people with skills and capacity
+      auth: Okta JWT
+      schema: ListPeopleRequest / ListPeopleResponse
+
+    - path: /api/createPerson
+      method: POST
+      description: Create a person profile with skills
+      auth: Okta JWT
+      schema: CreatePersonRequest / CreatePersonResponse
+
+    - path: /api/updatePerson
+      method: POST
+      description: Update person profile, skills, or capacity
+      auth: Okta JWT
+      schema: UpdatePersonRequest / UpdatePersonResponse
+
+    - path: /api/assignPerson
+      method: POST
+      description: Assign a person to a task or project
+      auth: Okta JWT
+      schema: AssignPersonRequest / AssignPersonResponse
+
+    - path: /api/unassignPerson
+      method: POST
+      description: Remove a person from a task or project
+      auth: Okta JWT
+      schema: UnassignPersonRequest / UnassignPersonResponse
+
+    - path: /api/getResourceAllocation
+      method: POST
+      description: Get resource allocation by person or project
+      auth: Okta JWT
+      schema: GetResourceAllocationRequest / GetResourceAllocationResponse
+
+    - path: /api/detectConflicts
+      method: POST
+      description: Detect resource conflicts (over-allocation, competing windows)
+      auth: Okta JWT
+      schema: DetectConflictsRequest / DetectConflictsResponse
+
+    - path: /api/getDocuments
+      method: POST
+      description: Get all generated documents for a project
+      auth: Okta JWT
+      schema: GetDocumentsRequest / GetDocumentsResponse
+
+    - path: /api/getDocument
+      method: POST
+      description: Get a specific document by type and version
+      auth: Okta JWT
+      schema: GetDocumentRequest / GetDocumentResponse
+
+    - path: /api/exportDocument
+      method: POST
+      description: Export a document as PDF or other format
+      auth: Okta JWT
+      schema: ExportDocumentRequest / ExportDocumentResponse
+
+    - path: /api/generateSchedule
+      method: POST
+      description: Trigger AI schedule generation via Bedrock
+      auth: Okta JWT
+      schema: GenerateScheduleRequest / GenerateScheduleResponse
+
+    - path: /api/createScenario
+      method: POST
+      description: Create a planning scenario for a new project
+      auth: Okta JWT
+      schema: CreateScenarioRequest / CreateScenarioResponse
+
+    - path: /api/whatIfReschedule
+      method: POST
+      description: What-if reschedule after delay or unavailability
+      auth: Okta JWT
+      schema: WhatIfRescheduleRequest / WhatIfRescheduleResponse
+
+    - path: /api/listScheduleSnapshots
+      method: POST
+      description: List saved schedule snapshots
+      auth: Okta JWT
+      schema: ListScheduleSnapshotsRequest / ListScheduleSnapshotsResponse
+
+    - path: /api/chat
+      method: POST
+      description: Send a message to the per-project AI chat (Sherpy flow or Q&A)
+      auth: Okta JWT
+      schema: ChatRequest / ChatResponse
+
+    - path: /api/getChatHistory
+      method: POST
+      description: Get chat history for a project
+      auth: Okta JWT
+      schema: GetChatHistoryRequest / GetChatHistoryResponse
+
+    - path: /api/health
+      method: GET
+      description: Health check endpoint
+      auth: None
+      schema: None
+
+  websocket:
+    path: /ws
+    description: |
+      Single WebSocket connection per client. Simple broadcast for v1.
+      Server pushes typed events to all connected clients.
+      Client authenticates by sending JWT token on connect.
+      Event types: project:updated, project:pipelineStatusChanged,
+      task:statusChanged, schedule:generated, assignment:created,
+      assignment:updated, conflict:detected, document:generated,
+      chat:message
+
+security:
+  authentication:
+    method: Okta OIDC (SPA application, PKCE flow)
+    implementation: |
+      Single Okta "Single Page Application" in existing tenant.
+
+      Local mode flow:
+      1. User runs `sherpy start`
+      2. CLI opens browser to web UI
+      3. Browser redirects to Okta login (PKCE flow — no client secret)
+      4. User authenticates via SSO
+      5. Okta redirects back with tokens
+      6. Browser stores access token (session)
+      7. API validates JWT on every request via Okta's public JWKS endpoint
+
+      Cloud mode flow:
+      1. User navigates to deployed URL
+      2. Standard OIDC PKCE authorization flow
+      3. Same JWT validation on API requests
+
+      Token management:
+      - Daemon auto-refreshes tokens in local mode
+      - Standard refresh token flow in cloud mode
+      - WebSocket auth: token sent on WS connect, validated server-side
+      - WebSocket auth: token sent on WS connect, validated server-side
+
+  authorization:
+    model: None for v1 (all authenticated users have full access)
+    implementation: |
+      Any authenticated Okta user has full access to all features.
+      Okta groups can be mapped to roles for future RBAC (e.g., admin,
+      scheduler, viewer). Authorization checks added as a middleware layer
+      when needed.
+
+  secrets:
+    storage: Environment variables + standard AWS credential chain
+    rotation: Managed by Okta and AWS respectively
+    secrets_required:
+      - OKTA_CLIENT_ID (OIDC application client ID)
+      - OKTA_CLIENT_SECRET (OIDC client secret)
+      - OKTA_DOMAIN (e.g., dev-12345.okta.com)
+      - AWS credentials via standard chain (~/.aws/credentials, env vars, or IAM roles)
+
+  data_validation:
+    input: Effect Schema validation on all API requests
+    output: Effect Schema validation on all API responses
+
+testing:
+  strategy: TDD with Vitest and Effect Vitest helpers
+  types:
+    unit:
+      framework: Vitest + @effect/vitest
+      coverage_target: 80%
+      scope: |
+        - Effect-TS domain services (project, person, schedule)
+        - Service Layer composition
+        - Schema validation
+        - Auth token validation
+        - Assignment and conflict logic
+
+    integration:
+      framework: Vitest + @effect/vitest with real test database
+      approach: |
+        Test services end-to-end against real SQLite (test DB).
+        - Seed test data via migrations
+        - Execute service methods with realistic inputs
+        - Verify database state after operations
+        - Test across both SQLite and PostgreSQL (when cloud mode is ready)
+        - Test migration compatibility
+
+      coverage_target: 70%
+
+    e2e:
+      framework: Vitest
+      approach: |
+        Smoke tests for:
+        - CLI start/stop lifecycle
+        - API health endpoint
+        - WebSocket connection and event delivery
+        - Full registration → dashboard → assignment flow
+
+      focus: Critical path verification, not exhaustive UI testing
+
+  mocking:
+    strategy: |
+      Mock external dependencies only (Okta JWKS, AWS Bedrock).
+      Use real database for integration tests.
+      Use Effect Layers to swap implementations in tests.
+
+    tools:
+      - "@effect/vitest test utilities"
+      - Effect Layer-based dependency injection for swapping services
+
+development:
+  workflow: |
+    1. Local development with pnpm workspaces
+    2. Feature branch workflow (main → feature → PR → main)
+    3. `pnpm dev` starts API daemon with hot reload + Vite dev server for web UI
+    4. Effect-TS provides hot reload for backend services
+    5. Pre-commit hooks via Biome (lint + format) and TypeScript type check
+
+  code_quality:
+    linter: Biome (all-in-one)
+    formatter: Biome (all-in-one)
+    type_checker: TypeScript strict mode
+
+  pre_commit_hooks:
+    - Biome check --apply (lint + format)
+    - TypeScript type check (tsc --noEmit)
+    - Vitest related tests
+
+  ci_cd:
+    platform: None for v1
+    pipeline: []
+
+operations:
+  deployment:
+    target: Local machine (v1) / AWS ECS or similar (cloud mode)
+    packaging:
+      format: npm package (@sherpy/pm)
+      distribution: npm registry (npm install -g @sherpy/pm)
+
+    environments:
+      - name: local
+        config: |
+          - API binds to 127.0.0.1:{port}
+          - SQLite database at ~/.sherpy/sherpy.db
+          - Okta OIDC for authentication
+          - AWS credentials from standard chain
+          - React static assets served by API daemon
+
+      - name: cloud (future)
+        config: |
+          - API deployed to AWS ECS or similar
+          - PostgreSQL via RDS
+          - Okta OIDC (same application)
+          - IAM roles for AWS credentials
+          - React assets served via CDN or API daemon
+          - Connection pooling, rate limiting, horizontal scaling
+
+    release_process:
+      strategy: Semantic Versioning (SemVer)
+      automation: Manual npm publish for v1
+
+  monitoring:
+    logging:
+      format: Structured JSON
+      destination: Stdout (local) / CloudWatch Logs (cloud)
+      levels: |
+        - debug: Development, request/response details
+        - info: Request logs, successful operations, AI call durations
+        - warn: Non-blocking issues, slow queries
+        - error: Errors, exceptions, failures
+
+    metrics:
+      collection: Effect's built-in metric system
+      visualization: None for v1 (logged as structured data)
+      key_metrics:
+        - API request duration and count
+        - AI call duration and token usage
+        - WebSocket connection count
+        - Database query duration
+
+    alerts:
+      strategy: None for v1
+      channels: []
+
+  performance:
+    targets:
+      response_time: No formal targets for v1
+      throughput: No formal targets for v1
+    optimization:
+      strategy: Address reactively if issues arise
+      monitoring: Effect metric system logs
+
+  scalability:
+    approach: Cloud-ready from day one
+    limits:
+      concurrent_users: Designed for multi-user (Okta auth, stateless API)
+      data_volume: 10-50 projects typical, designed for more
+    bottlenecks:
+      - SQLite concurrent writes (mitigated by cloud mode using PostgreSQL)
+      - AI scheduling latency (mitigated by progress indicators and async handling)
+      - WebSocket connection scaling (mitigated by stateless API design)
+
+constraints:
+  technical:
+    - Must use TypeScript strict mode with ESM (Node.js 23+)
+    - Must use Effect-TS for all backend logic (Layer, Service, Effect)
+    - Must use @effect/sql for database abstraction (SQLite + PostgreSQL compatible)
+    - Must use @effect/platform for HTTP server and WebSocket
+    - Must use Effect Schema for all request/response validation
+    - Must use React + Tailwind + shadcn + assistant-ui for frontend
+    - Must use AWS Bedrock via Vercel AI SDK for AI scheduling
+    - Must support Okta OIDC authentication
+    - Must use Biome for linting and formatting
+    - No external databases beyond SQLite (local) and PostgreSQL (cloud)
+    - No cloud services beyond AWS Bedrock, Okta, and RDS
+
+  operational:
+    - Ship ASAP — vertical-slice first, then expand
+    - Single-user local-first for v1, cloud-ready architecture
+    - Existing Sherpy skills remain unchanged
+    - No CI/CD for v1
+
+  architectural:
+    - Monorepo with pnpm workspaces (packages/cli, packages/api, packages/web, packages/shared)
+    - Effect-TS layered services with dependency injection
+    - All database queries through @effect/sql SqlClient interface
+    - All AI interactions through a single service layer
+    - RPC-style POST endpoints (not resource-oriented REST)
+
+  business:
+    - Must not require external infrastructure for local mode
+    - Must be installable via npm global install
+    - Must authenticate via existing Okta tenant
+
+trade_offs:
+  - decision: Effect-TS Layered Services vs Service-Command (contracted)
+    rationale: |
+      Effect-TS Layer/Service is native to the framework. No additional
+      dependency on @validkeys/contracted. The Layer system provides
+      clean dependency injection and testability. Simpler mental model
+      for a team already committed to Effect-TS.
+    alternative: "@validkeys/contracted service-command architecture"
+    consequence: |
+      Less formal command structure (no defineCommand/defineService macros).
+      Services are plain Effect-TS services with methods. Acceptable for
+      this project's scope.
+    reversibility: Low — core architectural pattern
+
+  - decision: RPC-style POST endpoints vs REST
+    rationale: |
+      Simpler to implement for a local-first tool. Aligns with the
+      service-method mental model (one endpoint per operation). No need
+      for RESTful resource modeling when there are no external API consumers.
+    alternative: Resource-oriented REST with CRUD via HTTP methods
+    consequence: |
+      Less conventional API. Clients must know endpoint names rather than
+      follow resource patterns. Acceptable for a tool with a single
+      dedicated frontend.
+    reversibility: Medium — can add REST endpoints alongside RPC
+
+  - decision: Okta OIDC vs no authentication
+    rationale: |
+      Cloud-ready from day one. SSO with existing org. No separate
+      credentials. Same auth for local and cloud modes. Future RBAC via
+      Okta groups.
+    alternative: No authentication (localhost-only trust boundary)
+    consequence: |
+      Adds complexity to local development (browser login step).
+      Requires Okta application setup. But pays off immediately when
+      deploying to cloud.
+    reversibility: Low — auth is foundational
+
+  - decision: "@effect/sql vs Kysely for database abstraction"
+    rationale: |
+      @effect/sql is native to Effect-TS. Provides SqlClient interface
+      with database-specific implementations swapped via Effect Layers.
+      Built-in migration support. Effect Schema integration for type-safe
+      queries.
+    alternative: Kysely (type-safe SQL query builder with multi-DB support)
+    consequence: |
+      Less mature query builder than Kysely. May need raw SQL for complex
+      queries. But avoids bridging an external library into the Effect
+      ecosystem.
+    reversibility: Medium — both use SQL, queries are portable
+
+  - decision: pnpm workspaces monorepo vs separate packages
+    rationale: |
+      Single repo for coordinated changes. Shared types package ensures
+      API contract consistency between frontend and backend. pnpm workspaces
+      provide clean package boundaries. Turborepo or pnpm built-in for
+      task orchestration.
+    alternative: Separate repos for CLI, API, web
+    consequence: |
+      Tighter coupling between packages. But for a single team building
+      one product, the coordination benefits outweigh the coupling risk.
+    reversibility: Medium — can extract packages later
+
+  - decision: No CI/CD for v1
+    rationale: |
+      Local-only tool with no deployment pipeline. CI adds overhead
+      without clear benefit until cloud deployment is real. Pre-commit
+      hooks provide local quality enforcement.
+    alternative: GitHub Actions for lint/test/typecheck on PRs
+    consequence: |
+      No automated quality gate on PRs. Relies on developer discipline
+      and pre-commit hooks. Acceptable for v1 single-developer or
+      small team pace.
+    reversibility: High — add CI anytime
+
+  - decision: Database as sole source of truth (no .sherpy/ files)
+    rationale: |
+      Eliminates file syncing, parsing, and re-parsing complexity. DB is the
+      canonical store. Documents are generated views rendered on demand by an
+      adapter service. Net new project with no existing file-based projects.
+    alternative: Files in .sherpy/ folders as source of truth, DB as cache
+    consequence: |
+      Documents must be generated from DB data rather than read from disk.
+      Requires a document adapter service. But eliminates an entire class of
+      sync/parsing bugs. Documents are always consistent with DB state.
+    reversibility: Low — foundational data architecture
+
+  - decision: Email inbox UI paradigm
+    rationale: |
+      Projects enter as new intake, users triage/tag/filter them. Clicking a
+      project shows pipeline status. Chat drives Sherpy flow steps. Familiar
+      mental model (email inbox) that maps well to project management.
+    alternative: Traditional dashboard with cards/kanban
+    consequence: |
+      Non-standard PM UI. But the inbox metaphor maps naturally to the Sherpy
+      flow pipeline (messages arrive, you process them, they move through
+      stages). Chat-per-project is intuitive.
+    reversibility: Medium — UI is separate from backend
+
+open_questions: []
+
+resolved_questions:
+  - question: Should assistant-ui be used for all AI interactions or only for scheduling conversations?
+    decision: |
+      assistant-ui is the per-project chat interface for Sherpy flow steps and
+      project Q&A. The initial UI for individual projects follows the Sherpy flow
+      closely — guided conversational AI. The inbox layout provides the non-chat
+      views (project list, tags, filtering, document viewer).
+
+  - question: How should planning document re-parsing work when files change on disk?
+    decision: |
+      Not applicable — database is the sole source of truth. No .sherpy/ files
+      are created or parsed. Documents are generated views from DB data. An
+      adapter service renders documents in YAML, markdown, and PDF formats.
+
+  - question: Should the WebSocket event system use a pub/sub pattern or simple broadcast?
+    decision: Simple broadcast for v1. All connected clients receive all events.
+
+  - question: What should the Okta application type be?
+    decision: |
+      Single Okta SPA application. Browser handles PKCE flow (no client secret).
+      API validates JWTs via Okta's public JWKS endpoint.

@@ -1,0 +1,666 @@
+milestone: m6
+name: "Project Detail, Documents & Chat"
+generated: "2026-04-20T12:00:00Z"
+
+style_anchor_refs: []
+frontend_anchor_note: |
+  No frontend style anchors were collected (SA-001 through SA-010 cover Effect-TS backend patterns).
+  Frontend tasks should follow these reference patterns:
+  - React 19: functional components with hooks, Suspense boundaries for data loading
+  - shadcn/ui: Collapsible for milestone expand/collapse, Accordion for explanations
+  - assistant-ui: Thread/Composer for all chat UI — NO custom message bubbles
+  - prism-react-renderer: Highlight component for syntax highlighting
+
+global_constraints:
+  allowed_patterns:
+    - "Use shadcn/ui components for all UI elements"
+    - "Use assistant-ui library for all AI chat interfaces"
+    - "Use React 19 patterns (use, Suspense boundaries)"
+    - "Use Tailwind CSS utility classes for styling"
+    - "Use React Router for client-side routing"
+    - "Use prism-react-renderer for syntax highlighting in document viewer"
+  forbidden_patterns:
+    - "Custom chat UI components — use assistant-ui exclusively"
+    - "Inline styles — use Tailwind utility classes"
+    - "CSS modules or styled-components"
+    - "Direct DOM manipulation"
+    - "Prop drilling beyond two levels — use React context"
+  tdd_required: true
+  max_task_duration_minutes: 150
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete
+      - m5 (project list/search) and m4 (data layer) milestones complete
+      - assistant-ui package installed and configured
+  - stage: pre-commit
+    commands:
+      - pnpm run lint
+      - pnpm run typecheck
+      - pnpm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint or type errors
+      - Components render without console errors
+  - stage: milestone-completion
+    criteria:
+      - Project detail view loads and displays pipeline status
+      - Milestone list shows task status breakdown accurately
+      - Document viewer renders with syntax highlighting
+      - PDF export produces valid downloadable PDF
+      - Per-project chat sends and receives messages via assistant-ui
+      - Chat messages persist across page reloads
+      - Task status updates reflect immediately in UI
+
+tasks:
+  - id: m6-001
+    name: "Build project detail view with pipeline status visualization"
+    description: |
+      Create the main project detail page that displays at /projects/:id.
+      Shows project metadata, pipeline status as a visual stepper/progress
+      bar, and overall project health. Fetches project data from the API
+      and handles loading and error states.
+    estimate_minutes: 90
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/web/src/pages/project-detail.tsx
+        - packages/web/src/components/project/pipeline-status.tsx
+        - packages/web/src/components/project/project-header.tsx
+      modify:
+        - packages/web/src/router.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Build the project detail page with pipeline status visualization.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/pages/project-detail.tsx`:
+         - Use React Router's useParams to extract project ID
+         - Fetch project data via API hook (useProject from m5 or new useQuery)
+         - Render project header, pipeline status, milestone list placeholder
+         - Wrap data fetch in Suspense with skeleton loader fallback
+         - Handle 404 and error states with appropriate UI
+      2. Create `packages/web/src/components/project/project-header.tsx`:
+         - Display project name, description, created date, status badge
+         - Use shadcn/ui Card as container
+         - Breadcrumb navigation: Home > Projects > {name}
+      3. Create `packages/web/src/components/project/pipeline-status.tsx`:
+         - Visual stepper showing pipeline stages (e.g., gap-analysis →
+           business-requirements → technical-requirements → implementation →
+           qa → complete)
+         - Highlight current stage, dim completed stages, grey out upcoming
+         - Use shadcn/ui Badge for stage labels
+         - Responsive layout — horizontal on desktop, vertical on mobile
+      4. Update `packages/web/src/router.tsx`:
+         - Add route: /projects/:id → ProjectDetail page
+         - Protect route with auth guard
+
+      **Constraints:**
+      - ONLY use: shadcn/ui components (Card, Badge, Skeleton)
+      - ONLY use: Tailwind utility classes for layout
+      - Pipeline stages must be derived from project data, not hardcoded
+      - Handle loading state with skeleton placeholders
+      - Handle error state with user-friendly message
+
+      **Success Criteria:**
+      - Navigating to /projects/:id loads project detail
+      - Pipeline status stepper renders correctly for all stage combinations
+      - Loading skeleton shown while data fetches
+      - Error state displayed for invalid project IDs
+      - Responsive layout works on mobile and desktop
+
+  - id: m6-002
+    name: "Build milestone list with task status breakdown"
+    description: |
+      Create the milestone list component that renders within the project
+      detail view. Each milestone shows its name, status, and a breakdown
+      of tasks by status (complete, in-progress, blocked, todo). Includes
+      expand/collapse to show individual tasks.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m6-001]
+    files:
+      create:
+        - packages/web/src/components/project/milestone-list.tsx
+        - packages/web/src/components/project/milestone-card.tsx
+        - packages/web/src/components/project/task-status-bar.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Build the milestone list with task status breakdown.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/components/project/task-status-bar.tsx`:
+         - Horizontal stacked bar showing task counts by status
+         - Color-coded: green (complete), blue (in-progress), red (blocked),
+           grey (todo)
+         - Use shadcn/ui Tooltip to show counts on hover
+         - Display fraction: "5/8 tasks complete"
+      2. Create `packages/web/src/components/project/milestone-card.tsx`:
+         - shadcn/ui Collapsible component for expand/collapse
+         - Header: milestone name, status badge, TaskStatusBar
+         - Expanded view: list of tasks with name and status icon
+         - Each task row shows name, type badge, status icon
+         - Use shadcn/ui CollapsibleTrigger and CollapsibleContent
+      3. Create `packages/web/src/components/project/milestone-list.tsx`:
+         - Map over milestones array, render MilestoneCard for each
+         - Section header: "Milestones" with count
+         - Sort milestones by order/sequence number
+         - Empty state message when no milestones exist
+
+      **Constraints:**
+      - ONLY use: shadcn/ui components (Collapsible, Badge, Tooltip, Card)
+      - ONLY use: Tailwind utility classes
+      - Task status colors must be consistent across all components
+      - No custom collapsible implementation — use shadcn/ui Collapsible
+
+      **Success Criteria:**
+      - Milestone list renders all milestones for a project
+      - TaskStatusBar accurately reflects task status counts
+      - Expand/collapse works smoothly with animation
+      - Empty state shown when project has no milestones
+      - Status colors are visually distinct and accessible
+
+  - id: m6-003
+    name: "Build document viewer with syntax highlighting"
+    description: |
+      Create the document viewer component that displays generated project
+      documents (markdown, YAML, code files) with syntax highlighting.
+      Supports viewing documents from the project detail view in a panel
+      or full-page layout.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m6-001]
+    files:
+      create:
+        - packages/web/src/components/project/document-viewer.tsx
+        - packages/web/src/components/project/document-list.tsx
+      modify:
+        - packages/web/src/pages/project-detail.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Build the document viewer with syntax highlighting.
+
+      **Implementation Steps:**
+      1. Install prism-react-renderer if not already in dependencies
+      2. Create `packages/web/src/components/project/document-list.tsx`:
+         - Sidebar list of documents for the current project
+         - Each item: document name, type icon (yaml, md, ts), generated date
+         - Click to select document and display in viewer
+         - Use shadcn/ui ScrollArea for scrollable list
+         - Highlight currently selected document
+      3. Create `packages/web/src/components/project/document-viewer.tsx`:
+         - Main content area rendering the selected document
+         - Detect file type from extension (.yaml, .md, .ts, .tsx, .json)
+         - Use prism-react-renderer Highlight component for code files
+         - Render markdown files with basic markdown-to-HTML conversion
+         - Line numbers toggle
+         - Copy-to-clipboard button in header
+         - Fullscreen toggle to expand viewer
+         - Use shadcn/ui Button, ScrollArea, Tooltip
+      4. Update project-detail.tsx:
+         - Add documents tab or section below milestones
+         - Integrate DocumentList and DocumentViewer
+
+      **Constraints:**
+      - ONLY use: prism-react-renderer for syntax highlighting
+      - ONLY use: shadcn/ui for UI components
+      - Support file types: .yaml, .yml, .md, .ts, .tsx, .json, .txt
+      - Do NOT build a custom markdown renderer — use a lightweight library
+        or render raw markdown in a code block for v1
+
+      **Success Criteria:**
+      - Document list displays all project documents
+      - Selecting a document renders content with appropriate highlighting
+      - YAML and code files display with syntax highlighting
+      - Copy-to-clipboard works
+      - Viewer handles empty state gracefully
+
+  - id: m6-004
+    name: "Implement PDF export for generated documents"
+    description: |
+      Add PDF export functionality to the document viewer. Users can
+      download any generated document as a formatted PDF. Uses browser
+      print-to-PDF or a library like @react-pdf/renderer for generation.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m6-003]
+    files:
+      create:
+        - packages/web/src/components/project/document-pdf-export.tsx
+      modify:
+        - packages/web/src/components/project/document-viewer.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Implement PDF export for generated documents.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/components/project/document-pdf-export.tsx`:
+         - Export button using shadcn/ui Button with download icon
+         - On click, generate PDF from document content
+         - For v1: use browser window.print() with a print-specific stylesheet
+           that hides chrome and formats content for PDF
+         - Alternative: use html2canvas + jspdf if richer control needed
+         - Filename format: {project-name}-{document-name}.pdf
+      2. Update document-viewer.tsx:
+         - Add DocumentPdfExport button to viewer header
+         - Pass document content and metadata to export component
+         - Add print-specific CSS class to viewer content area
+
+      **Constraints:**
+      - ONLY use: browser print API or html2canvas + jspdf
+      - Do NOT add heavy PDF libraries — keep bundle size minimal
+      - Print stylesheet must hide navigation, buttons, sidebar
+      - PDF must include document title and project name as header
+
+      **Success Criteria:**
+      - Clicking export generates a downloadable PDF
+      - PDF content matches the displayed document
+      - PDF layout is readable (proper margins, line wrapping)
+      - No UI chrome included in exported PDF
+
+  - id: m6-005
+    name: "Integrate assistant-ui for per-project chat"
+    description: |
+      Integrate the assistant-ui library to provide a per-project AI chat
+      interface. The chat panel lives within the project detail view,
+      allowing users to discuss project context with the AI assistant.
+      Uses assistant-ui's Thread component with runtime configured to
+      connect to the project-specific chat API endpoint.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m6-001]
+    files:
+      create:
+        - packages/web/src/components/chat/project-chat-panel.tsx
+        - packages/web/src/components/chat/chat-assistant-ui-provider.tsx
+      modify:
+        - packages/web/src/pages/project-detail.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Integrate assistant-ui for per-project AI chat.
+
+      **Frontend Pattern Reference:** Follow assistant-ui docs for
+      AssistantRuntimeProvider setup. Use useExternalStoreRuntime for
+      backend-connected chat (not useLocalRuntime). Scope to project via
+      runtime config. All chat UI must come from assistant-ui — no custom
+      message bubbles or input fields.
+
+      **Implementation Steps:**
+      1. Install assistant-ui package if not already present (pnpm add assistant-ui)
+      2. Create `packages/web/src/components/chat/chat-assistant-ui-provider.tsx`:
+         - Wrap assistant-ui's AssistantRuntimeProvider
+         - Configure runtime to use project-scoped chat API endpoint
+         - Pass project ID as context to the runtime
+         - Use useExternalStoreRuntime or useLocalRuntime depending on backend
+         - Configure with API endpoint: POST /api/projects/:id/chat
+      3. Create `packages/web/src/components/chat/project-chat-panel.tsx`:
+         - Use assistant-ui's Thread component for message display
+         - Use assistant-ui's Composer component for message input
+         - Add toggle button to show/hide chat panel (slide-in from right)
+         - Panel width: ~400px on desktop, full-screen overlay on mobile
+         - Show chat bubble icon button when panel is collapsed
+         - Include message count badge on toggle button
+      4. Update project-detail.tsx:
+         - Wrap page content in ChatAssistantUIProvider
+         - Add ProjectChatPanel as a sibling to main content
+         - Layout: main content area + optional chat panel side-by-side
+
+      **Constraints:**
+      - ONLY use: assistant-ui components for ALL chat UI — NO custom chat UI
+      - Chat context must be scoped to the current project ID
+      - Do NOT build custom message bubbles, input fields, or thread displays
+      - Use assistant-ui's theming/styling capabilities for visual integration
+      - Chat panel must not overlap or obscure project content on mobile
+
+      **Success Criteria:**
+      - Chat panel toggles open/closed from project detail view
+      - Messages send to project-specific API endpoint
+      - AI responses render in assistant-ui Thread component
+      - Chat panel responsive — side panel on desktop, overlay on mobile
+      - No custom chat components — all from assistant-ui library
+
+  - id: m6-006
+    name: "Implement chat message persistence via API"
+    description: |
+      Create the backend API endpoints for persisting and retrieving chat
+      messages per project. Messages are stored in the local SQLite database
+      and loaded when a user opens the project chat. Supports message history
+      retrieval with pagination.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m6-005]
+    files:
+      create:
+        - packages/api/src/services/chat-service.ts
+      modify:
+        - packages/api/src/api/routes/chat.ts
+        - packages/api/src/server.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Implement chat message persistence via API. This task extends the chat
+      infrastructure from m3 (ChatSessionService, chat routes) with AI-aware
+      message handling and cursor-based pagination.
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/chat-service.ts`:
+         - Effect.Service for chat message operations (distinct from ChatSessionService
+           from m3-008 which manages session lifecycle; this service handles individual
+           message persistence and retrieval)
+         - sendMessage(projectId, role, content): saves message to DB
+         - getMessages(projectId, limit?, before?): retrieves message history
+            with cursor-based pagination
+         - Database table: chat_messages (id, project_id, role, content,
+            created_at)
+         - Use Schema for message validation
+      2. Modify `packages/api/src/api/routes/chat.ts` (extends routes from m3-011):
+         - POST /api/projects/:id/chat — send message and get AI response
+           - Saves user message to DB
+           - Forwards to AI backend (or returns placeholder for now)
+           - Saves assistant response to DB
+           - Returns both messages
+         - GET /api/projects/:id/chat/messages — retrieve message history
+           - Query params: limit (default 50), before (cursor)
+           - Returns messages in chronological order
+      3. Update server.ts:
+         - Register chat API group with auth middleware
+
+      **Constraints:**
+      - ONLY use: Effect.Service pattern for ChatService
+      - ONLY use: schema-validated request/response for endpoints
+      - Messages scoped to project ID — never cross-project
+      - Cursor-based pagination (not offset-based) for message history
+      - AI response can be a placeholder echo for now if AI backend not ready
+
+      **Success Criteria:**
+      - POST /api/projects/:id/chat saves and returns messages
+      - GET /api/projects/:id/chat/messages returns paginated history
+      - Messages persist across server restarts (SQLite)
+      - Endpoint requires authentication
+      - Response times under 200ms for message retrieval
+
+  - id: m6-007
+    name: "Build task status update actions"
+    description: |
+      Create the UI actions for updating task status from the milestone
+      list view. Users can mark tasks as in-progress, blocked, or complete
+      via dropdown or button actions. Updates are sent to the API and
+      reflected immediately in the UI.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m6-002]
+    files:
+      create:
+        - packages/web/src/components/project/task-status-actions.tsx
+      modify:
+        - packages/web/src/components/project/milestone-card.tsx
+        - packages/api/src/api/routes/projects.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Build task status update actions.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/components/project/task-status-actions.tsx`:
+         - shadcn/ui DropdownMenu with status options
+         - Options: Mark In Progress, Mark Blocked, Mark Complete, Mark Todo
+         - Each option has appropriate icon and color
+         - On select: call API to update task status
+         - Optimistic update: update UI immediately, revert on error
+         - Show loading spinner during API call
+      2. Update milestone-card.tsx:
+         - Add TaskStatusActions dropdown to each task row
+         - Current status highlighted in dropdown
+         - Disabled options for invalid transitions (e.g., blocked → complete
+           without resolving blocker)
+      3. Update projects API routes:
+         - PATCH /api/projects/:projectId/tasks/:taskId — update task status
+         - Validates status transition is allowed
+         - Returns updated task
+
+      **Constraints:**
+      - ONLY use: shadcn/ui DropdownMenu for status selection
+      - Optimistic UI updates with rollback on failure
+      - Status transitions must be validated (no invalid state jumps)
+      - Use toast notification for success/error feedback (shadcn/ui Sonner)
+
+      **Success Criteria:**
+      - Dropdown menu appears on task row interaction
+      - Selecting a status updates task immediately in UI
+      - API call confirms status change
+      - Error state reverts UI to previous status
+      - Toast notification confirms successful update
+
+  - id: m6-008
+    name: "Wire project pipeline status transitions to real-time updates"
+    description: |
+      Connect the pipeline status visualization to real-time WebSocket
+      events. When a task status changes or a pipeline stage completes,
+      the UI updates without requiring a page refresh. Uses the WebSocket
+      connection established in m2.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m6-001, m6-007]
+    files:
+      create:
+        - packages/web/src/hooks/use-project-events.ts
+      modify:
+        - packages/web/src/components/project/pipeline-status.tsx
+        - packages/web/src/pages/project-detail.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Wire pipeline status to real-time WebSocket updates.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/hooks/use-project-events.ts`:
+         - Hook that subscribes to WebSocket events for a specific project ID
+         - Filters events by project ID
+         - Handles: task-status-changed, milestone-completed,
+           pipeline-stage-changed events
+         - Returns latest event for components to react to
+         - Re-subscribes on WebSocket reconnection
+      2. Update pipeline-status.tsx:
+         - Consume useProjectEvents hook
+         - Animate stage transitions when pipeline stage changes
+         - Update progress indicators on task status changes
+      3. Update project-detail.tsx:
+         - Invalidate/refresh project data query on relevant events
+         - Use React Query invalidation for data freshness
+         - Debounce rapid updates (e.g., batch task status changes)
+
+      **Constraints:**
+      - ONLY use: existing WebSocket connection from m2
+      - Filter events by project ID — only react to current project events
+      - Handle WebSocket disconnection gracefully (polling fallback optional)
+      - Animate transitions, do not jarringly re-render
+
+      **Success Criteria:**
+      - Pipeline status updates in real-time when tasks change status
+      - Stage transitions animate smoothly
+      - No full page refresh required for status updates
+      - WebSocket disconnection does not break the UI
+
+  - id: m6-009
+    name: "Component tests for detail view and document viewer"
+    description: |
+      Write component tests for the project detail view, pipeline status,
+      milestone list, and document viewer components. Tests cover rendering,
+      user interactions, loading states, and error states.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m6-002, m6-003, m6-004]
+    files:
+      create:
+        - packages/web/src/pages/project-detail.test.tsx
+        - packages/web/src/components/project/pipeline-status.test.tsx
+        - packages/web/src/components/project/milestone-list.test.tsx
+        - packages/web/src/components/project/document-viewer.test.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Test project detail view and document viewer components.
+
+      **Implementation Steps:**
+      1. Create project-detail.test.tsx:
+         - Test renders project header with name and status
+         - Test shows loading skeleton while fetching
+         - Test shows error state for invalid project ID
+         - Test breadcrumb navigation renders correctly
+      2. Create pipeline-status.test.tsx:
+         - Test renders all stages for a complete pipeline
+         - Test highlights current stage correctly
+         - Test dims completed stages and greys upcoming stages
+         - Test handles single-stage pipeline
+      3. Create milestone-list.test.tsx:
+         - Test renders all milestones for a project
+         - Test expand/collapse toggles task list visibility
+         - Test TaskStatusBar shows correct counts
+         - Test empty state when no milestones
+      4. Create document-viewer.test.tsx:
+         - Test renders document content
+         - Test syntax highlighting applied for YAML files
+         - Test copy-to-clipboard button present
+         - Test empty state when no documents
+         - Test PDF export button triggers export
+
+      **Constraints:**
+      - ONLY use: vitest + @testing-library/react for component tests
+      - Mock API responses with msw or vi.mock
+      - Test user interactions with @testing-library/user-event
+      - Do NOT test implementation details — test behavior
+
+      **Success Criteria:**
+      - All component tests pass
+      - Coverage exceeds 80% for tested components
+      - Loading, error, and empty states tested
+      - User interactions (click, toggle) tested
+
+  - id: m6-010
+    name: "Integration tests for chat persistence"
+    description: |
+      Write integration tests for the chat message persistence flow. Tests
+      cover sending messages, retrieving history, pagination, and
+      cross-project isolation. Uses the real API server with test database.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m6-006]
+    files:
+      create:
+        - packages/api/src/api/routes/chat.test.ts
+        - packages/api/src/services/chat-service.test.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Test chat message persistence integration.
+
+      **Implementation Steps:**
+      1. Create chat-service.test.ts:
+         - Test sendMessage saves message to database
+         - Test getMessages returns messages in chronological order
+         - Test pagination: limit and before cursor work correctly
+         - Test messages scoped to project ID (no cross-project leakage)
+         - Test handles empty message history
+      2. Create chat.test.ts:
+         - Test POST /api/projects/:id/chat saves user message and returns
+           response
+         - Test GET /api/projects/:id/chat/messages returns paginated history
+         - Test unauthenticated requests return 401
+         - Test messages for one project not visible to another project
+         - Test message content validation (empty content rejected)
+
+      **Constraints:**
+      - ONLY use: test database (in-memory SQLite or temp file)
+      - Clean up test data after each test
+      - Test with real Effect service layers, not mocks
+      - Verify database state directly in assertions
+
+      **Success Criteria:**
+      - All chat persistence tests pass
+      - Messages correctly scoped to project ID
+      - Pagination returns correct page boundaries
+      - Unauthenticated access properly rejected
+
+  - id: m6-011
+    name: "Code review for project detail, documents & chat"
+    description: |
+      Review all project detail view, document viewer, chat integration,
+      and task status action code for quality, accessibility, and alignment
+      with technical requirements.
+    estimate_minutes: 60
+    type: code-review
+    dependencies: [m6-009, m6-010]
+    files:
+      create:
+        - code-reviews/2026-04-20-m6-code-review.yaml
+      touch_only:
+        - packages/web/src/pages/project-detail.tsx
+        - packages/web/src/components/project/pipeline-status.tsx
+        - packages/web/src/components/project/project-header.tsx
+        - packages/web/src/components/project/milestone-list.tsx
+        - packages/web/src/components/project/milestone-card.tsx
+        - packages/web/src/components/project/task-status-bar.tsx
+        - packages/web/src/components/project/task-status-actions.tsx
+        - packages/web/src/components/project/document-viewer.tsx
+        - packages/web/src/components/project/document-list.tsx
+        - packages/web/src/components/project/document-pdf-export.tsx
+        - packages/web/src/components/chat/project-chat-panel.tsx
+        - packages/web/src/components/chat/chat-assistant-ui-provider.tsx
+        - packages/web/src/hooks/use-project-events.ts
+        - packages/api/src/api/routes/chat.ts
+        - packages/api/src/services/chat-service.ts
+    instructions: |
+      **Objective:**
+      Review project detail, document viewer, chat, and task action code.
+
+      **Review Checklist:**
+      1. **UI Quality:**
+         - [ ] All components use shadcn/ui — no custom UI primitives
+         - [ ] Tailwind utility classes used consistently
+         - [ ] Loading, error, and empty states handled for all views
+         - [ ] Responsive layout works on mobile and desktop
+         - [ ] No console errors on render
+
+      2. **Chat Integration:**
+         - [ ] assistant-ui used exclusively for chat — no custom components
+         - [ ] Chat scoped to project ID
+         - [ ] Messages persist and reload correctly
+         - [ ] Chat panel responsive (side panel / overlay)
+
+      3. **Document Viewer:**
+         - [ ] Syntax highlighting works for all supported file types
+         - [ ] PDF export produces valid output
+         - [ ] Copy-to-clipboard functional
+
+      4. **Real-time Updates:**
+         - [ ] Pipeline status reflects WebSocket events
+         - [ ] Task status changes propagate to milestone list
+         - [ ] Debouncing prevents excessive re-renders
+
+      5. **Accessibility:**
+         - [ ] Keyboard navigation works for all interactive elements
+         - [ ] Status colors have sufficient contrast
+         - [ ] ARIA labels on interactive elements
+         - [ ] Screen reader friendly status announcements
+
+      6. **Security:**
+         - [ ] Chat API requires authentication
+         - [ ] Task status updates validate project ownership
+         - [ ] No XSS in document viewer (content sanitized)
+
+      **Output:** Create code-reviews/2026-04-20-m6-code-review.yaml with findings.
+
+      **Success Criteria:**
+      - No accessibility violations found
+      - Chat uses assistant-ui exclusively
+      - Document viewer handles all file types correctly
+      - Real-time updates work without page refresh

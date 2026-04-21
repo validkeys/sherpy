@@ -1,0 +1,840 @@
+milestone: m5
+name: "Inbox Web UI"
+generated: "2026-04-20T12:00:00Z"
+
+style_anchor_refs: []
+frontend_anchor_note: |
+  No frontend style anchors were collected (SA-001 through SA-010 cover Effect-TS backend patterns).
+  Frontend tasks should follow these reference patterns:
+  - React 19: functional components with hooks, no class components
+  - Tailwind CSS: utility-first, no CSS modules or styled-components
+  - shadcn/ui: use components/ui/ primitives, extend via composition not modification
+  - assistant-ui: use Thread/Composer components, scope to project via runtime config
+
+global_constraints:
+  allowed_patterns:
+    - "Use React 19 functional components with hooks"
+    - "Use Tailwind CSS utility classes for all styling"
+    - "Use shadcn/ui components from packages/web/src/components/ui/"
+    - "Use Okta OIDC SPA with PKCE flow (no client secret in browser)"
+    - "Use typed API client from packages/web/src/lib/api-client.ts"
+    - "Use WebSocket client from packages/web/src/lib/ws-client.ts"
+    - "Use Vite for frontend build and dev server"
+    - "Use workspace: protocol for shared package imports"
+  forbidden_patterns:
+    - "CSS modules or .css files (use Tailwind utilities only)"
+    - "styled-components or emotion (use Tailwind utilities only)"
+    - "Inline styles except for dynamic values that Tailwind can't express"
+    - "Direct fetch calls outside the typed API client"
+    - "Any authentication logic outside packages/web/src/lib/auth.ts"
+    - "Direct DOM manipulation (use React state and refs)"
+    - "Class components (use functional components with hooks)"
+  tdd_required: true
+  max_task_duration_minutes: 90
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete
+      - m3 (Project & Task Domain Services) complete and tested
+      - API server running with all RPC endpoints functional
+      - pnpm install successful with all web dependencies resolved
+  - stage: pre-commit
+    commands:
+      - pnpm run lint
+      - pnpm run typecheck
+      - pnpm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint or type errors
+      - Components render without console errors
+      - Tailwind classes compile correctly
+  - stage: milestone-completion
+    criteria:
+      - Okta login redirects and returns with valid access token
+      - Inbox displays project list with pipeline status badges
+      - Tag filtering narrows project list correctly
+      - WebSocket updates reflect in UI within 500ms of server event
+      - API client handles all project/task RPC endpoints with type safety
+      - Responsive layout works at 1280px+ viewport
+      - Unauthenticated users redirect to Okta login
+      - All components have basic unit tests
+
+tasks:
+  - id: m5-001
+    name: "Install and configure shadcn/ui components"
+    description: |
+      Install shadcn/ui CLI and initialize configuration for the web package.
+      Add the required components: Button, Input, Badge, Command, ScrollArea,
+      and Sheet. Configure components.json with Tailwind CSS integration and
+      set up the component alias paths. These components form the foundation
+      for all inbox UI elements.
+    estimate_minutes: 60
+    type: config
+    dependencies: []
+    files:
+      create:
+        - packages/web/components.json
+        - packages/web/src/components/ui/button.tsx
+        - packages/web/src/components/ui/input.tsx
+        - packages/web/src/components/ui/badge.tsx
+        - packages/web/src/components/ui/command.tsx
+        - packages/web/src/components/ui/scroll-area.tsx
+        - packages/web/src/components/ui/sheet.tsx
+      modify:
+        - packages/web/package.json
+        - packages/web/tsconfig.json
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Install and configure shadcn/ui components for the inbox web UI.
+
+      **Implementation Steps:**
+      1. Initialize shadcn/ui in packages/web:
+         - Create `components.json` with:
+           - style: "default"
+           - tailwind.cssVariables: true
+           - aliases pointing to src/components/ui, src/lib, src/hooks
+         - Set base color and font configuration
+      2. Install required shadcn components:
+         - `button` — primary actions, sidebar toggles, login button
+         - `input` — search bar, filter inputs
+         - `badge` — pipeline status indicators, tags
+         - `command` — command palette for quick project navigation
+         - `scroll-area` — scrollable project list and sidebar
+         - `sheet` — mobile sidebar overlay, detail panel
+      3. Verify component aliases resolve in tsconfig.json paths
+      4. Verify Tailwind config includes shadcn CSS variable theme tokens
+      5. Run `pnpm run build` to confirm all components compile
+
+      **Constraints:**
+      - ONLY install the listed components (no extras)
+      - Components must live in packages/web/src/components/ui/
+      - Use default shadcn style (New York style if prompted, otherwise default)
+      - Do not modify generated component files unless alias paths need adjustment
+      - Ensure components.json aliases match tsconfig paths
+
+      **Success Criteria:**
+      - All 6 components installed and importable
+      - `pnpm run build` succeeds with no type errors
+      - Component imports resolve correctly (e.g., `@/components/ui/button`)
+      - Tailwind CSS variables for shadcn theme tokens present in config
+
+  - id: m5-002
+    name: "Create Okta OIDC SPA login flow with PKCE"
+    description: |
+      Implement the Okta OIDC SPA authentication flow using PKCE (no client
+      secret). Handle login redirect, token exchange, token storage, and
+      automatic token refresh. Create an AuthProvider context that wraps the
+      app and provides auth state to all components. Unauthenticated users
+      are redirected to Okta login. Token is attached to all API and
+      WebSocket requests.
+    estimate_minutes: 90
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/web/src/lib/auth.ts
+        - packages/web/src/components/auth/auth-provider.tsx
+        - packages/web/src/components/auth/login-page.tsx
+        - packages/web/src/components/auth/protected-route.tsx
+      modify:
+        - packages/web/src/App.tsx
+        - packages/web/src/main.tsx
+        - packages/web/vite.config.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Implement Okta OIDC SPA login flow with PKCE for browser authentication.
+
+      **TDD Approach:** Write failing test for token validation flow (mock Okta
+      JWKS endpoint) before implementing auth provider. Test 401 redirect
+      behavior before implementing ProtectedRoute.
+
+      **Implementation Steps:**
+      1. Install `@okta/okta-auth-js` in packages/web
+      2. Create `packages/web/src/lib/auth.ts`:
+         - Initialize OktaAuth with PKCE configuration:
+           - issuer: from VITE_OKTA_DOMAIN env var
+           - clientId: from VITE_OKTA_CLIENT_ID env var
+           - redirectUri: window.location.origin + /login/callback
+           - postLogoutRedirectUri: window.location.origin
+           - scopes: ['openid', 'profile', 'email']
+           - pkce: true
+         - Export singleton auth client instance
+         - Helper functions: getAccessToken(), isAuthenticated(), getUserInfo()
+      3. Create `packages/web/src/components/auth/auth-provider.tsx`:
+         - React context providing: authState, login(), logout(), accessToken
+         - Subscribe to OktaAuth authState changes
+         - Handle token refresh automatically via Okta SDK
+         - Render children only when authenticated, else show login redirect
+      4. Create `packages/web/src/components/auth/login-page.tsx`:
+         - Simple centered login page with shadcn Button
+         - "Sign in with Okta" button triggers authClient.signInWithRedirect()
+         - Show loading state during redirect
+      5. Create `packages/web/src/components/auth/protected-route.tsx`:
+         - Wrapper that checks auth state
+         - Redirects to login page if not authenticated
+         - Shows spinner while auth state resolves
+      6. Add /login/callback route in App.tsx that handles Okta redirect
+         - Parse tokens from URL
+         - Redirect to inbox on success
+      7. Configure Vite env vars:
+         - VITE_OKTA_DOMAIN
+         - VITE_OKTA_CLIENT_ID
+         - VITE_API_URL (default: http://localhost:3100)
+
+      **Constraints:**
+      - ONLY use @okta/okta-auth-js for OIDC (no manual PKCE implementation)
+      - NEVER store client_secret in browser code (PKCE flow only)
+      - Store tokens in session storage (cleared on tab close)
+      - Do NOT use localStorage for tokens (session storage only)
+      - All API requests must include Authorization: Bearer {token}
+
+      **Success Criteria:**
+      - Unauthenticated users redirect to Okta login page
+      - Successful login redirects back to inbox with valid access token
+      - AuthProvider supplies token to all child components
+      - Token refresh happens automatically before expiry
+      - Logout clears session and redirects to login page
+
+  - id: m5-003
+    name: "Create typed API client for all RPC endpoints"
+    description: |
+      Build a typed fetch wrapper that calls all backend RPC endpoints with
+      full TypeScript type safety. Import request/response types from the
+      shared package. Handle auth token injection, error parsing, and response
+      validation. The client is a singleton used by all data-fetching hooks.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m5-002]
+    files:
+      create:
+        - packages/web/src/lib/api-client.ts
+        - packages/web/src/hooks/use-api.ts
+      modify: []
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Create a fully typed API client for all backend RPC endpoints.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/lib/api-client.ts`:
+         - Import request/response types from `@sherpy/shared`
+         - Define endpoint map (method + path + request type + response type):
+           - createProject, listProjects, getProject, updateProject
+           - updateTaskStatus
+           - listPeople, createPerson, updatePerson
+           - assignPerson, unassignPerson
+           - getResourceAllocation, detectConflicts
+           - getDocuments, getDocument, exportDocument
+           - generateSchedule, createScenario, whatIfReschedule, listScheduleSnapshots
+           - chat, getChatHistory
+         - Create ApiClient class:
+           - constructor(baseUrl: string, getToken: () => Promise<string>)
+           - private async rpc<TReq, TRes>(endpoint: string, body: TReq): Promise<TRes>
+             - Sets Content-Type: application/json
+             - Sets Authorization: Bearer {token} from getToken()
+             - POST to {baseUrl}{endpoint}
+             - Parse response JSON
+             - Throw typed ApiError on non-200 (with status, message, code)
+           - Public methods for each endpoint (typed)
+         - Export singleton factory: createApiClient(baseUrl, getToken)
+      2. Create `packages/web/src/hooks/use-api.ts`:
+         - Custom hook that provides typed API client
+         - Gets base URL from VITE_API_URL env var
+         - Gets token from auth context
+         - Returns memoized ApiClient instance
+         - Handles 401 by triggering re-authentication
+
+      **Constraints:**
+      - ONLY use native fetch (no axios or other HTTP libraries)
+      - All endpoints are POST (RPC style) except GET /api/health
+      - Import types from @sherpy/shared (workspace dependency)
+      - Client must be usable without React (pure TypeScript class)
+      - Error responses must be typed (not just Error)
+
+      **Success Criteria:**
+      - API client methods have full type inference (request params, response type)
+      - Auth token injected on every request automatically
+      - 401 responses trigger re-authentication flow
+      - Network errors wrapped in typed ApiError
+
+  - id: m5-004
+    name: "Create WebSocket client with reconnection and event dispatch"
+    description: |
+      Build a WebSocket client that connects to the /ws endpoint with JWT
+      authentication. Implement exponential backoff reconnection, typed event
+      parsing from shared schemas, and a custom event dispatcher that React
+      components can subscribe to. The client dispatches typed events that
+      inbox components consume for real-time updates.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m5-002]
+    files:
+      create:
+        - packages/web/src/lib/ws-client.ts
+        - packages/web/src/hooks/use-websocket.ts
+      modify: []
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Create a WebSocket client with reconnection and typed event dispatch.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/lib/ws-client.ts`:
+         - Import WsEvent types from `@sherpy/shared`
+         - Define event types matching server broadcasts:
+           - project:updated, project:pipelineStatusChanged
+           - task:statusChanged, assignment:created, assignment:updated
+           - conflict:detected, document:generated, chat:message
+           - schedule:generated
+         - Create WebSocketClient class:
+           - constructor(url: string, getToken: () => Promise<string>)
+           - connect(): opens WebSocket, sends JWT as first message
+           - Event listener map: Map<string, Set<Handler>>
+           - on(eventType: string, handler: Function): unsubscribe function
+           - off(eventType: string, handler: Function): void
+           - Reconnection with exponential backoff (1s, 2s, 4s, 8s, max 30s)
+           - Jitter on backoff to prevent thundering herd
+           - Max reconnection attempts: unlimited (local-first tool)
+           - Parse incoming messages as typed WsEvent
+           - Dispatch to registered handlers
+           - Connection state tracking: connecting, connected, disconnected, reconnecting
+           - destroy(): clean close, remove all listeners
+      2. Create `packages/web/src/hooks/use-websocket.ts`:
+         - Custom hook that manages WebSocket lifecycle
+         - Connects on mount, disconnects on unmount
+         - Provides: connectionState, subscribe(eventType, handler)
+         - subscribe returns unsubscribe function
+         - Auto-reconnects using client's built-in reconnection
+
+      **Constraints:**
+      - ONLY use native WebSocket (no socket.io or similar)
+      - JWT sent as first message after connection opens
+      - Reconnection must not hammer the server (exponential backoff)
+      - Client must be usable without React (pure TypeScript class)
+      - Event types must match server's WsEvent schema exactly
+
+      **Success Criteria:**
+      - WebSocket connects and authenticates with JWT
+      - Typed events dispatched to registered handlers
+      - Reconnection works with exponential backoff after disconnect
+      - Connection state observable by consuming components
+      - Cleanup on unmount prevents memory leaks
+
+  - id: m5-005
+    name: "Build inbox layout shell (sidebar + list + detail panels)"
+    description: |
+      Create the three-panel inbox layout: a fixed sidebar for navigation and
+      filters, a scrollable project list in the center, and a detail preview
+      panel on the right. The layout uses Tailwind CSS flexbox/grid with
+      responsive behavior. On smaller viewports, the detail panel becomes a
+      Sheet overlay. The sidebar includes navigation links and a collapse toggle.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m5-001, m5-002, m5-003, m5-004]
+    files:
+      create:
+        - packages/web/src/components/inbox/inbox-layout.tsx
+        - packages/web/src/components/inbox/sidebar.tsx
+        - packages/web/src/components/inbox/detail-panel.tsx
+      modify:
+        - packages/web/src/App.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Build the three-panel inbox layout shell that serves as the main UI.
+
+      **Frontend Pattern Reference:** Use Tailwind flex for three-column layout
+      with `h-screen overflow-hidden`. Follow shadcn sidebar patterns for
+      collapsible nav. Sheet component for mobile overlay. Keep layout component
+      thin — delegate data fetching to child components.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/components/inbox/inbox-layout.tsx`:
+         - Three-column layout: sidebar (240px) | project list (flex-1, min 400px) | detail panel (400px)
+         - Use Tailwind flex with h-screen overflow-hidden
+         - Sidebar collapsible to icon-only mode (48px)
+         - Detail panel shows placeholder when no project selected
+         - On viewport < 1280px: detail panel renders as shadcn Sheet (slide-in from right)
+         - Accept props: selectedProjectId, onProjectSelect, onToggleSidebar, sidebarCollapsed
+         - Manage layout state via component state
+      2. Create `packages/web/src/components/inbox/sidebar.tsx`:
+         - Fixed sidebar with:
+           - Sherpy logo/wordmark at top
+           - "New Project" button (shadcn Button)
+           - Pipeline status filter links (inbox counts for each status)
+           - Tag filter section (collapsible, shows all tags)
+           - "My Projects" filter (projects assigned to current user)
+           - Collapse toggle button at bottom
+         - Use shadcn ScrollArea for overflow content
+         - Use shadcn Badge for status counts
+         - Sidebar state: collapsed (icon-only) or expanded (full labels)
+         - Emit filter changes to parent via callbacks
+      3. Create `packages/web/src/components/inbox/detail-panel.tsx`:
+         - Right panel showing selected project preview:
+           - Project name and description
+           - Pipeline status badge (large, prominent)
+           - Milestones progress bar
+           - Tags as badge list
+           - Assigned people avatars/names
+           - "Open Project" button (navigates to full detail view, deferred to m6)
+         - Placeholder state when no project selected
+         - Uses shadcn Badge, Button, ScrollArea
+         - On narrow viewport: renders inside shadcn Sheet
+      4. Wire up in App.tsx:
+         - Wrap inbox layout in AuthProvider and ProtectedRoute
+         - Initialize API client and WebSocket client
+         - Pass selected project state down
+
+      **Constraints:**
+      - ONLY use Tailwind CSS utility classes for styling
+      - ONLY use shadcn/ui components for interactive elements
+      - No CSS files, no CSS modules, no styled-components
+      - Layout must work at 1280px+ viewport (primary target)
+      - Detail panel must gracefully degrade on narrower viewports
+      - All text visible, no overflow clipping on content
+
+      **Success Criteria:**
+      - Three-panel layout renders correctly at 1280px+ viewport
+      - Sidebar collapses to icon-only mode
+      - Detail panel shows placeholder when no project selected
+      - Detail panel becomes Sheet overlay on narrow viewports
+      - No horizontal page scrolling
+      - Layout fills full viewport height
+
+  - id: m5-006
+    name: "Build project list component with status indicators and health badges"
+    description: |
+      Create the project list component that renders in the center panel of
+      the inbox layout. Each project row shows the project name, pipeline
+      status as a colored badge, assigned people avatars, tags, and a health
+      indicator (derived from milestone progress). The list supports keyboard
+      navigation and selection highlighting. Rows load via the typed API client.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m5-003, m5-005]
+    files:
+      create:
+        - packages/web/src/components/inbox/project-list.tsx
+        - packages/web/src/components/inbox/project-row.tsx
+        - packages/web/src/components/inbox/pipeline-status-badge.tsx
+        - packages/web/src/components/inbox/health-indicator.tsx
+      modify: []
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Build the project list component with visual status indicators.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/components/inbox/pipeline-status-badge.tsx`:
+         - Map pipeline statuses to colors and labels:
+           - intake: slate/gray — "Intake"
+           - gap-analysis: amber — "Gap Analysis"
+           - business-requirements: blue — "Business Req"
+           - technical-requirements: blue — "Technical Req"
+           - style-anchors: purple — "Style Anchors"
+           - implementation-planning: purple — "Planning"
+           - plan-review: purple — "Review"
+           - architecture-decisions: indigo — "Architecture"
+           - delivery-timeline: indigo — "Timeline"
+           - qa-test-plan: teal — "QA Plan"
+           - summaries: teal — "Summaries"
+           - active-development: green — "Active"
+           - completed: emerald — "Complete"
+           - archived: gray — "Archived"
+         - Use shadcn Badge with Tailwind color variants
+         - Accept: status: PipelineStatus, size?: 'sm' | 'md' | 'lg'
+      2. Create `packages/web/src/components/inbox/health-indicator.tsx`:
+         - Small circular indicator showing project health:
+           - green: all milestones on track
+           - amber: some tasks blocked or overdue
+           - red: critical blockers or significantly behind
+         - Derived from milestone/task status ratios
+         - Tooltip with summary text on hover
+      3. Create `packages/web/src/components/inbox/project-row.tsx`:
+         - Single project row in the list:
+           - Left: health indicator dot + project name (truncated)
+           - Center: pipeline status badge, tags (max 3 visible, "+N" overflow)
+           - Right: assigned people initials, relative updated_at timestamp
+         - Selected state: bg-accent highlight
+         - Hover state: subtle bg transition
+         - Click: calls onProjectSelect(projectId)
+         - Keyboard: Enter to select, arrow keys for navigation
+      4. Create `packages/web/src/components/inbox/project-list.tsx`:
+         - Scrollable list of ProjectRow components
+         - Uses shadcn ScrollArea for virtual scroll container
+         - Fetches projects via useApi().listProjects()
+         - Loading state: skeleton rows (3-5 placeholder rows)
+         - Empty state: "No projects match your filters" message
+         - Selected project highlighted
+         - Keyboard navigation support (focus management)
+
+      **Constraints:**
+      - ONLY use Tailwind CSS for styling
+      - ONLY use shadcn Badge, ScrollArea for interactive parts
+      - Project name truncated with text-ellipsis (never wraps)
+      - Tags show max 3 with "+N more" overflow indicator
+      - Assigned people show max 3 initials with "+N" overflow
+      - List must handle 100+ projects without jank (use key-based rendering)
+
+      **Success Criteria:**
+      - Project list renders with all status indicators visible
+      - Pipeline status badges use correct colors per status
+      - Health indicator derives from milestone/task data
+      - Selection highlighting works with click and keyboard
+      - Loading and empty states display correctly
+      - Tags and people overflow indicators work
+
+  - id: m5-007
+    name: "Build tag-based filtering and search"
+    description: |
+      Implement tag-based filtering and full-text search for the project list.
+      The sidebar provides tag filters and pipeline status filters. A search
+      input at the top of the project list filters by project name and
+      description. Multiple filters combine with AND logic. Active filters
+      show as removable badges above the project list. Use shadcn Command
+      component for a command-palette search experience.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m5-005, m5-006]
+    files:
+      create:
+        - packages/web/src/components/inbox/search-bar.tsx
+        - packages/web/src/components/inbox/active-filters.tsx
+        - packages/web/src/components/inbox/command-palette.tsx
+        - packages/web/src/hooks/use-project-filters.ts
+      modify:
+        - packages/web/src/components/inbox/sidebar.tsx
+        - packages/web/src/components/inbox/project-list.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Build tag-based filtering, status filtering, and search for the inbox.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/hooks/use-project-filters.ts`:
+         - Custom hook managing filter state:
+           - searchQuery: string
+           - statusFilters: PipelineStatus[] (multiple selection)
+           - tagFilters: string[] (multiple selection)
+           - assignedToMe: boolean
+         - Computed: filteredProjects (applies all filters client-side)
+         - Actions: setSearch, toggleStatus, toggleTag, toggleMyProjects, clearAll
+         - Filters combine with AND logic across categories
+         - Tag filter: project.tags includes any selected tag (OR within tags)
+         - Status filter: project.pipelineStatus in selected statuses
+         - Search: case-insensitive match on name and description
+      2. Create `packages/web/src/components/inbox/search-bar.tsx`:
+         - Search input at top of project list panel
+         - Uses shadcn Input with search icon prefix
+         - Debounced input (300ms) to avoid excessive re-renders
+         - Clear button (X) when query is non-empty
+         - Ctrl/Cmd+K shortcut focuses search input
+         - Emits searchQuery change to parent
+      3. Create `packages/web/src/components/inbox/active-filters.tsx`:
+         - Horizontal row of removable filter badges above project list
+         - Each active filter shown as shadcn Badge with X button:
+           - Status filters: "{Status Name} ×"
+           - Tag filters: "tag:{name} ×"
+           - My Projects: "My Projects ×"
+           - Search: "Search: {query} ×"
+         - "Clear all" button when 2+ filters active
+         - Only visible when filters are active
+      4. Create `packages/web/src/components/inbox/command-palette.tsx`:
+         - shadcn Command component for quick project search
+         - Triggered by Ctrl/Cmd+K
+         - Searches project names with fuzzy matching
+         - Shows top 10 results with status badges
+         - Select a result to navigate to that project
+         - Dismissible with Escape key
+      5. Update sidebar.tsx:
+         - Add tag filter section with checkboxes
+         - Tags fetched from project data (extract unique tags)
+         - Show count of projects per tag
+         - "My Projects" toggle
+         - Active filter state synced with useProjectFilters
+      6. Update project-list.tsx:
+         - Accept filtered projects from parent (not all projects)
+         - Show active filters bar above list
+         - Show result count: "X projects"
+
+      **Constraints:**
+      - ONLY use shadcn Input, Badge, Command for filter UI
+      - Filtering happens client-side on the loaded project list
+      - Debounce search input to 300ms
+      - Command palette must not interfere with typing in other inputs
+      - No external search libraries (simple string matching is sufficient)
+
+      **Success Criteria:**
+      - Tag filters narrow project list correctly
+      - Status filters narrow project list correctly
+      - Search matches on project name and description
+      - Multiple filters combine with AND logic
+      - Active filters show as removable badges
+      - Command palette opens with Ctrl/Cmd+K and searches projects
+      - Clearing filters restores full list
+
+  - id: m5-008
+    name: "Wire up real-time updates via WebSocket"
+    description: |
+      Connect the inbox UI to the WebSocket client for real-time project updates.
+      When a project status changes, a task is updated, or an assignment is
+      modified on the server, the inbox list and detail panel update immediately
+      without requiring a page refresh. Project list re-sorts by updated_at when
+      changes arrive. Status badges animate on change.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m5-004, m5-005, m5-006]
+    files:
+      create:
+        - packages/web/src/hooks/use-realtime-projects.ts
+      modify:
+        - packages/web/src/components/inbox/project-list.tsx
+        - packages/web/src/components/inbox/detail-panel.tsx
+        - packages/web/src/components/inbox/pipeline-status-badge.tsx
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Wire up real-time WebSocket updates to the inbox UI components.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/hooks/use-realtime-projects.ts`:
+         - Custom hook that manages project list with real-time updates
+         - Initial load: fetch all projects via API client listProjects()
+         - Subscribe to WebSocket events:
+           - project:updated → update project in list, re-sort by updated_at
+           - project:pipelineStatusChanged → update pipeline status, animate badge
+           - task:statusChanged → update task status in detail panel
+           - assignment:created / assignment:updated → update assignments
+         - Optimistic updates: update local state immediately, confirm on next WS event
+         - Return: projects[], loading, error, refresh()
+         - Re-sort projects by updated_at DESC after each update
+      2. Update project-list.tsx:
+         - Replace static project list with useRealtimeProjects hook
+         - Animate row on update (brief highlight flash via Tailwind transition)
+         - Show connection status indicator (green dot = connected, gray = disconnected)
+      3. Update detail-panel.tsx:
+         - Listen for updates to selected project
+         - Animate status badge change (color transition)
+         - Update milestone progress bar on task status changes
+      4. Update pipeline-status-badge.tsx:
+         - Add transition animation when status changes
+         - Use Tailwind transition-all + scale for brief "pop" effect
+         - Animate color change with transition-colors
+
+      **Constraints:**
+      - ONLY use the WebSocket client from packages/web/src/lib/ws-client.ts
+      - Updates must apply to existing project objects (no full refetch)
+      - Animations must be subtle (no jarring UI movement)
+      - Connection status visible but not intrusive
+      - If WebSocket disconnected, show subtle indicator but don't block UI
+
+      **Success Criteria:**
+      - Project list updates within 500ms of server event
+      - Status badge animates on pipeline status change
+      - Updated projects float to top of list (sorted by updated_at)
+      - Connection status indicator shows WebSocket state
+      - UI remains usable during WebSocket reconnection
+
+  - id: m5-009
+    name: "Integration tests for API client and WebSocket"
+    description: |
+      Write integration tests for the typed API client and WebSocket client.
+      Test the API client against the running API server with real endpoints.
+      Test the WebSocket client connection lifecycle, event dispatch, and
+      reconnection behavior. Use a test HTTP server for deterministic results.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m5-003, m5-004]
+    files:
+      create:
+        - packages/web/src/lib/api-client.test.ts
+        - packages/web/src/lib/ws-client.test.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Write integration tests for the API client and WebSocket client.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/lib/api-client.test.ts`:
+         - Test API client construction and configuration
+         - Test RPC method sends correct headers (Content-Type, Authorization)
+         - Test typed response parsing for listProjects
+         - Test typed response parsing for getProject
+         - Test error handling: 401 Unauthorized triggers re-auth
+         - Test error handling: 500 Server Error wraps in ApiError
+         - Test network failure wraps in typed error
+         - Mock fetch with typed responses for deterministic testing
+         - Verify all endpoint methods have correct type inference
+      2. Create `packages/web/src/lib/ws-client.test.ts`:
+         - Test WebSocket connection with JWT authentication
+         - Test event dispatch to registered handlers
+         - Test multiple handlers for same event type
+         - Test unsubscribe removes handler correctly
+         - Test reconnection triggers after connection close
+         - Test exponential backoff delays between reconnection attempts
+         - Test destroy cleans up all listeners and closes connection
+         - Test connection state transitions: connecting → connected → disconnected → reconnecting
+         - Use MockWebSocket or similar for deterministic testing
+
+      **Constraints:**
+      - ONLY use Vitest for test framework
+      - Mock fetch and WebSocket for deterministic testing
+      - Do NOT depend on running API server for these tests
+      - Test types at compile time (TypeScript inference)
+      - Clean up all mocks and timers in afterEach
+
+      **Success Criteria:**
+      - API client tests verify header injection and response parsing
+      - WebSocket tests verify event dispatch and handler lifecycle
+      - Reconnection backoff tested with fake timers
+      - Error cases covered for both clients
+      - All tests pass with no flakiness
+
+  - id: m5-010
+    name: "Component tests for inbox layout and project list"
+    description: |
+      Write component tests for the inbox layout, project list, project rows,
+      status badges, and filter components. Test rendering, user interactions
+      (click, keyboard navigation, filter changes), and state management.
+      Use Vitest with React Testing Library.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m5-005, m5-006, m5-007]
+    files:
+      create:
+        - packages/web/src/components/inbox/inbox-layout.test.tsx
+        - packages/web/src/components/inbox/project-list.test.tsx
+        - packages/web/src/components/inbox/pipeline-status-badge.test.tsx
+        - packages/web/src/components/inbox/search-bar.test.tsx
+      modify: []
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Write component tests for the inbox UI components.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/components/inbox/inbox-layout.test.tsx`:
+         - Test three-panel layout renders correctly
+         - Test sidebar collapse toggle works
+         - Test detail panel shows placeholder when no project selected
+         - Test detail panel shows project info when project selected
+         - Test keyboard shortcut for sidebar toggle
+         - Mock child components to isolate layout behavior
+      2. Create `packages/web/src/components/inbox/project-list.test.tsx`:
+         - Test renders list of project rows
+         - Test loading state shows skeleton rows
+         - Test empty state shows "No projects" message
+         - Test clicking a row triggers onProjectSelect
+         - Test selected row has highlight styling
+         - Test keyboard navigation (arrow keys, Enter)
+      3. Create `packages/web/src/components/inbox/pipeline-status-badge.test.tsx`:
+         - Test each pipeline status renders correct color and label
+         - Test badge sizes (sm, md, lg)
+         - Test unknown status falls back to default
+      4. Create `packages/web/src/components/inbox/search-bar.test.tsx`:
+         - Test input renders with search icon
+         - Test typing updates search query (debounced)
+         - Test clear button appears and works
+         - Test Ctrl/Cmd+K focuses input
+         - Use fake timers for debounce testing
+
+      **Constraints:**
+      - ONLY use Vitest + React Testing Library
+      - Mock API client and WebSocket for all component tests
+      - Test user-visible behavior, not implementation details
+      - Use accessible queries (getByRole, getByLabelText)
+      - Clean up mocks and timers in afterEach
+
+      **Success Criteria:**
+      - Layout tests verify three-panel structure
+      - Project list tests cover loading, empty, and populated states
+      - Status badge tests cover all pipeline statuses
+      - Search bar tests verify debounce and keyboard shortcuts
+      - All tests pass consistently
+
+  - id: m5-011
+    name: "Comprehensive code review for inbox web UI"
+    description: |
+      Review all inbox web UI code for quality, accessibility, performance,
+      and alignment with technical requirements. Verify Okta auth integration,
+      component composition, Tailwind usage, and shadcn patterns.
+    estimate_minutes: 60
+    type: code-review
+    dependencies: [m5-009, m5-010]
+    files:
+      create:
+        - code-reviews/2026-04-20-m5-code-review.yaml
+      touch_only:
+        - packages/web/src/lib/auth.ts
+        - packages/web/src/lib/api-client.ts
+        - packages/web/src/lib/ws-client.ts
+        - packages/web/src/components/auth/auth-provider.tsx
+        - packages/web/src/components/auth/login-page.tsx
+        - packages/web/src/components/auth/protected-route.tsx
+        - packages/web/src/components/inbox/inbox-layout.tsx
+        - packages/web/src/components/inbox/sidebar.tsx
+        - packages/web/src/components/inbox/detail-panel.tsx
+        - packages/web/src/components/inbox/project-list.tsx
+        - packages/web/src/components/inbox/project-row.tsx
+        - packages/web/src/components/inbox/pipeline-status-badge.tsx
+        - packages/web/src/components/inbox/health-indicator.tsx
+        - packages/web/src/components/inbox/search-bar.tsx
+        - packages/web/src/components/inbox/active-filters.tsx
+        - packages/web/src/components/inbox/command-palette.tsx
+        - packages/web/src/hooks/use-api.ts
+        - packages/web/src/hooks/use-websocket.ts
+        - packages/web/src/hooks/use-project-filters.ts
+        - packages/web/src/hooks/use-realtime-projects.ts
+    style_anchor_refs: []
+    instructions: |
+      **Objective:**
+      Review all inbox web UI code for quality, accessibility, and correctness.
+
+      **Review Checklist:**
+      1. **Authentication:**
+         - [ ] Okta PKCE flow implemented correctly (no client secret)
+         - [ ] Tokens stored in session storage only (not localStorage)
+         - [ ] Auth token injected on all API and WebSocket requests
+         - [ ] Unauthenticated users redirect to login
+         - [ ] Token refresh handled automatically
+
+      2. **Component Quality:**
+         - [ ] All components use Tailwind CSS (no CSS files or modules)
+         - [ ] shadcn/ui components used correctly (Button, Badge, Input, etc.)
+         - [ ] Components are composable and accept appropriate props
+         - [ ] No prop drilling beyond 2 levels (use hooks or context)
+         - [ ] Loading, empty, and error states handled for all data
+
+      3. **Accessibility:**
+         - [ ] All interactive elements keyboard accessible
+         - [ ] Proper ARIA labels on custom components
+         - [ ] Focus management for sidebar toggle and command palette
+         - [ ] Color contrast meets WCAG AA for status badges
+         - [ ] Screen reader text for health indicators
+
+      4. **Performance:**
+         - [ ] No unnecessary re-renders (memoization where needed)
+         - [ ] Project list handles 100+ items without jank
+         - [ ] WebSocket updates batched (no render per event)
+         - [ ] Search debounce prevents excessive filtering
+         - [ ] No memory leaks in WebSocket subscriptions
+
+      5. **Type Safety:**
+         - [ ] API client fully typed (request params and response types)
+         - [ ] WebSocket events typed from shared package
+         - [ ] No `any` types in component props or hooks
+         - [ ] TypeScript strict mode passes with zero errors
+
+      **Output:** Create code-reviews/2026-04-20-m5-code-review.yaml with findings.
+
+      **Success Criteria:**
+      - No security vulnerabilities in auth flow
+      - All components accessible via keyboard
+      - No lint errors, no type errors
+      - Performance acceptable with 100+ projects
+      - Code follows React 19 best practices

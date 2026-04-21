@@ -1,0 +1,1075 @@
+milestone: m7
+name: "AI Scheduling & Sherpy Flow"
+generated: "2026-04-20T12:00:00Z"
+
+style_anchor_refs:
+  - SA-001
+  - SA-002
+  - SA-003
+  - SA-004
+  - SA-005
+  - SA-008
+  - SA-009
+
+global_constraints:
+  allowed_patterns:
+    - "Use Vercel AI SDK (ai package) for all AI model calls"
+    - "Use @ai-sdk/amazon-bedrock provider for Bedrock model access"
+    - "Use Effect.Service for all service definitions (SA-001)"
+    - "Use Effect.gen for composing async operations in services (SA-001)"
+    - "Use generateText / generateObject from 'ai' package for structured output"
+    - "Use Model.Class for schedule snapshot persistence (SA-002)"
+    - "Use SqlResolver for database query patterns (SA-003)"
+    - "Use HttpApiGroup + HttpApiEndpoint for RPC endpoints (SA-004)"
+    - "Use HttpApiBuilder.group for handler implementations (SA-005)"
+    - "Use assistant-ui for per-project chat interface"
+  forbidden_patterns:
+    - "Direct AWS SDK calls — use Vercel AI SDK with @ai-sdk/amazon-bedrock"
+    - "Hardcoded model names — use Config for model configuration"
+    - "Throwing exceptions — use Effect.fail with TaggedErrors"
+    - "Async/await in service logic — use Effect.gen"
+    - "Raw string parsing for AI output — use generateObject with Zod/Schema schemas"
+    - "Removing manual override options — users must always be able to override AI suggestions"
+    - "Calling Bedrock directly in tests — mock the AI SDK layer"
+  tdd_required: true
+  max_task_duration_minutes: 150
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete
+      - Milestone m6 fully complete (chat, project detail, assistant-ui)
+      - AWS Bedrock credentials configured (or mock available)
+      - Style anchors SA-001, SA-002, SA-003 reviewed
+  - stage: pre-commit
+    commands:
+      - pnpm run lint
+      - pnpm run typecheck
+      - pnpm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint or type errors
+      - AI service calls use Vercel AI SDK patterns correctly
+      - Manual override available for all AI-generated suggestions
+  - stage: milestone-completion
+    criteria:
+      - AI chat responds with relevant project context
+      - Sherpy flow steps progress through pipeline stages via chat
+      - Schedule generation produces valid assignments respecting constraints
+      - Planning scenarios show impact on existing projects
+      - What-if reschedule recalculates dates after disruptions
+      - AI explanations provide human-readable schedule reasoning
+      - Schedule snapshots saved and retrievable
+      - Manual override of AI suggestions always available
+
+tasks:
+  - id: m7-001
+    name: "Create AIService with Bedrock integration via Vercel AI SDK"
+    description: |
+      Implement the core AIService using Effect.Service that wraps the Vercel AI SDK
+      with @ai-sdk/amazon-bedrock provider. This is the foundational AI service that
+      all scheduling, scenario, and Sherpy flow features depend on. Configure model
+      selection via Effect Config, implement generateText and generateObject wrappers
+      with proper error handling, and expose a clean Effect-based API.
+    estimate_minutes: 90
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/api/src/services/ai/ai-service.ts
+        - packages/api/src/services/ai/bedrock-config.ts
+        - packages/api/src/services/ai/errors.ts
+        - packages/api/src/services/ai/index.ts
+      modify:
+        - packages/api/src/services/index.ts
+    style_anchor_refs:
+      - SA-001
+    instructions: |
+      **Objective:**
+      Create the AIService as an Effect.Service wrapping Vercel AI SDK with
+      Bedrock provider, providing a clean Effect-based interface for all AI
+      operations in the system.
+
+      **TDD Approach:** Write failing test for AIService.generateText with
+      mocked Bedrock response before implementing. Test error mapping
+      (Bedrock errors → AIServiceError) before implementing error handling.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/ai/errors.ts`:
+         - AIServiceError extends Schema.TaggedError with _tag: "AIServiceError"
+           and fields: message, cause?, model
+         - AIRateLimitError extends Schema.TaggedError with _tag: "AIRateLimitError"
+           and fields: message, retryAfter
+         - AIModelNotConfiguredError extends Schema.TaggedError with _tag: "AIModelNotConfiguredError"
+         - Each error type annotated with HttpApiSchema.annotations for status codes
+      2. Create `packages/api/src/services/ai/bedrock-config.ts`:
+         - BedrockConfig using Schema.Struct with fields:
+           modelId (string, e.g., "anthropic.claude-sonnet-4-20250514"),
+           region (string, default "us-east-1"),
+           maxTokens (number, default 4096),
+           temperature (number, default 0.7)
+         - Load from Effect.Config: BEDROCK_MODEL_ID, AWS_REGION, BEDROCK_MAX_TOKENS
+      3. Create `packages/api/src/services/ai/ai-service.ts`:
+         - AIService using Effect.Service pattern (**SA-001**)
+         - Methods:
+           - generateText(prompt: string, options?: AiTextOptions): Effect<string, AIServiceError>
+             Wraps Vercel AI SDK generateText with bedrock model
+           - generateObject<T>(prompt: string, schema: ZodSchema | Schema.Schema<T>): Effect<T, AIServiceError>
+             Wraps Vercel AI SDK generateObject for structured output
+           - streamText(prompt: string, options?: AiTextOptions): Stream<string>
+             Wraps Vercel AI SDK streamText for streaming responses
+         - Create bedrock model instance using @ai-sdk/amazon-bedrock provider:
+           `bedrock(modelId)` from @ai-sdk/amazon-bedrock
+         - Layer composition: BedrockConfig → AIService
+         - Wrap all AI SDK calls in Effect.tryPromise, mapping errors to AIServiceError
+         - Add request timeout via Effect.timeout (30 seconds default)
+      4. Create `packages/api/src/services/ai/index.ts` barrel export
+      5. Update `packages/api/src/services/index.ts` to export AIService
+
+      **Constraints:**
+      - ONLY use: Vercel AI SDK (ai package) with @ai-sdk/amazon-bedrock
+      - NEVER use: AWS SDK directly — go through Vercel AI SDK provider
+      - Follow **SA-001** for Effect.Service with Layer pattern
+      - Model ID configurable via environment, never hardcoded
+      - All AI calls must have timeout protection
+      - Credentials managed via standard AWS credential chain (env, ~/.aws, etc.)
+
+      **Success Criteria:**
+      - AIService compiles with Effect.Service pattern
+      - generateText returns string responses from Bedrock
+      - generateObject returns typed structured output
+      - Errors mapped to TaggedErrors, not thrown exceptions
+      - Layer composition provides config → service correctly
+
+  - id: m7-002
+    name: "Implement structured output generation for schedule data"
+    description: |
+      Define Zod schemas for structured AI output types (schedules, assignments,
+      scenarios) and implement the structured generation methods on AIService.
+      Use Vercel AI SDK's generateObject with output schemas to ensure AI returns
+      parseable, type-safe schedule data.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m7-001]
+    files:
+      create:
+        - packages/api/src/services/ai/schemas/schedule-output.ts
+        - packages/api/src/services/ai/schemas/scenario-output.ts
+        - packages/api/src/services/ai/schemas/explanation-output.ts
+        - packages/api/src/services/ai/schemas/index.ts
+      modify:
+        - packages/api/src/services/ai/ai-service.ts
+    style_anchor_refs:
+      - SA-001
+    instructions: |
+      **Objective:**
+      Define structured output schemas and implement typed generation methods
+      for schedule data, scenarios, and explanations using Vercel AI SDK's
+      generateObject.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service pattern
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/ai/schemas/schedule-output.ts`:
+         - Zod schema for AI schedule output:
+           - assignments: array of { taskId, personId, personName, startDate, endDate, allocationPercentage, rationale }
+           - conflicts: array of { type, description, affectedTasks, severity }
+           - utilization: object with per-person utilization percentages
+           - overallFeasibility: "feasible" | "constrained" | "infeasible"
+           - confidenceScore: number (0-1)
+         - Export zod schema and inferred TypeScript type
+      2. Create `packages/api/src/services/ai/schemas/scenario-output.ts`:
+         - Zod schema for planning scenario:
+           - scenarioName, description
+           - modifiedAssignments: same shape as schedule assignments
+           - impactAnalysis: { affectedProjects, timelineChanges, riskLevel, summary }
+           - tradeoffs: array of { description, pros, cons }
+      3. Create `packages/api/src/services/ai/schemas/explanation-output.ts`:
+         - Zod schema for schedule explanation:
+           - summary: string (2-3 sentence overview)
+           - keyDecisions: array of { decision, reasoning, affectedTasks }
+           - constraints: array of { constraint, howAddressed }
+           - assumptions: string[]
+           - recommendations: string[]
+      4. Create `packages/api/src/services/ai/schemas/index.ts` barrel export
+      5. Update `packages/api/src/services/ai/ai-service.ts`:
+         - Add generateSchedule(projectContext: string): Effect<ScheduleOutput, AIServiceError>
+           using generateObject with schedule-output schema
+         - Add generateScenario(projectContext: string, modification: string): Effect<ScenarioOutput, AIServiceError>
+           using generateObject with scenario-output schema
+         - Add generateExplanation(scheduleData: string): Effect<ExplanationOutput, AIServiceError>
+           using generateObject with explanation-output schema
+
+      **Constraints:**
+      - ONLY use: Zod schemas for Vercel AI SDK generateObject output parameter
+      - NEVER use: raw string parsing — generateObject handles validation
+      - All output schemas must have a corresponding TypeScript type export
+      - Schemas must handle edge cases (empty assignments, missing optionals)
+
+      **Success Criteria:**
+      - All Zod schemas compile and validate correctly
+      - generateSchedule returns typed ScheduleOutput from AI
+      - generateScenario returns typed ScenarioOutput from AI
+      - generateExplanation returns typed ExplanationOutput from AI
+      - Invalid AI responses caught and mapped to AIServiceError
+
+  - id: m7-003
+    name: "Implement Sherpy flow orchestration through chat"
+    description: |
+      Build the Sherpy flow orchestration service that drives the planning
+      pipeline steps through per-project chat. The AI guides users through
+      pipeline stages (intake → scoping → planning → review → scheduling →
+      active) conversationally, collecting information and making suggestions
+      at each step. Integrates with the existing chat session infrastructure
+      from m6.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m7-001]
+    files:
+      create:
+        - packages/api/src/services/ai/sherpy-flow-service.ts
+        - packages/api/src/services/ai/flow-steps.ts
+        - packages/api/src/services/ai/prompts/sherpy-flow-system.ts
+        - packages/api/src/services/ai/prompts/flow-step-prompts.ts
+      modify:
+        - packages/api/src/services/ai/index.ts
+    style_anchor_refs:
+      - SA-001
+    instructions: |
+      **Objective:**
+      Implement the Sherpy flow orchestration that drives planning pipeline
+      steps through conversational AI chat, guiding users from intake through
+      scheduling.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/ai/flow-steps.ts`:
+         - Define SherpyFlowStep as Schema.Literal union:
+           "intake", "scoping", "planning", "review", "scheduling", "active", "archived"
+         - Define FlowStepConfig with:
+           step: SherpyFlowStep
+           systemPrompt: string
+           requiredData: string[] (what info this step needs)
+           nextStep: SherpyFlowStep
+           completionCriteria: string (natural language description)
+         - Export flowSteps: Record<SherpyFlowStep, FlowStepConfig> with all pipeline steps
+      2. Create `packages/api/src/services/ai/prompts/sherpy-flow-system.ts`:
+         - System prompt for Sherpy flow AI assistant:
+           - Role: expert project management assistant
+           - Context: project data from DB (milestones, tasks, people)
+           - Behavior: guide through current flow step, collect missing info,
+             suggest next actions, detect when step is complete
+           - Tone: professional, concise, action-oriented
+         - Export function buildSystemPrompt(step: SherpyFlowStep, projectContext: ProjectContext): string
+      3. Create `packages/api/src/services/ai/prompts/flow-step-prompts.ts`:
+         - Per-step prompt templates:
+           - Intake: gather project overview, goals, constraints, team
+           - Scoping: define milestones, deliverables, rough timeline
+           - Planning: break milestones into tasks, estimate effort, assign people
+           - Review: validate plan against constraints, surface risks
+           - Scheduling: generate optimized schedule, show conflicts
+           - Active: monitor progress, flag delays, suggest adjustments
+         - Each template includes instructions for what to collect and how to respond
+      4. Create `packages/api/src/services/ai/sherpy-flow-service.ts`:
+         - SherpyFlowService using Effect.Service (**SA-001**)
+         - Dependencies: AIService, ProjectRepository, ChatSessionRepository
+         - Methods:
+           - processMessage(projectId: string, message: string): Effect<FlowResponse, AIServiceError>
+             1. Load project context (milestones, tasks, people, assignments)
+             2. Determine current flow step from project pipelineStatus
+             3. Build system prompt with project context + step-specific prompt
+             4. Call AIService.generateText with full conversation context
+             5. Analyze response for step completion signals
+             6. If step complete, suggest pipeline status transition
+             7. Return FlowResponse with { reply, suggestedAction?, stepComplete?, nextStep? }
+           - getStepGuidance(projectId: string): Effect<StepGuidance, AIServiceError>
+             Returns current step info, what data is needed, what's missing
+           - transitionStep(projectId: string, nextStep: SherpyFlowStep): Effect<void, AIServiceError>
+             Updates project pipelineStatus and initializes next step context
+         - Layer composition: AIService + repositories → SherpyFlowService
+      5. Update `packages/api/src/services/ai/index.ts` to export SherpyFlowService
+
+      **Constraints:**
+      - ONLY use: AIService for all AI calls (never call Vercel AI SDK directly)
+      - Follow **SA-001** for Effect.Service with Layer DI
+      - Pipeline status transitions must go through ProjectRepository (DB is source of truth)
+      - System prompts must include project context from DB, not from user messages
+      - AI must never auto-transition pipeline status — always suggest and require confirmation
+      - Manual override always available: users can skip steps or go back
+
+      **Success Criteria:**
+      - SherpyFlowService processes chat messages with project context
+      - AI responses are step-aware (different guidance per pipeline stage)
+      - Step completion detection works for basic cases
+      - Pipeline status transitions require user confirmation
+      - Users can manually override any AI suggestion
+
+  - id: m7-004
+    name: "Create ScheduleService with generation and snapshots"
+    description: |
+      Implement the ScheduleService using Effect.Service that orchestrates
+      schedule generation via AIService and persists schedule snapshots to the
+      database. Handles schedule generation from project data, saving snapshots
+      with full parameters and results, and retrieving schedule history.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m7-001]
+    files:
+      create:
+        - packages/api/src/services/schedule/schedule-service.ts
+        - packages/api/src/services/schedule/schedule-repository.ts
+        - packages/api/src/services/schedule/index.ts
+      modify:
+        - packages/api/src/services/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-002
+    instructions: |
+      **Objective:**
+      Create the ScheduleService for generating schedules via AI and managing
+      schedule snapshots in the database.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+      - See `artifacts/style-anchors/SA-002.md` — Model.Class with makeRepository
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/schedule/schedule-repository.ts`:
+         - Use ScheduleSnapshot Model.Class from shared schemas (already defined in m1)
+         - Create repository using makeRepository pattern (**SA-002**)
+         - Methods: insert, findById, findByProjectId, findLatestByProject
+         - Use SqlResolver for queries (**SA-003**):
+           - ByProjectId: selects by project_id ordered by created_at DESC
+           - LatestByProject: selects most recent snapshot for a project
+           - ByProjectAndType: filters by project_id and type (full/scenario/what-if)
+      2. Create `packages/api/src/services/schedule/schedule-service.ts`:
+         - ScheduleService using Effect.Service (**SA-001**)
+         - Dependencies: AIService, ScheduleRepository, ProjectRepository,
+           TaskRepository, PersonRepository, AssignmentRepository
+         - Methods:
+           - generateSchedule(projectId: string): Effect<ScheduleSnapshot, AIServiceError>
+             1. Load project context: milestones, tasks, people, skills, availability
+             2. Build scheduling prompt with all constraints:
+                - Task dependencies and effort estimates
+                - People skills, capacity, and availability windows
+                - Existing assignments across all projects
+                - Project priority and deadlines
+             3. Call AIService.generateSchedule(projectContext)
+             4. Save result as schedule snapshot (type: "full")
+             5. Return saved snapshot
+           - saveSnapshot(projectId: string, name: string, type: string, parameters: unknown, result: unknown, reasoning: string): Effect<ScheduleSnapshot, never>
+             Persists a schedule snapshot to the database
+           - getScheduleHistory(projectId: string): Effect<readonly ScheduleSnapshot[], never>
+             Returns all snapshots for a project ordered by recency
+           - getLatestSchedule(projectId: string): Effect<ScheduleSnapshot | null, never>
+             Returns the most recent schedule snapshot
+           - applySchedule(snapshotId: string): Effect<readonly Assignment[], never>
+             Applies a schedule snapshot by creating assignments from the AI output
+             Only applies if no conflicting assignments exist
+         - Layer composition: AIService + all repositories → ScheduleService
+      3. Create `packages/api/src/services/schedule/index.ts` barrel export
+      4. Update `packages/api/src/services/index.ts` to export schedule services
+
+      **Constraints:**
+      - ONLY use: AIService for schedule generation (never call AI directly)
+      - Follow **SA-001** for ScheduleService Effect.Service pattern
+      - Follow **SA-002** for repository with Model.Class makeRepository
+      - Follow **SA-003** for SqlResolver query patterns
+      - Schedule generation must include all project constraints in prompt
+      - Snapshots are immutable — never update, only create new ones
+      - applySchedule must validate against existing assignments before applying
+      - Users must confirm before applying a schedule (manual override)
+
+      **Success Criteria:**
+      - ScheduleService generates schedules via AI with full project context
+      - Schedule snapshots persisted to database with parameters and results
+      - Schedule history retrievable by project
+      - applySchedule creates valid assignments from AI output
+      - Existing assignments checked before applying new schedule
+
+  - id: m7-005
+    name: "Implement planning scenario creation and comparison"
+    description: |
+      Build scenario creation and comparison features that allow users to
+      explore different planning options. Users can create "what would happen
+      if" scenarios (e.g., add a person, change a deadline, reprioritize) and
+      compare them side-by-side with the current schedule.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m7-001]
+    files:
+      create:
+        - packages/api/src/services/schedule/scenario-service.ts
+        - packages/api/src/services/ai/prompts/scenario-prompts.ts
+      modify:
+        - packages/api/src/services/schedule/index.ts
+    style_anchor_refs:
+      - SA-001
+      - SA-003
+    instructions: |
+      **Objective:**
+      Implement planning scenario creation and comparison for exploring
+      different scheduling options.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+      - See `artifacts/style-anchors/SA-003.md` — SqlResolver patterns
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/ai/prompts/scenario-prompts.ts`:
+         - Build scenario creation prompt template:
+           - Include current schedule state
+           - Describe the modification to explore
+           - Ask for impact analysis across all affected projects
+           - Request tradeoff analysis (pros/cons)
+         - Build scenario comparison prompt template:
+           - Include two or more schedule snapshots
+           - Ask for comparative analysis
+           - Highlight key differences and recommendations
+      2. Create `packages/api/src/services/schedule/scenario-service.ts`:
+         - ScenarioService using Effect.Service (**SA-001**)
+         - Dependencies: AIService, ScheduleService, ScheduleRepository,
+           ProjectRepository, PersonRepository
+         - Methods:
+           - createScenario(projectId: string, modification: ScenarioModification): Effect<ScheduleSnapshot, AIServiceError>
+             1. Load current schedule and project context
+             2. Build scenario prompt with current state + proposed modification
+                modification types: addPerson, removePerson, changeDeadline,
+                reprioritize, splitProject, mergeProjects
+             3. Call AIService.generateScenario with context
+             4. Save result as schedule snapshot (type: "scenario")
+             5. Return saved scenario snapshot
+           - compareScenarios(snapshotIds: string[]): Effect<ScenarioComparison, AIServiceError>
+             1. Load all specified snapshots
+             2. Build comparison prompt with all scenario data
+             3. Call AIService for comparative analysis
+             4. Return structured comparison with:
+                - keyDifferences, riskAnalysis, recommendation, tradeoffs
+           - listScenarios(projectId: string): Effect<readonly ScheduleSnapshot[], never>
+             Returns all scenario-type snapshots for a project
+           - promoteScenario(snapshotId: string): Effect<ScheduleSnapshot, AIServiceError>
+             Creates a new "full" snapshot from a scenario, making it the active schedule
+         - Layer composition: AIService + ScheduleService + repositories → ScenarioService
+      3. Update `packages/api/src/services/schedule/index.ts` to export ScenarioService
+
+      **Constraints:**
+      - ONLY use: AIService for AI operations
+      - Follow **SA-001** for service pattern
+      - Scenario snapshots are immutable and type: "scenario"
+      - Promoting a scenario creates a new "full" snapshot (doesn't mutate)
+      - Comparison must include risk analysis and clear recommendation
+      - Manual override: users can accept, modify, or reject any scenario
+
+      **Success Criteria:**
+      - createScenario produces valid scenarios from proposed modifications
+      - compareScenarios returns meaningful analysis of differences
+      - Scenarios stored as snapshots and retrievable
+      - promoteScenario creates a new full schedule from scenario data
+      - Users can freely create and compare scenarios without affecting live schedule
+
+  - id: m7-006
+    name: "Implement what-if rescheduling after delays"
+    description: |
+      Build the what-if rescheduling feature that recalculates schedules when
+      disruptions occur (delays, unavailability, scope changes). Takes a
+      disruption description, analyzes impact on current schedule, and proposes
+      a revised schedule with minimal cascading effects.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m7-001]
+    files:
+      create:
+        - packages/api/src/services/schedule/reschedule-service.ts
+        - packages/api/src/services/ai/prompts/reschedule-prompts.ts
+      modify:
+        - packages/api/src/services/schedule/index.ts
+    style_anchor_refs:
+      - SA-001
+    instructions: |
+      **Objective:**
+      Implement what-if rescheduling for handling delays and disruptions
+      to active schedules.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/ai/prompts/reschedule-prompts.ts`:
+         - Build reschedule prompt template:
+           - Include current schedule with all assignments
+           - Describe the disruption (delayed task, unavailable person, scope change)
+           - Constraints: minimize changes to unaffected tasks, respect priorities
+           - Request: revised assignments, impact summary, risk assessment
+         - Disruption types:
+           - TaskDelay: task took longer than estimated
+           - PersonUnavailable: person on PTO or reassigned
+           - ScopeChange: task added, removed, or reestimated
+           - DependencyBlocked: upstream task blocked
+      2. Create `packages/api/src/services/schedule/reschedule-service.ts`:
+         - RescheduleService using Effect.Service (**SA-001**)
+         - Dependencies: AIService, ScheduleService, AssignmentRepository,
+           TaskRepository, PersonRepository, AvailabilityRepository
+         - Methods:
+           - analyzeDisruption(projectId: string, disruption: Disruption): Effect<DisruptionAnalysis, AIServiceError>
+             1. Load current schedule and assignments
+             2. Assess impact: which tasks are affected, cascading delays
+             3. Call AIService with disruption context
+             4. Return analysis with: affectedTasks, estimatedDelay, riskLevel, suggestedActions
+           - reschedule(projectId: string, disruption: Disruption): Effect<ScheduleSnapshot, AIServiceError>
+             1. Load full project context + disruption details
+             2. Build reschedule prompt emphasizing minimal disruption
+             3. Call AIService.generateSchedule with reschedule context
+             4. Save result as schedule snapshot (type: "what-if")
+             5. Return revised schedule snapshot
+           - applyReschedule(snapshotId: string): Effect<void, never>
+             Validates and applies a what-if reschedule (delegates to ScheduleService.applySchedule)
+         - Disruption type defined as Schema.Struct union:
+           - { type: "task-delay", taskId, additionalDays }
+           - { type: "person-unavailable", personId, startDate, endDate, reason }
+           - { type: "scope-change", taskId, newEstimate?, addedTasks?, removedTaskIds? }
+           - { type: "dependency-blocked", taskId, blockedByTaskId, reason }
+         - Layer composition: AIService + ScheduleService + repositories → RescheduleService
+      3. Update `packages/api/src/services/schedule/index.ts` to export RescheduleService
+
+      **Constraints:**
+      - ONLY use: AIService for AI operations
+      - Follow **SA-001** for service pattern
+      - Reschedule must minimize changes to unaffected tasks
+      - What-if snapshots are type: "what-if" and don't affect live schedule until applied
+      - Manual override: users can modify any AI-proposed reschedule before applying
+      - Disruption analysis must be available before committing to reschedule
+
+      **Success Criteria:**
+      - analyzeDisruption identifies affected tasks and cascading impact
+      - reschedule produces a revised schedule respecting constraints
+      - What-if snapshots saved separately from full schedules
+      - Users can review disruption analysis before requesting reschedule
+      - Applied reschedules update assignments via existing applySchedule flow
+
+  - id: m7-007
+    name: "Implement AI-generated schedule explanations"
+    description: |
+      Build the schedule explanation feature that generates human-readable
+      explanations for why the AI made specific scheduling decisions. Provides
+      natural language reasoning for assignments, conflict resolution, and
+      overall schedule strategy.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m7-001]
+    files:
+      create:
+        - packages/api/src/services/schedule/explanation-service.ts
+        - packages/api/src/services/ai/prompts/explanation-prompts.ts
+      modify:
+        - packages/api/src/services/schedule/index.ts
+    style_anchor_refs:
+      - SA-001
+    instructions: |
+      **Objective:**
+      Implement AI-generated schedule explanations that help users understand
+      scheduling decisions in natural language.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-001.md` — Effect.Service with Layer DI
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/ai/prompts/explanation-prompts.ts`:
+         - Build explanation prompt template:
+           - Include full schedule data (assignments, constraints, conflicts)
+           - Ask for: summary, key decisions with reasoning, constraints addressed,
+             assumptions made, recommendations for improvement
+           - Tone: clear, non-technical, actionable
+         - Build assignment-level explanation template:
+           - Focus on why a specific person was assigned to a specific task
+           - Consider: skills match, availability, workload balance, dependencies
+      2. Create `packages/api/src/services/schedule/explanation-service.ts`:
+         - ExplanationService using Effect.Service (**SA-001**)
+         - Dependencies: AIService, ScheduleRepository
+         - Methods:
+           - explainSchedule(snapshotId: string): Effect<ScheduleExplanation, AIServiceError>
+             1. Load schedule snapshot from database
+             2. Build explanation prompt with schedule data
+             3. Call AIService.generateExplanation with schedule context
+             4. Return structured explanation (summary, keyDecisions, constraints, assumptions, recommendations)
+           - explainAssignment(snapshotId: string, taskId: string): Effect<AssignmentExplanation, AIServiceError>
+             1. Load schedule snapshot and find specific assignment
+             2. Build focused prompt for that assignment
+             3. Return explanation with: why this person, alternatives considered, risk factors
+           - explainConflict(snapshotId: string, conflictIndex: number): Effect<ConflictExplanation, AIServiceError>
+             Focus on a specific conflict from the schedule and explain resolution
+         - Layer composition: AIService + ScheduleRepository → ExplanationService
+      3. Update `packages/api/src/services/schedule/index.ts` to export ExplanationService
+
+      **Constraints:**
+      - ONLY use: AIService for explanation generation
+      - Follow **SA-001** for service pattern
+      - Explanations must be in clear, non-technical language
+      - Must handle edge case: schedule with no conflicts or no assignments
+      - Explanation cached in snapshot's reasoning field to avoid regenerating
+
+      **Success Criteria:**
+      - explainSchedule returns comprehensive explanation with all sections
+      - explainAssignment provides person-specific reasoning
+      - Explanations are clear and actionable for non-technical users
+      - Edge cases (empty schedule, no conflicts) handled gracefully
+
+  - id: m7-008
+    name: "Create scheduling RPC endpoints and schedule views"
+    description: |
+      Create the HTTP API endpoints for schedule generation, scenario management,
+      what-if rescheduling, and schedule explanations. These are RPC-style POST
+      endpoints following the existing API patterns with schema-validated
+      requests and responses.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m7-004, m7-005, m7-006, m7-007]
+    files:
+      create:
+        - packages/api/src/api/routes/schedule.ts
+        - packages/api/src/api/routes/sherpy-flow.ts
+      modify:
+        - packages/api/src/server.ts
+    style_anchor_refs:
+      - SA-004
+      - SA-005
+    instructions: |
+      **Objective:**
+      Create RPC endpoints for scheduling and Sherpy flow operations following
+      existing API patterns.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-004.md` — HttpApiGroup + HttpApiEndpoint
+      - See `artifacts/style-anchors/SA-005.md` — Handler implementation
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/api/routes/schedule.ts`:
+         - Define schedule HttpApiGroup.make("schedule") (**SA-004**)
+         - Endpoints:
+           - POST /api/schedule/generate: generate schedule for a project
+             Request: { projectId }
+             Response: ScheduleSnapshot
+           - POST /api/schedule/scenario: create planning scenario
+             Request: { projectId, modification: ScenarioModification }
+             Response: ScheduleSnapshot
+           - POST /api/schedule/compare: compare multiple scenarios
+             Request: { snapshotIds: string[] }
+             Response: ScenarioComparison
+           - POST /api/schedule/reschedule: what-if reschedule after disruption
+             Request: { projectId, disruption: Disruption }
+             Response: ScheduleSnapshot
+           - POST /api/schedule/analyze-disruption: analyze disruption impact
+             Request: { projectId, disruption: Disruption }
+             Response: DisruptionAnalysis
+           - POST /api/schedule/apply: apply a schedule snapshot
+             Request: { snapshotId }
+             Response: { assignments: Assignment[] }
+           - POST /api/schedule/explain: explain a schedule
+             Request: { snapshotId }
+             Response: ScheduleExplanation
+           - GET /api/schedule/history/:projectId: list schedule snapshots
+             Response: ScheduleSnapshot[]
+           - GET /api/schedule/latest/:projectId: get latest schedule
+             Response: ScheduleSnapshot | null
+         - Implement handlers using HttpApiBuilder.group (**SA-005**)
+         - Use Effect.gen in handlers to access ScheduleService, ScenarioService, etc.
+         - All endpoints require authentication (bearer JWT)
+      2. Create `packages/api/src/api/routes/sherpy-flow.ts`:
+         - Define sherpyFlow HttpApiGroup.make("sherpy-flow") (**SA-004**)
+         - Endpoints:
+           - POST /api/flow/message: send message to Sherpy flow chat
+             Request: { projectId, message }
+             Response: FlowResponse (reply, suggestedAction, stepComplete, nextStep)
+           - POST /api/flow/transition: transition pipeline step
+             Request: { projectId, nextStep }
+             Response: { success: boolean }
+           - GET /api/flow/guidance/:projectId: get current step guidance
+             Response: StepGuidance
+         - Implement handlers (**SA-005**)
+      3. Update `packages/api/src/server.ts`:
+         - Register schedule and sherpy-flow groups with the main HttpApi
+         - Add authentication middleware to both groups
+
+      **Constraints:**
+      - ONLY use: HttpApiGroup + HttpApiEndpoint (**SA-004**)
+      - Follow **SA-005** for handler implementations with Effect.gen
+      - All endpoints use schema-validated request/response
+      - All endpoints require authentication
+      - Schedule generation endpoints should have longer timeout (60s)
+      - Follow existing error handling patterns with TaggedErrors
+
+      **Success Criteria:**
+      - All schedule endpoints respond with schema-validated data
+      - Sherpy flow endpoints process messages and return step-aware responses
+      - Authentication required on all endpoints
+      - Error responses use TaggedErrors with correct HTTP status codes
+
+  - id: m7-009
+    name: "Build schedule UI views in the web frontend"
+    description: |
+      Create the schedule UI views in the web frontend using React, shadcn/ui,
+      and Tailwind. Includes schedule timeline visualization, scenario comparison
+      cards, what-if reschedule dialog, and schedule explanation panel. Integrates
+      with the API endpoints via RPC calls.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m7-008]
+    files:
+      create:
+        - packages/web/src/features/schedule/schedule-view.tsx
+        - packages/web/src/features/schedule/schedule-timeline.tsx
+        - packages/web/src/features/schedule/scenario-compare.tsx
+        - packages/web/src/features/schedule/reschedule-dialog.tsx
+        - packages/web/src/features/schedule/explanation-panel.tsx
+        - packages/web/src/features/schedule/schedule-actions.ts
+        - packages/web/src/features/schedule/schedule-types.ts
+        - packages/web/src/features/schedule/index.ts
+      modify:
+        - packages/web/src/features/project/project-detail.tsx
+    instructions: |
+      **Objective:**
+      Build the schedule UI views for displaying schedules, comparing scenarios,
+      handling disruptions, and viewing AI explanations.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/features/schedule/schedule-types.ts`:
+         - TypeScript types matching API response schemas
+         - ScheduleSnapshot, ScenarioComparison, DisruptionAnalysis,
+           ScheduleExplanation, FlowResponse, StepGuidance
+      2. Create `packages/web/src/features/schedule/schedule-actions.ts`:
+         - Server action functions calling schedule RPC endpoints:
+           - generateSchedule(projectId)
+           - createScenario(projectId, modification)
+           - compareScenarios(snapshotIds)
+           - analyzeDisruption(projectId, disruption)
+           - reschedule(projectId, disruption)
+           - applySchedule(snapshotId)
+           - explainSchedule(snapshotId)
+           - getScheduleHistory(projectId)
+           - sendFlowMessage(projectId, message)
+           - transitionFlowStep(projectId, nextStep)
+      3. Create `packages/web/src/features/schedule/schedule-timeline.tsx`:
+         - Timeline visualization showing:
+           - Tasks as bars on a timeline (start/end dates)
+           - People assigned to each task
+           - Color-coded by milestone
+           - Hover shows assignment details and AI explanation
+         - Uses shadcn/ui components for consistent styling
+      4. Create `packages/web/src/features/schedule/schedule-view.tsx`:
+         - Main schedule view component:
+           - Tab layout: Current Schedule | Scenarios | History
+           - Current tab: timeline + explanation panel + apply button
+           - Scenarios tab: scenario cards with comparison toggle
+           - History tab: list of snapshots with restore option
+         - Generate Schedule button with loading state
+         - Manual override: edit assignment dates/people inline
+      5. Create `packages/web/src/features/schedule/scenario-compare.tsx`:
+         - Side-by-side scenario comparison:
+           - Select 2-3 scenarios to compare
+           - Show key differences highlighted
+           - AI recommendation displayed prominently
+           - "Promote this scenario" button
+      6. Create `packages/web/src/features/schedule/reschedule-dialog.tsx`:
+         - Dialog for what-if rescheduling:
+           - Disruption type selector (delay, unavailability, scope change)
+           - Dynamic form based on disruption type
+           - "Analyze Impact" button shows analysis before rescheduling
+           - "Reschedule" button generates what-if snapshot
+      7. Create `packages/web/src/features/schedule/explanation-panel.tsx`:
+         - Expandable panel showing AI schedule explanation:
+           - Summary at top
+           - Key decisions as accordion items
+           - Constraints and assumptions sections
+           - Recommendations section
+         - Uses shadcn/ui Accordion and Card components
+      8. Update `packages/web/src/features/project/project-detail.tsx`:
+         - Add "Schedule" tab to project detail view
+         - Render ScheduleView component when tab selected
+      9. Create `packages/web/src/features/schedule/index.ts` barrel export
+
+      **Constraints:**
+      - ONLY use: shadcn/ui components for UI primitives
+      - ONLY use: Tailwind CSS for styling (no inline styles)
+      - Follow existing project detail tab pattern from m6
+      - Manual override must be prominent and always accessible
+      - Show loading states for all AI operations (schedules take 5-15s)
+      - Handle errors gracefully with toast notifications
+      - All dates displayed in user's local timezone
+
+      **Success Criteria:**
+      - Schedule timeline renders assignments visually
+      - Scenario comparison shows differences side-by-side
+      - What-if reschedule dialog collects disruption info and generates schedule
+      - Explanation panel shows AI reasoning in readable format
+      - Manual override available for all AI suggestions
+      - Loading states shown during AI operations
+
+  - id: m7-010
+    name: "Unit tests for AIService with mocked Bedrock"
+    description: |
+      Write comprehensive unit tests for AIService, structured output generation,
+      and Sherpy flow orchestration. Mock the Bedrock provider so tests run
+      without AWS credentials. Test error handling, timeout behavior, and
+      structured output validation.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m7-001, m7-002, m7-003]
+    files:
+      create:
+        - packages/api/src/services/ai/ai-service.test.ts
+        - packages/api/src/services/ai/sherpy-flow-service.test.ts
+        - packages/api/src/services/ai/__mocks__/bedrock-mock.ts
+    style_anchor_refs:
+      - SA-008
+    instructions: |
+      **Objective:**
+      Test AIService and Sherpy flow service with mocked Bedrock provider.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-008.md` — @effect/vitest patterns
+
+      **Implementation Steps:**
+      1. Create `packages/api/src/services/ai/__mocks__/bedrock-mock.ts`:
+         - Create a mock Bedrock provider that returns predetermined responses
+         - Mock for generateText: returns configurable text response
+         - Mock for generateObject: returns valid structured output matching schemas
+         - Mock for streamText: returns a test stream of tokens
+         - Export a BedrockMockLive layer that replaces real Bedrock provider
+         - Include helpers: setMockResponse(), setMockError(), resetMock()
+      2. Create `packages/api/src/services/ai/ai-service.test.ts`:
+         - Test generateText:
+           - Returns expected text from mock Bedrock
+           - Maps Bedrock errors to AIServiceError
+           - Respects configured timeout (test with fast timeout)
+           - Includes system prompt in call
+         - Test generateObject:
+           - Returns typed output matching schedule schema
+           - Validates output against schema
+           - Rejects invalid AI output gracefully
+         - Test streamText:
+           - Returns stream of tokens
+           - Stream completes successfully
+         - Test error scenarios:
+           - Model not configured → AIModelNotConfiguredError
+           - Rate limit exceeded → AIRateLimitError
+           - Network timeout → AIServiceError
+         - Use Effect.provide with BedrockMockLive layer
+         - Use it.effect from @effect/vitest (**SA-008**)
+      3. Create `packages/api/src/services/ai/sherpy-flow-service.test.ts`:
+         - Test processMessage:
+           - Returns step-appropriate response for each pipeline stage
+           - Detects step completion in AI response
+           - Includes project context in system prompt
+         - Test getStepGuidance:
+           - Returns correct guidance for current step
+           - Identifies missing data
+         - Test transitionStep:
+           - Updates project pipeline status
+           - Initializes next step context
+         - Mock dependencies: AIService, ProjectRepository, ChatSessionRepository
+         - Use it.effect with Effect.provide for mocked layers (**SA-008**)
+
+      **Constraints:**
+      - ONLY use: mocked Bedrock provider (no real AWS calls)
+      - Follow **SA-008** for @effect/vitest test patterns
+      - NEVER use: real AWS credentials or network calls in tests
+      - All tests must be deterministic (no flaky tests)
+
+      **Success Criteria:**
+      - AIService tests pass with mocked Bedrock
+      - Error handling tests cover all error types
+      - Sherpy flow tests verify step-aware responses
+      - Coverage exceeds 80% for AIService and SherpyFlowService
+      - No tests require network access
+
+  - id: m7-011
+    name: "Integration tests for schedule generation"
+    description: |
+      Write integration tests for the full schedule generation pipeline:
+      AIService → ScheduleService → database persistence → retrieval.
+      Test scenario creation, comparison, what-if rescheduling, and
+      explanation generation. Use real SQLite database with test data.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m7-004, m7-005, m7-006, m7-007]
+    files:
+      create:
+        - packages/api/src/services/schedule/schedule-service.test.ts
+        - packages/api/src/services/schedule/scenario-service.test.ts
+        - packages/api/src/services/schedule/reschedule-service.test.ts
+        - packages/api/src/services/schedule/explanation-service.test.ts
+    style_anchor_refs:
+      - SA-008
+      - SA-009
+    instructions: |
+      **Objective:**
+      Integration tests for schedule generation, scenarios, rescheduling, and
+      explanations using real SQLite and mocked AI.
+
+      **Style Anchors:**
+      - See `artifacts/style-anchors/SA-008.md` — @effect/vitest patterns
+      - See `artifacts/style-anchors/SA-009.md` — SQL testing with temp databases
+
+      **Implementation Steps:**
+      1. Create shared test setup utilities:
+         - createTestProject(): inserts project with milestones and tasks
+         - createTestPeople(): inserts people with skills and availability
+         - createTestAssignments(): inserts sample assignments
+         - All using SqlClient against temp SQLite database (**SA-009**)
+      2. Create `packages/api/src/services/schedule/schedule-service.test.ts`:
+         - Test generateSchedule:
+           - Creates valid schedule with assignments from project data
+           - Persists snapshot to database with correct type "full"
+           - Schedule respects task dependencies and effort estimates
+         - Test saveSnapshot:
+           - Persists all fields correctly
+           - Retrieves saved snapshot matches original
+         - Test getScheduleHistory:
+           - Returns snapshots ordered by created_at DESC
+           - Filters by project_id
+         - Test applySchedule:
+           - Creates assignments from schedule output
+           - Rejects if conflicting assignments exist
+         - Use it.scoped with temp directory and SQLite client (**SA-009**)
+      3. Create `packages/api/src/services/schedule/scenario-service.test.ts`:
+         - Test createScenario:
+           - Saves scenario with type "scenario"
+           - Includes modification details in parameters
+         - Test compareScenarios:
+           - Returns structured comparison with key differences
+           - Includes risk analysis and recommendation
+         - Test promoteScenario:
+           - Creates new "full" snapshot from scenario
+           - Original scenario remains unchanged
+      4. Create `packages/api/src/services/schedule/reschedule-service.test.ts`:
+         - Test analyzeDisruption:
+           - Identifies affected tasks for task-delay disruption
+           - Identifies affected tasks for person-unavailable disruption
+           - Returns risk level and estimated delay
+         - Test reschedule:
+           - Generates what-if snapshot with revised schedule
+           - Snapshot type is "what-if"
+           - Minimizes changes to unaffected tasks
+      5. Create `packages/api/src/services/schedule/explanation-service.test.ts`:
+         - Test explainSchedule:
+           - Returns explanation with summary, decisions, constraints
+           - Handles empty schedule gracefully
+         - Test explainAssignment:
+           - Returns person-specific reasoning
+           - Lists alternatives considered
+
+      **Constraints:**
+      - ONLY use: real SQLite with temp directory (**SA-009**)
+      - ONLY use: mocked AI (BedrockMockLive) — no real AWS calls
+      - Follow **SA-008** for test patterns
+      - Clean up temp databases after each test
+      - Test data must be realistic (proper dates, skill names, etc.)
+
+      **Success Criteria:**
+      - All schedule service integration tests pass
+      - Tests use real database operations (not mocked repositories)
+      - Tests verify data persistence and retrieval
+      - Coverage exceeds 75% for schedule services
+      - No cross-test pollution (each test uses fresh database)
+
+  - id: m7-012
+    name: "Comprehensive code review for AI scheduling"
+    description: |
+      Review all AI service, scheduling, scenario, and rescheduling code for
+      quality, correctness, security, and alignment with technical requirements.
+      Verify AI prompt quality, error handling, manual override availability,
+      and test coverage.
+    estimate_minutes: 60
+    type: code-review
+    dependencies: [m7-009, m7-010, m7-011]
+    files:
+      create:
+        - code-reviews/2026-04-20-7-code-review.yaml
+      touch_only:
+        - packages/api/src/services/ai/ai-service.ts
+        - packages/api/src/services/ai/bedrock-config.ts
+        - packages/api/src/services/ai/errors.ts
+        - packages/api/src/services/ai/sherpy-flow-service.ts
+        - packages/api/src/services/ai/flow-steps.ts
+        - packages/api/src/services/ai/schemas/schedule-output.ts
+        - packages/api/src/services/ai/schemas/scenario-output.ts
+        - packages/api/src/services/ai/schemas/explanation-output.ts
+        - packages/api/src/services/ai/prompts/sherpy-flow-system.ts
+        - packages/api/src/services/ai/prompts/flow-step-prompts.ts
+        - packages/api/src/services/ai/prompts/scenario-prompts.ts
+        - packages/api/src/services/ai/prompts/reschedule-prompts.ts
+        - packages/api/src/services/ai/prompts/explanation-prompts.ts
+        - packages/api/src/services/schedule/schedule-service.ts
+        - packages/api/src/services/schedule/schedule-repository.ts
+        - packages/api/src/services/schedule/scenario-service.ts
+        - packages/api/src/services/schedule/reschedule-service.ts
+        - packages/api/src/services/schedule/explanation-service.ts
+        - packages/api/src/api/routes/schedule.ts
+        - packages/api/src/api/routes/sherpy-flow.ts
+        - packages/web/src/features/schedule/schedule-view.tsx
+        - packages/web/src/features/schedule/schedule-timeline.tsx
+        - packages/web/src/features/schedule/scenario-compare.tsx
+        - packages/web/src/features/schedule/reschedule-dialog.tsx
+        - packages/web/src/features/schedule/explanation-panel.tsx
+    instructions: |
+      **Objective:**
+      Review all AI scheduling and Sherpy flow code for quality and correctness.
+
+      **Review Checklist:**
+      1. **AI Service Quality:**
+         - [ ] All AI calls go through AIService (no direct SDK usage elsewhere)
+         - [ ] Vercel AI SDK patterns used correctly (generateText, generateObject)
+         - [ ] Bedrock provider configured via Effect.Config (no hardcoded values)
+         - [ ] Timeout protection on all AI calls
+         - [ ] Errors mapped to TaggedErrors consistently
+
+      2. **Prompt Engineering:**
+         - [ ] System prompts include relevant project context from DB
+         - [ ] Prompts are clear, specific, and produce consistent output
+         - [ ] Structured output schemas match AI capabilities
+         - [ ] No sensitive data leaked in prompts
+
+      3. **Schedule Logic:**
+         - [ ] Schedule generation includes all constraints (skills, availability, dependencies)
+         - [ ] Snapshots are immutable — only new snapshots created
+         - [ ] applySchedule validates against existing assignments
+         - [ ] What-if snapshots don't affect live schedule until applied
+
+      4. **Manual Override:**
+         - [ ] Users can always override AI suggestions
+         - [ ] Pipeline status transitions require confirmation
+         - [ ] Schedule applications require confirmation
+         - [ ] Manual edit available for all AI-generated assignments
+
+      5. **Testing:**
+         - [ ] AI calls mocked in all tests (no real Bedrock)
+         - [ ] Integration tests use real SQLite with temp directories
+         - [ ] Coverage exceeds 80% for AI services
+         - [ ] Error scenarios tested (timeout, rate limit, invalid output)
+
+      6. **UI Quality:**
+         - [ ] Loading states for all AI operations
+         - [ ] Error handling with user-friendly messages
+         - [ ] Manual override controls prominent
+         - [ ] Schedule timeline renders correctly
+
+      7. **Security:**
+         - [ ] No AWS credentials in code or logs
+         - [ ] All endpoints require authentication
+         - [ ] AI prompts don't expose other users' data inappropriately
+         - [ ] Rate limiting considered for AI endpoints
+
+      **Output:** Create code-reviews/2026-04-20-7-code-review.yaml with findings.
+
+      **Success Criteria:**
+      - No critical issues found
+      - AI service patterns consistent with style anchors
+      - Manual override available for all AI features
+      - Test coverage adequate for high-risk milestone
