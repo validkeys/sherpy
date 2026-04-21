@@ -1,7 +1,6 @@
 /**
  * Domain services barrel export
  * Services: project, milestone, task, person, schedule, ai
- * Placeholder for m1+ implementation
  */
 
-export {};
+export { ProjectService, ProjectServiceLive, type CreateProjectInput, type UpdateProjectInput, type ProjectFilters } from "./project-service.js"
