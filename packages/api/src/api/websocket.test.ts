@@ -12,7 +12,6 @@ import { WsEvent, ChatMessageEvent } from "@sherpy/shared"
 
 // Mock AuthService for tests
 const MockAuthServiceLive = Layer.succeed(AuthService, {
-  getJwks: () => Effect.succeed({ keys: [] }),
   validateToken: (token: string) =>
     Effect.gen(function* () {
       if (token === "valid-token") {

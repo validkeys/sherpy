@@ -14,7 +14,7 @@ import {
   HttpMiddleware,
   HttpServer,
 } from "@effect/platform"
-import { NodeHttpServer, NodeRuntime } from "@effect/platform-node"
+import { NodeHttpServer, NodeRuntime, NodeFileSystem } from "@effect/platform-node"
 import { FetchHttpClient } from "@effect/platform"
 import { SqlClient } from "@effect/sql"
 import { LibsqlClient } from "@effect/sql-libsql"
@@ -33,6 +33,7 @@ import {
   WebSocketService,
   WebSocketConnection,
 } from "./api/websocket.js"
+import { wrapWithStaticFiles } from "./api/static-server.js"
 
 /**
  * Health check response schema
@@ -260,11 +261,23 @@ const WebSocketServerLive = Layer.scopedDiscard(
 
 /**
  * HTTP server layer with configuration
+ * TODO: Integrate static file serving when web package is ready
+ *
+ * To add static serving:
+ * 1. Wrap the HTTP app with wrapWithStaticFiles before serving
+ * 2. Provide NodeFileSystem.layer for file system access
+ * 3. Path: "../../../web/dist" (relative to dist/server.js)
+ *
+ * Example integration (requires @effect/platform updates):
+ *   const apiApp = HttpApiBuilder.api(SherryApi)
+ *   const wrappedApp = wrapWithStaticFiles(apiApp, "../../../web/dist")
+ *   HttpApiBuilder.serve(wrappedApp, HttpMiddleware.logger)
  */
 const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   HttpServer.withLogAddress,
   Layer.provide(SherryApiLive),
   Layer.provide(FetchHttpClient.layer),
+  Layer.provide(NodeFileSystem.layer),
   Layer.provide(NodeHttpServer.layer(createServer, { port: 3100, host: "127.0.0.1" }))
 )
 

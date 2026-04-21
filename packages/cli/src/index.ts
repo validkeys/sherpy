@@ -8,7 +8,7 @@
 import { startCommand } from "./commands/start.js";
 import { stopCommand } from "./commands/stop.js";
 
-export function main(): void {
+export async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const command = args[0];
 
@@ -19,7 +19,7 @@ export function main(): void {
       exitCode = startCommand();
       break;
     case "stop":
-      exitCode = stopCommand();
+      exitCode = await stopCommand();
       break;
     default:
       console.error(`Unknown command: ${command}`);
