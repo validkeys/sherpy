@@ -1,0 +1,37 @@
+/**
+ * Milestone domain schema using @effect/sql Model.Class
+ * Represents milestones within a project
+ */
+
+import { Model } from "@effect/sql"
+import { Schema } from "effect"
+
+/**
+ * Milestone status enum
+ */
+export const MilestoneStatus = Schema.Literal(
+  "pending",
+  "in-progress",
+  "blocked",
+  "complete",
+)
+
+export type MilestoneStatus = typeof MilestoneStatus.Type
+
+/**
+ * Milestone entity - represents a major deliverable phase in a project
+ */
+export class Milestone extends Model.Class<Milestone>("Milestone")({
+  id: Model.Generated(Schema.String),
+  projectId: Schema.String,
+  name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(255)),
+  description: Schema.optional(Schema.String),
+  status: MilestoneStatus,
+  orderIndex: Schema.Number.pipe(Schema.int(), Schema.greaterThanOrEqualTo(0)),
+  estimatedDays: Schema.optional(
+    Schema.Number.pipe(Schema.positive(), Schema.finite()),
+  ),
+  acceptanceCriteria: Schema.optional(Schema.String),
+  createdAt: Model.DateTimeInsert,
+  updatedAt: Model.DateTimeUpdate,
+}) {}
