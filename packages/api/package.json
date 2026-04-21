@@ -15,9 +15,12 @@
     "@effect/platform-node": "^0.78.0",
     "@effect/sql": "^0.34.0",
     "@effect/sql-libsql": "^0.10.0",
-    "@effect/schema": "^0.75.5"
+    "@effect/schema": "^0.75.5",
+    "@effect/experimental": "^0.60.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "@effect/vitest": "^0.13.6",
+    "vitest": "^2.1.8"
   }
 }

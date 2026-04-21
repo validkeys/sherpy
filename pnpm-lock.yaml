@@ -29,6 +29,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@effect/experimental':
+        specifier: ^0.60.0
+        version: 0.60.0(@effect/platform@0.81.1(effect@3.21.1))(effect@3.21.1)
       '@effect/platform':
         specifier: ^0.81.0
         version: 0.81.1(effect@3.21.1)
@@ -51,9 +54,15 @@ importers:
         specifier: ^3.14.0
         version: 3.21.1
     devDependencies:
+      '@effect/vitest':
+        specifier: ^0.13.6
+        version: 0.13.19(effect@3.21.1)(vitest@2.1.9(@types/node@25.6.0))
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@25.6.0)
 
   packages/cli:
     dependencies:
