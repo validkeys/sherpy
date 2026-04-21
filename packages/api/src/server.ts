@@ -8,18 +8,24 @@ import {
   HttpApiBuilder,
   HttpApiEndpoint,
   HttpApiGroup,
+  HttpApiMiddleware,
   HttpApiSchema,
+  HttpApiSecurity,
   HttpMiddleware,
   HttpServer,
 } from "@effect/platform"
 import { NodeHttpServer, NodeRuntime } from "@effect/platform-node"
+import { FetchHttpClient } from "@effect/platform"
 import { SqlClient } from "@effect/sql"
 import { LibsqlClient } from "@effect/sql-libsql"
-import { Config, Effect, Layer, Schema } from "effect"
+import { Config, Context, Effect, Layer, Redacted, Schema } from "effect"
 import { createServer } from "node:http"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { runMigrations } from "./db/migration-runner.js"
+import { OktaClaims, validateJwt } from "./auth/okta-jwt.js"
+import { UnauthorizedError } from "./errors/auth.js"
+import { AuthService } from "./auth/jwks-cache.js"
 
 /**
  * Health check response schema
@@ -30,6 +36,30 @@ class HealthResponse extends Schema.Class<HealthResponse>("HealthResponse")({
   uptime: Schema.Number,
   timestamp: Schema.String,
 }) {}
+
+/**
+ * CurrentUser context tag
+ * Provides authenticated user claims to request handlers
+ */
+export class CurrentUser extends Context.Tag("CurrentUser")<
+  CurrentUser,
+  OktaClaims
+>() {}
+
+/**
+ * Authentication middleware
+ * Validates JWT bearer tokens and provides CurrentUser to handlers
+ */
+export class Authentication extends HttpApiMiddleware.Tag<Authentication>()(
+  "Authentication",
+  {
+    failure: UnauthorizedError,
+    provides: CurrentUser,
+    security: {
+      bearer: HttpApiSecurity.bearer,
+    },
+  }
+) {}
 
 /**
  * Health API group - no authentication required
@@ -68,6 +98,25 @@ const HealthApiLive = HttpApiBuilder.group(SherryApi, "health", (handlers) =>
 )
 
 /**
+ * Authentication middleware implementation
+ * Validates Bearer tokens via Okta JWT validation
+ */
+const AuthenticationLive = Layer.effect(
+  Authentication,
+  Effect.gen(function* () {
+    const authService = yield* AuthService
+
+    return Authentication.of({
+      bearer: (token) =>
+        Effect.gen(function* () {
+          const claims = yield* authService.validateToken(Redacted.value(token))
+          return claims
+        }),
+    })
+  })
+)
+
+/**
  * Migration runner service
  * Runs database migrations before the server starts
  */
@@ -92,6 +141,8 @@ const DatabaseLayer = LibsqlClient.layer({
  */
 export const SherryApiLive = HttpApiBuilder.api(SherryApi).pipe(
   Layer.provide(HealthApiLive),
+  Layer.provide(AuthenticationLive),
+  Layer.provide(AuthService.Live),
   Layer.provide(MigrationRunnerLive),
   Layer.provide(DatabaseLayer)
 )
@@ -102,6 +153,7 @@ export const SherryApiLive = HttpApiBuilder.api(SherryApi).pipe(
 const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   HttpServer.withLogAddress,
   Layer.provide(SherryApiLive),
+  Layer.provide(FetchHttpClient.layer),
   Layer.provide(NodeHttpServer.layer(createServer, { port: 3100, host: "127.0.0.1" }))
 )
 
