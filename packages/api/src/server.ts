@@ -22,10 +22,17 @@ import { Config, Context, Effect, Layer, Redacted, Schema } from "effect"
 import { createServer } from "node:http"
 import { homedir } from "node:os"
 import { join } from "node:path"
+import { WebSocketServer, WebSocket } from "ws"
+import { IncomingMessage } from "node:http"
 import { runMigrations } from "./db/migration-runner.js"
 import { OktaClaims, validateJwt } from "./auth/okta-jwt.js"
 import { UnauthorizedError } from "./errors/auth.js"
 import { AuthService } from "./auth/jwks-cache.js"
+import {
+  EventBroadcaster,
+  WebSocketService,
+  WebSocketConnection,
+} from "./api/websocket.js"
 
 /**
  * Health check response schema
@@ -148,6 +155,110 @@ export const SherryApiLive = HttpApiBuilder.api(SherryApi).pipe(
 )
 
 /**
+ * WebSocket server layer
+ * Sets up WebSocket server with JWT authentication
+ */
+const WebSocketServerLive = Layer.scopedDiscard(
+  Effect.gen(function* () {
+    yield* Effect.log("Initializing WebSocket server")
+
+    const wsService = yield* WebSocketService
+    const broadcaster = yield* EventBroadcaster
+
+    // Create WebSocket server on port 3101 (separate from HTTP API)
+    // In production, this would be proxied through a reverse proxy like Nginx
+    const wss = new WebSocketServer({ port: 3101, host: "127.0.0.1" })
+
+    // Track active connections
+    let connectionId = 0
+
+    wss.on("connection", (ws: WebSocket, request: IncomingMessage) => {
+      const connId = `ws-${++connectionId}`
+
+      // Extract JWT from query parameter
+      const requestUrl = request.url || "/"
+      const host = request.headers.host || "localhost"
+      const url = new URL(requestUrl, `http://${host}`)
+      const token = url.searchParams.get("token") || ""
+
+      // Validate JWT asynchronously
+      Effect.runPromise(
+        Effect.gen(function* () {
+          // Validate the token
+          const result = yield* Effect.either(
+            wsService.validateConnection(token)
+          )
+
+          if (result._tag === "Left") {
+            yield* Effect.log(
+              `WebSocket authentication failed for ${connId}: ${result.left.message}`
+            )
+            ws.close(1008, "Authentication failed")
+            return
+          }
+
+          const claims = result.right
+          yield* Effect.log(
+            `WebSocket client authenticated: ${connId} (user: ${claims.email})`
+          )
+
+          // Create WebSocketConnection adapter
+          const connection: WebSocketConnection = {
+            id: connId,
+            send: (data: string) =>
+              Effect.sync(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                  ws.send(data)
+                }
+              }),
+            close: () =>
+              Effect.sync(() => {
+                ws.close()
+              }),
+          }
+
+          // Add to broadcaster pool
+          yield* broadcaster.addConnection(connection)
+
+          // Send acknowledgment
+          ws.send(JSON.stringify({ type: "connected", connectionId: connId }))
+
+          // Handle disconnect
+          ws.on("close", () => {
+            Effect.runPromise(
+              Effect.gen(function* () {
+                yield* Effect.log(`WebSocket client disconnected: ${connId}`)
+                yield* broadcaster.removeConnection(connection)
+              })
+            )
+          })
+
+          ws.on("error", (error) => {
+            Effect.runPromise(
+              Effect.gen(function* () {
+                yield* Effect.logWarning(
+                  `WebSocket error for ${connId}: ${String(error)}`
+                )
+                yield* broadcaster.removeConnection(connection)
+              })
+            )
+          })
+        })
+      )
+    })
+
+    yield* Effect.addFinalizer(() =>
+      Effect.gen(function* () {
+        yield* Effect.log("Closing WebSocket server")
+        yield* Effect.sync(() => wss.close())
+      })
+    )
+
+    yield* Effect.log("WebSocket server listening on ws://127.0.0.1:3101")
+  })
+)
+
+/**
  * HTTP server layer with configuration
  */
 const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
@@ -158,10 +269,20 @@ const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
 )
 
 /**
- * Main server effect
- * Runs migrations, starts the HTTP server, and keeps it running
+ * Combined server layer with HTTP API and WebSocket server
  */
-export const main = HttpLive.pipe(Layer.launch, Effect.scoped)
+const ServerLive = Layer.mergeAll(HttpLive, WebSocketServerLive).pipe(
+  Layer.provide(EventBroadcaster.Default),
+  Layer.provide(WebSocketService.Default),
+  Layer.provide(AuthService.Live),
+  Layer.provide(FetchHttpClient.layer)
+)
+
+/**
+ * Main server effect
+ * Runs migrations, starts the HTTP server and WebSocket server, and keeps them running
+ */
+export const main = ServerLive.pipe(Layer.launch, Effect.scoped)
 
 /**
  * Bootstrap and run the server

@@ -53,10 +53,16 @@ importers:
       effect:
         specifier: ^3.14.0
         version: 3.21.1
+      ws:
+        specifier: ^8.20.0
+        version: 8.20.0
     devDependencies:
       '@effect/vitest':
         specifier: ^0.13.6
         version: 0.13.19(effect@3.21.1)(vitest@2.1.9(@types/node@25.6.0))
+      '@types/ws':
+        specifier: ^8.18.1
+        version: 8.18.1
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
