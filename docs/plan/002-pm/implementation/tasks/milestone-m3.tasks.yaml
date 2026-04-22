@@ -533,9 +533,12 @@ tasks:
     estimate_minutes: 60
     type: code
     dependencies: [m3-001]
+    status: completed
+    completed_at: "2026-04-22"
     files:
       create:
         - packages/api/src/services/chat-session-service.ts
+        - packages/api/src/services/chat-session-service.test.ts
       modify:
         - packages/api/src/services/index.ts
     style_anchor_refs:
