@@ -34,6 +34,15 @@ import {
   WebSocketConnection,
 } from "./api/websocket.js"
 import { wrapWithStaticFiles } from "./api/static-server.js"
+import {
+  ProjectsApi,
+  CreateProjectResponse,
+  ListProjectsResponse,
+  GetProjectResponse,
+  UpdateProjectResponse,
+} from "./api/routes/projects.js"
+import { ProjectService, ProjectServiceLive } from "./services/project-service.js"
+import { ValidationError } from "@sherpy/shared"
 
 /**
  * Health check response schema
@@ -79,7 +88,7 @@ class HealthApi extends HttpApiGroup.make("health").add(
 /**
  * Main API composition
  */
-export class SherryApi extends HttpApi.make("api").add(HealthApi) {}
+export class SherryApi extends HttpApi.make("api").add(HealthApi).add(ProjectsApi) {}
 
 /**
  * Health check handler implementation
@@ -102,6 +111,72 @@ const HealthApiLive = HttpApiBuilder.group(SherryApi, "health", (handlers) =>
         })
       })
     )
+  })
+)
+
+/**
+ * Projects API handler implementation
+ * Delegates to ProjectService for all business logic
+ */
+const ProjectsApiLive = HttpApiBuilder.group(SherryApi, "projects", (handlers) =>
+  Effect.gen(function* () {
+    const projectService = yield* ProjectService
+
+    return handlers
+      .handle("createProject", ({ payload }) =>
+        Effect.gen(function* () {
+          const project = yield* projectService.create({
+            name: payload.name,
+            description: payload.description,
+            slug: payload.slug,
+            tags: payload.tags,
+            priority: payload.priority,
+          })
+
+          return new CreateProjectResponse({ project })
+        })
+      )
+      .handle("listProjects", ({ urlParams }) =>
+        Effect.gen(function* () {
+          const projects = yield* projectService.list({
+            pipelineStatus: urlParams.pipelineStatus,
+            priority: urlParams.priority,
+            search: urlParams.search,
+            limit: urlParams.limit,
+            offset: urlParams.offset,
+          }).pipe(
+            Effect.catchTag("SqlError", (error) =>
+              Effect.fail(
+                new ValidationError({
+                  message: `Database error: ${error.message ?? "Unknown error"}`,
+                })
+              )
+            )
+          )
+
+          return new ListProjectsResponse({ projects })
+        })
+      )
+      .handle("getProject", ({ path }) =>
+        Effect.gen(function* () {
+          const project = yield* projectService.get(path.projectId)
+
+          return new GetProjectResponse({ project })
+        })
+      )
+      .handle("updateProject", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const project = yield* projectService.update(path.projectId, {
+            name: payload.name,
+            description: payload.description,
+            pipelineStatus: payload.pipelineStatus,
+            tags: payload.tags,
+            priority: payload.priority,
+          })
+
+          return new UpdateProjectResponse({ project })
+        })
+      )
   })
 )
 
@@ -149,8 +224,10 @@ const DatabaseLayer = LibsqlClient.layer({
  */
 export const SherryApiLive = HttpApiBuilder.api(SherryApi).pipe(
   Layer.provide(HealthApiLive),
+  Layer.provide(ProjectsApiLive),
   Layer.provide(AuthenticationLive),
   Layer.provide(AuthService.Live),
+  Layer.provide(ProjectServiceLive),
   Layer.provide(MigrationRunnerLive),
   Layer.provide(DatabaseLayer)
 )
