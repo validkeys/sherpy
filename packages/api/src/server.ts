@@ -41,7 +41,45 @@ import {
   GetProjectResponse,
   UpdateProjectResponse,
 } from "./api/routes/projects.js"
+import {
+  MilestonesApi,
+  CreateMilestoneResponse,
+  ListMilestonesResponse,
+  GetMilestoneResponse,
+  UpdateMilestoneResponse,
+  ReorderMilestonesResponse,
+} from "./api/routes/milestones.js"
+import {
+  TasksApi,
+  CreateTaskResponse,
+  ListTasksByMilestoneResponse,
+  ListTasksByProjectResponse,
+  GetTaskResponse,
+  UpdateTaskResponse,
+  UpdateTaskStatusResponse,
+  ReorderTasksResponse,
+  BulkUpdateTaskStatusResponse,
+} from "./api/routes/tasks.js"
+import {
+  DocumentsApi,
+  GenerateDocumentResponse,
+  ListDocumentsResponse,
+  GetDocumentResponse,
+  GetDocumentVersionResponse,
+} from "./api/routes/documents.js"
+import {
+  ChatApi,
+  CreateChatSessionResponse,
+  ListChatSessionsResponse,
+  GetChatHistoryResponse,
+  SendMessageResponse,
+  DeleteChatSessionResponse,
+} from "./api/routes/chat.js"
 import { ProjectService, ProjectServiceLive } from "./services/project-service.js"
+import { MilestoneService, MilestoneServiceLive } from "./services/milestone-service.js"
+import { TaskService, TaskServiceLive } from "./services/task-service.js"
+import { DocumentService, DocumentServiceLive } from "./services/document-service.js"
+import { ChatSessionService, ChatSessionServiceLive } from "./services/chat-session-service.js"
 import { ValidationError } from "@sherpy/shared"
 
 /**
@@ -88,7 +126,7 @@ class HealthApi extends HttpApiGroup.make("health").add(
 /**
  * Main API composition
  */
-export class SherryApi extends HttpApi.make("api").add(HealthApi).add(ProjectsApi) {}
+export class SherryApi extends HttpApi.make("api").add(HealthApi).add(ProjectsApi).add(MilestonesApi).add(TasksApi).add(DocumentsApi).add(ChatApi) {}
 
 /**
  * Health check handler implementation
@@ -181,6 +219,262 @@ const ProjectsApiLive = HttpApiBuilder.group(SherryApi, "projects", (handlers) =
 )
 
 /**
+ * Milestones API handler implementation
+ * Delegates to MilestoneService for all business logic
+ */
+const MilestonesApiLive = HttpApiBuilder.group(SherryApi, "milestones", (handlers) =>
+  Effect.gen(function* () {
+    const milestoneService = yield* MilestoneService
+
+    return handlers
+      .handle("createMilestone", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const milestone = yield* milestoneService.create({
+            projectId: path.projectId,
+            name: payload.name,
+            description: payload.description,
+            estimatedDays: payload.estimatedDays,
+            acceptanceCriteria: payload.acceptanceCriteria,
+          })
+
+          return new CreateMilestoneResponse({ milestone })
+        })
+      )
+      .handle("listMilestones", ({ path }) =>
+        Effect.gen(function* () {
+          const milestones = yield* milestoneService.listByProject(path.projectId)
+
+          return new ListMilestonesResponse({ milestones })
+        })
+      )
+      .handle("getMilestone", ({ path }) =>
+        Effect.gen(function* () {
+          const milestone = yield* milestoneService.get(path.milestoneId)
+
+          return new GetMilestoneResponse({ milestone })
+        })
+      )
+      .handle("updateMilestone", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const milestone = yield* milestoneService.update(path.milestoneId, {
+            name: payload.name,
+            description: payload.description,
+            status: payload.status,
+            estimatedDays: payload.estimatedDays,
+            acceptanceCriteria: payload.acceptanceCriteria,
+          })
+
+          return new UpdateMilestoneResponse({ milestone })
+        })
+      )
+      .handle("reorderMilestones", ({ path, payload }) =>
+        Effect.gen(function* () {
+          yield* milestoneService.reorder(path.projectId, {
+            milestoneIds: payload.milestoneIds,
+          })
+
+          return new ReorderMilestonesResponse({ success: true })
+        })
+      )
+  })
+)
+
+/**
+ * Tasks API handler implementation
+ * Delegates to TaskService for all business logic
+ */
+const TasksApiLive = HttpApiBuilder.group(SherryApi, "tasks", (handlers) =>
+  Effect.gen(function* () {
+    const taskService = yield* TaskService
+
+    return handlers
+      .handle("createTask", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const task = yield* taskService.create({
+            milestoneId: path.milestoneId,
+            projectId: payload.projectId,
+            name: payload.name,
+            description: payload.description,
+            priority: payload.priority,
+            estimatedHours: payload.estimatedHours,
+          })
+
+          return new CreateTaskResponse({ task })
+        })
+      )
+      .handle("listTasksByMilestone", ({ path }) =>
+        Effect.gen(function* () {
+          const tasks = yield* taskService.listByMilestone(path.milestoneId)
+
+          return new ListTasksByMilestoneResponse({ tasks })
+        })
+      )
+      .handle("listTasksByProject", ({ path, urlParams }) =>
+        Effect.gen(function* () {
+          const tasks = yield* taskService.listByProject(path.projectId, {
+            status: urlParams.status,
+            priority: urlParams.priority,
+          })
+
+          return new ListTasksByProjectResponse({ tasks })
+        })
+      )
+      .handle("getTask", ({ path }) =>
+        Effect.gen(function* () {
+          const task = yield* taskService.get(path.taskId)
+
+          return new GetTaskResponse({ task })
+        })
+      )
+      .handle("updateTask", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const task = yield* taskService.update(path.taskId, {
+            name: payload.name,
+            description: payload.description,
+            priority: payload.priority,
+            estimatedHours: payload.estimatedHours,
+            actualHours: payload.actualHours,
+          })
+
+          return new UpdateTaskResponse({ task })
+        })
+      )
+      .handle("updateTaskStatus", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const task = yield* taskService.updateStatus(path.taskId, {
+            status: payload.status,
+          })
+
+          return new UpdateTaskStatusResponse({ task })
+        })
+      )
+      .handle("reorderTasks", ({ path, payload }) =>
+        Effect.gen(function* () {
+          yield* taskService.reorder(path.milestoneId, {
+            taskIds: payload.taskIds,
+          })
+
+          return new ReorderTasksResponse({ success: true })
+        })
+      )
+      .handle("bulkUpdateTaskStatus", ({ payload }) =>
+        Effect.gen(function* () {
+          const tasks = yield* taskService.bulkUpdateStatus({
+            taskIds: payload.taskIds,
+            status: payload.status,
+          })
+
+          return new BulkUpdateTaskStatusResponse({ tasks })
+        })
+      )
+  })
+)
+
+/**
+ * Documents API handler implementation
+ * Delegates to DocumentService for document generation and retrieval
+ */
+const DocumentsApiLive = HttpApiBuilder.group(SherryApi, "documents", (handlers) =>
+  Effect.gen(function* () {
+    const documentService = yield* DocumentService
+
+    return handlers
+      .handle("generateDocument", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const document = yield* documentService.generateProjectPlan({
+            projectId: path.projectId,
+            format: payload.format,
+          })
+
+          return new GenerateDocumentResponse({ document })
+        })
+      )
+      .handle("listDocuments", ({ path }) =>
+        Effect.gen(function* () {
+          const documents = yield* documentService.listDocuments(path.projectId)
+
+          return new ListDocumentsResponse({ documents: Array.from(documents) })
+        })
+      )
+      .handle("getDocument", ({ path }) =>
+        Effect.gen(function* () {
+          const document = yield* documentService.getDocument(
+            path.projectId,
+            path.documentType
+          )
+
+          return new GetDocumentResponse({ document })
+        })
+      )
+      .handle("getDocumentVersion", ({ path }) =>
+        Effect.gen(function* () {
+          const document = yield* documentService.getDocumentVersion(
+            path.projectId,
+            path.documentType,
+            path.version
+          )
+
+          return new GetDocumentVersionResponse({ document })
+        })
+      )
+  })
+)
+
+/**
+ * Chat API handler implementation
+ * Delegates to ChatSessionService for chat operations
+ */
+const ChatApiLive = HttpApiBuilder.group(SherryApi, "chat", (handlers) =>
+  Effect.gen(function* () {
+    const chatService = yield* ChatSessionService
+
+    return handlers
+      .handle("createChatSession", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const session = yield* chatService.create({
+            projectId: path.projectId,
+            contextType: payload.contextType,
+          })
+
+          return new CreateChatSessionResponse({ session })
+        })
+      )
+      .handle("listChatSessions", ({ path }) =>
+        Effect.gen(function* () {
+          const sessions = yield* chatService.listByProject(path.projectId)
+
+          return new ListChatSessionsResponse({ sessions: Array.from(sessions) })
+        })
+      )
+      .handle("getChatHistory", ({ path }) =>
+        Effect.gen(function* () {
+          const session = yield* chatService.getHistory(path.sessionId)
+
+          return new GetChatHistoryResponse({ session })
+        })
+      )
+      .handle("sendMessage", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const session = yield* chatService.addMessage({
+            sessionId: path.sessionId,
+            role: payload.role,
+            content: payload.content,
+          })
+
+          return new SendMessageResponse({ session })
+        })
+      )
+      .handle("deleteChatSession", ({ path }) =>
+        Effect.gen(function* () {
+          yield* chatService.delete(path.sessionId)
+
+          return new DeleteChatSessionResponse({ success: true })
+        })
+      )
+  })
+)
+
+/**
  * Authentication middleware implementation
  * Validates Bearer tokens via Okta JWT validation
  */
@@ -225,9 +519,17 @@ const DatabaseLayer = LibsqlClient.layer({
 export const SherryApiLive = HttpApiBuilder.api(SherryApi).pipe(
   Layer.provide(HealthApiLive),
   Layer.provide(ProjectsApiLive),
+  Layer.provide(MilestonesApiLive),
+  Layer.provide(TasksApiLive),
+  Layer.provide(DocumentsApiLive),
+  Layer.provide(ChatApiLive),
   Layer.provide(AuthenticationLive),
   Layer.provide(AuthService.Live),
   Layer.provide(ProjectServiceLive),
+  Layer.provide(MilestoneServiceLive),
+  Layer.provide(TaskServiceLive),
+  Layer.provide(DocumentServiceLive),
+  Layer.provide(ChatSessionServiceLive),
   Layer.provide(MigrationRunnerLive),
   Layer.provide(DatabaseLayer)
 )

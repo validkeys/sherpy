@@ -52,6 +52,15 @@ export class ReorderTasksInput extends Schema.Class<ReorderTasksInput>(
 }) {}
 
 /**
+ * Input for updating a single task status
+ */
+export class UpdateTaskStatusInput extends Schema.Class<UpdateTaskStatusInput>(
+  "UpdateTaskStatusInput",
+)({
+  status: Schema.Literal("pending", "in-progress", "blocked", "complete"),
+}) {}
+
+/**
  * Input for bulk status update
  */
 export class BulkUpdateStatusInput extends Schema.Class<BulkUpdateStatusInput>(
@@ -317,6 +326,37 @@ export class TaskService extends Effect.Service<TaskService>()(
         )
 
       /**
+       * Update task status
+       */
+      const updateStatus = (
+        id: string,
+        input: typeof UpdateTaskStatusInput.Type,
+      ): Effect.Effect<typeof Task.Type, NotFoundError | ValidationError> =>
+        Effect.gen(function* () {
+          // First verify the task exists
+          yield* get(id)
+
+          const now = new Date().toISOString()
+
+          yield* sql`
+            UPDATE tasks
+            SET status = ${input.status}, updated_at = ${now}
+            WHERE id = ${id}
+          `
+
+          // Fetch the updated task
+          return yield* get(id)
+        }).pipe(
+          Effect.catchTag("SqlError", (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: `Database error: ${error.message ?? "Unknown error"}`,
+              }),
+            ),
+          ),
+        )
+
+      /**
        * Reorder tasks within a milestone atomically
        * Takes an array of task IDs in the desired order
        */
@@ -423,6 +463,7 @@ export class TaskService extends Effect.Service<TaskService>()(
         listByProject,
         get,
         update,
+        updateStatus,
         reorder,
         bulkUpdateStatus,
       } as const
