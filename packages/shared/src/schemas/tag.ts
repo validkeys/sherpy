@@ -13,7 +13,5 @@ import { Schema } from "effect"
 export class Tag extends Model.Class<Tag>("Tag")({
   id: Model.Generated(Schema.String),
   name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(100)),
-  color: Schema.optional(
-    Schema.String.pipe(Schema.pattern(/^#[0-9a-fA-F]{6}$/)), // Hex color code
-  ),
+  color: Schema.optional(Schema.NullOr(Schema.String.pipe(Schema.pattern(/^#[0-9a-fA-F]{6}$/)))),
 }) {}

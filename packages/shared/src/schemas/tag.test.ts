@@ -50,8 +50,9 @@ describe("Tag Schema", () => {
         const tag = new Tag({
           id: "test-id",
           name: "untagged",
+          color: null,
         })
-        expect(tag.color).toBeUndefined()
+        expect(tag.color).toBeNull()
       }),
     )
   })
