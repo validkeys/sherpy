@@ -26,14 +26,43 @@ export class Task extends Model.Class<Task>("Task")({
   milestoneId: Schema.String,
   projectId: Schema.String,
   name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(255)),
-  description: Schema.optional(Schema.String),
+  description: Schema.optional(
+    Schema.NullOr(Schema.String).pipe(
+      Schema.transform(
+        Schema.UndefinedOr(Schema.String),
+        {
+          strict: false,
+          decode: (nullOrStr) => nullOrStr === null ? undefined : nullOrStr,
+          encode: (undefinedOrStr) => undefinedOrStr === undefined ? null : undefinedOrStr,
+        }
+      )
+    )
+  ),
   status: TaskStatus,
   priority: Schema.Literal("low", "medium", "high"),
   estimatedHours: Schema.optional(
-    Schema.Number.pipe(Schema.positive(), Schema.finite()),
+    Schema.NullOr(Schema.Number.pipe(Schema.positive(), Schema.finite())).pipe(
+      Schema.transform(
+        Schema.UndefinedOr(Schema.Number.pipe(Schema.positive(), Schema.finite())),
+        {
+          strict: false,
+          decode: (nullOrNum) => nullOrNum === null ? undefined : nullOrNum,
+          encode: (undefinedOrNum) => undefinedOrNum === undefined ? null : undefinedOrNum,
+        }
+      )
+    )
   ),
   actualHours: Schema.optional(
-    Schema.Number.pipe(Schema.nonNegative(), Schema.finite()),
+    Schema.NullOr(Schema.Number.pipe(Schema.nonNegative(), Schema.finite())).pipe(
+      Schema.transform(
+        Schema.UndefinedOr(Schema.Number.pipe(Schema.nonNegative(), Schema.finite())),
+        {
+          strict: false,
+          decode: (nullOrNum) => nullOrNum === null ? undefined : nullOrNum,
+          encode: (undefinedOrNum) => undefinedOrNum === undefined ? null : undefinedOrNum,
+        }
+      )
+    )
   ),
   orderIndex: Schema.Number.pipe(Schema.int(), Schema.greaterThanOrEqualTo(0)),
   createdAt: Model.DateTimeInsert,

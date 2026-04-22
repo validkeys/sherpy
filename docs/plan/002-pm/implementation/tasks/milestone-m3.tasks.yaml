@@ -201,6 +201,8 @@ tasks:
     estimate_minutes: 60
     type: code
     dependencies: [m3-001]
+    status: complete
+    completed_at: "2026-04-22"
     files:
       create:
         - packages/api/src/services/milestone-service.ts
@@ -261,6 +263,8 @@ tasks:
     estimate_minutes: 90
     type: code
     dependencies: [m3-001]
+    status: complete
+    completed_at: "2026-04-22"
     files:
       create:
         - packages/api/src/services/task-service.ts
@@ -328,6 +332,8 @@ tasks:
     estimate_minutes: 90
     type: test
     dependencies: [m3-003, m3-004]
+    status: complete
+    completed_at: "2026-04-22"
     files:
       create:
         - packages/api/src/services/milestone-service.test.ts
