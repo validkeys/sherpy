@@ -5,10 +5,14 @@
 
 import { PipelineStatusVisualization } from "@/components/project/pipeline-status";
 import { ProjectHeader } from "@/components/project/project-header";
+import { MilestoneList } from "@/components/project/milestone-list";
+import { DocumentList } from "@/components/project/document-list";
+import { DocumentViewer } from "@/components/project/document-viewer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/hooks/use-api";
-import { Suspense, use, useMemo } from "react";
+import { Suspense, use, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import type { Document } from "@sherpy/shared";
 
 /**
  * Error component for project not found or fetch errors
@@ -78,6 +82,7 @@ function ProjectDetailSkeleton() {
  */
 function ProjectDetailContent({ projectId }: { projectId: string }) {
   const api = useApi();
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
 
   // Create a promise for the project data
   // React 19's `use` hook will suspend until the promise resolves
@@ -90,6 +95,58 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
 
   const { project } = response;
 
+  // Fetch documents (mock data for now - TODO: implement API endpoint)
+  const documents: Document[] = useMemo(() => {
+    // Mock data until API is implemented
+    return [
+      {
+        id: "doc1",
+        projectId,
+        documentType: "business-requirements",
+        format: "yaml",
+        content: `# Business Requirements\n\nProject: ${project.name}\n\n## Overview\nThis document outlines the business requirements for the project.\n\n## Goals\n- Goal 1: Deliver high-quality features\n- Goal 2: Meet deadlines\n- Goal 3: Maintain code quality`,
+        version: 1,
+        createdAt: new Date(Date.now() - 86400000 * 2) as any, // 2 days ago
+        updatedAt: new Date(Date.now() - 86400000 * 2) as any,
+      },
+      {
+        id: "doc2",
+        projectId,
+        documentType: "technical-requirements",
+        format: "markdown",
+        content: `# Technical Requirements\n\n## Architecture\n- React 19 with TypeScript\n- Effect-TS for functional programming\n- shadcn/ui component library\n\n## Key Technologies\n- **Frontend**: React, TypeScript, Tailwind CSS\n- **Backend**: Effect-TS, PostgreSQL\n- **Testing**: Vitest, React Testing Library`,
+        version: 1,
+        createdAt: new Date(Date.now() - 86400000) as any, // 1 day ago
+        updatedAt: new Date(Date.now() - 86400000) as any,
+      },
+      {
+        id: "doc3",
+        projectId,
+        documentType: "implementation-plan",
+        format: "yaml",
+        content: `implementation_plan:\n  milestones:\n    - id: m1\n      name: "Setup & Foundation"\n      tasks:\n        - Configure project structure\n        - Set up CI/CD pipeline\n        - Create base components\n    - id: m2\n      name: "Core Features"\n      tasks:\n        - Implement authentication\n        - Build API endpoints\n        - Create UI components`,
+        version: 1,
+        createdAt: new Date(Date.now() - 3600000) as any, // 1 hour ago
+        updatedAt: new Date(Date.now() - 3600000) as any,
+      },
+    ];
+  }, [projectId, project.name]);
+
+  // Auto-select first document if none selected
+  const selectedDocument = useMemo(() => {
+    if (!selectedDocumentId && documents.length > 0) {
+      const firstDoc = documents[0];
+      if (firstDoc) {
+        setSelectedDocumentId(firstDoc.id);
+        return firstDoc;
+      }
+    }
+    return documents.find((d) => d.id === selectedDocumentId) || null;
+  }, [selectedDocumentId, documents]);
+
+  // Mock milestones data - TODO: fetch from API
+  const milestones: Array<never> = [];
+
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       <ProjectHeader
@@ -101,17 +158,41 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
 
       <PipelineStatusVisualization currentStatus={project.pipelineStatus} />
 
-      {/* Placeholder for milestone list (m6-002) */}
-      <div className="p-6 border rounded-lg">
-        <h2 className="text-lg font-semibold mb-2">Milestones</h2>
-        <p className="text-muted-foreground">Milestone list coming in m6-002...</p>
-      </div>
+      {/* Milestones section */}
+      {milestones.length > 0 ? (
+        <MilestoneList milestones={milestones} />
+      ) : (
+        <div className="p-6 border rounded-lg">
+          <h2 className="text-lg font-semibold mb-2">Milestones</h2>
+          <p className="text-muted-foreground">No milestones found for this project</p>
+        </div>
+      )}
 
-      {/* Placeholder for documents section (m6-003) */}
-      <div className="p-6 border rounded-lg">
-        <h2 className="text-lg font-semibold mb-2">Documents</h2>
-        <p className="text-muted-foreground">Document viewer coming in m6-003...</p>
-      </div>
+      {/* Documents section */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Documents</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 border rounded-lg overflow-hidden">
+          {/* Document list sidebar */}
+          <div className="border-r bg-muted/20">
+            <DocumentList
+              documents={documents}
+              selectedDocumentId={selectedDocumentId}
+              onSelectDocument={setSelectedDocumentId}
+            />
+          </div>
+
+          {/* Document viewer */}
+          <div className="min-h-[600px]">
+            <DocumentViewer
+              document={selectedDocument ?? null}
+              projectName={project.name}
+            />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

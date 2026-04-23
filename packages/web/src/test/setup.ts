@@ -15,3 +15,10 @@ afterEach(() => {
 vi.stubEnv("VITE_API_URL", "http://localhost:3100");
 vi.stubEnv("VITE_OKTA_DOMAIN", "https://dev-test.okta.com");
 vi.stubEnv("VITE_OKTA_CLIENT_ID", "test-client-id");
+
+// Mock ResizeObserver for Radix UI components
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
