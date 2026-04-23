@@ -266,9 +266,7 @@ describe("PersonSkillService", () => {
         yield* personSkillService.removeSkill(person.id, skill.id);
 
         // Verify it was removed
-        const result = yield* Effect.either(
-          personSkillService.removeSkill(person.id, skill.id),
-        );
+        const result = yield* Effect.either(personSkillService.removeSkill(person.id, skill.id));
 
         assert.isTrue(Either.isLeft(result));
         if (Either.isLeft(result)) {
@@ -310,9 +308,7 @@ describe("PersonSkillService", () => {
 
         const skill = yield* skillService.create({ name: "Kubernetes" });
 
-        const result = yield* Effect.either(
-          personSkillService.removeSkill(person.id, skill.id),
-        );
+        const result = yield* Effect.either(personSkillService.removeSkill(person.id, skill.id));
 
         assert.isTrue(Either.isLeft(result));
         if (Either.isLeft(result)) {

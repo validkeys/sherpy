@@ -12,8 +12,8 @@ import {
   type AssignmentStatus,
   ConflictError,
   NotFoundError,
-  Person,
-  Task,
+  type Person,
+  type Task,
   ValidationError,
 } from "@sherpy/shared";
 import { Effect, Schema } from "effect";

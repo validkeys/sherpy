@@ -287,7 +287,10 @@ export class AvailabilityService extends Effect.Service<AvailabilityService>()(
        */
       const listByPerson = (
         personId: string,
-      ): Effect.Effect<ReadonlyArray<typeof AvailabilityWindow.Type>, NotFoundError | ValidationError> =>
+      ): Effect.Effect<
+        ReadonlyArray<typeof AvailabilityWindow.Type>,
+        NotFoundError | ValidationError
+      > =>
         Effect.gen(function* () {
           // Verify person exists
           const people = yield* sql`

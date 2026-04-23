@@ -4,7 +4,12 @@
  */
 
 import { HttpApiEndpoint, HttpApiGroup } from "@effect/platform";
-import { AvailabilityType, AvailabilityWindow, NotFoundError, ValidationError } from "@sherpy/shared";
+import {
+  AvailabilityType,
+  AvailabilityWindow,
+  NotFoundError,
+  ValidationError,
+} from "@sherpy/shared";
 import { Schema } from "effect";
 
 /**
@@ -82,22 +87,22 @@ export class ListAvailabilityByPersonResponse extends Schema.Class<ListAvailabil
 }) {}
 
 // GET /api/people/:personId/availability/overlapping - List overlapping availability windows
-export class ListOverlappingAvailabilityParams extends Schema.Class<
-  ListOverlappingAvailabilityParams
->("ListOverlappingAvailabilityParams")({
+export class ListOverlappingAvailabilityParams extends Schema.Class<ListOverlappingAvailabilityParams>(
+  "ListOverlappingAvailabilityParams",
+)({
   personId: Schema.String,
 }) {}
 
-export class ListOverlappingAvailabilityQueryParams extends Schema.Class<
-  ListOverlappingAvailabilityQueryParams
->("ListOverlappingAvailabilityQueryParams")({
+export class ListOverlappingAvailabilityQueryParams extends Schema.Class<ListOverlappingAvailabilityQueryParams>(
+  "ListOverlappingAvailabilityQueryParams",
+)({
   startDate: Schema.String,
   endDate: Schema.String,
 }) {}
 
-export class ListOverlappingAvailabilityResponse extends Schema.Class<
-  ListOverlappingAvailabilityResponse
->("ListOverlappingAvailabilityResponse")({
+export class ListOverlappingAvailabilityResponse extends Schema.Class<ListOverlappingAvailabilityResponse>(
+  "ListOverlappingAvailabilityResponse",
+)({
   availabilityWindows: Schema.Array(Schema.typeSchema(AvailabilityWindow)),
 }) {}
 
@@ -136,10 +141,7 @@ export class AvailabilityApi extends HttpApiGroup.make("availability")
       .setPath(ListAvailabilityByPersonParams),
   )
   .add(
-    HttpApiEndpoint.get(
-      "listOverlappingAvailability",
-      "/people/:personId/availability/overlapping",
-    )
+    HttpApiEndpoint.get("listOverlappingAvailability", "/people/:personId/availability/overlapping")
       .addSuccess(ListOverlappingAvailabilityResponse)
       .addError(NotFoundError)
       .addError(ValidationError)

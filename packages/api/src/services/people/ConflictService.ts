@@ -270,11 +270,7 @@ export class ConflictService extends Effect.Service<ConflictService>()("Conflict
         }
 
         // Run both detection methods
-        const overAllocationConflicts = yield* detectOverAllocation(
-          personId,
-          startDate,
-          endDate,
-        );
+        const overAllocationConflicts = yield* detectOverAllocation(personId, startDate, endDate);
         const availabilityConflicts = yield* detectAvailabilityConflicts(personId);
 
         return [...overAllocationConflicts, ...availabilityConflicts];

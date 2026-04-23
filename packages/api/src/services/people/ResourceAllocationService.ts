@@ -5,7 +5,7 @@
  */
 
 import { SqlClient } from "@effect/sql";
-import { Assignment, Person, Project, Task, ValidationError } from "@sherpy/shared";
+import { Assignment, type Person, Project, Task, ValidationError } from "@sherpy/shared";
 import { Effect, Schema } from "effect";
 
 /**
@@ -114,16 +114,14 @@ export class ResourceAllocationService extends Effect.Service<ResourceAllocation
               ORDER BY pr.name ASC, t.name ASC
             `;
 
-            const assignmentDetails: Array<typeof AssignmentDetail.Type> = assignments.map(
-              (a) => ({
-                assignmentId: a.assignmentId as string,
-                taskId: a.taskId as string,
-                taskName: a.taskName as string,
-                projectId: a.projectId as string,
-                projectName: a.projectName as string,
-                allocation: a.allocationPercentage as number,
-              }),
-            );
+            const assignmentDetails: Array<typeof AssignmentDetail.Type> = assignments.map((a) => ({
+              assignmentId: a.assignmentId as string,
+              taskId: a.taskId as string,
+              taskName: a.taskName as string,
+              projectId: a.projectId as string,
+              projectName: a.projectName as string,
+              allocation: a.allocationPercentage as number,
+            }));
 
             allAllocations.push({
               personId,
@@ -219,10 +217,7 @@ export class ResourceAllocationService extends Effect.Service<ResourceAllocation
        */
       const personAllocationByProject = (
         personId: string,
-      ): Effect.Effect<
-        ReadonlyArray<typeof PersonProjectAllocation.Type>,
-        ValidationError
-      > =>
+      ): Effect.Effect<ReadonlyArray<typeof PersonProjectAllocation.Type>, ValidationError> =>
         Effect.gen(function* () {
           // Verify person exists
           const people = yield* sql<typeof Person.Type>`

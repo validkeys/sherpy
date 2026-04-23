@@ -2,9 +2,9 @@
  * React hook for typed API client
  */
 
-import { useMemo } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { createApiClient } from "@/lib/api-client";
+import { useMemo } from "react";
 
 /**
  * Hook that provides typed API client with auth token injection

@@ -104,10 +104,7 @@ export class WebSocketClient {
     this.notifyStateChange();
 
     // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (max)
-    const baseDelay = Math.min(
-      1000 * Math.pow(2, this.reconnectAttempts),
-      this.maxReconnectDelay,
-    );
+    const baseDelay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), this.maxReconnectDelay);
 
     // Add jitter: ±25% of base delay
     const jitter = baseDelay * 0.25 * (Math.random() * 2 - 1);

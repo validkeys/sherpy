@@ -5,8 +5,8 @@
 import type {
   CreateProjectRequest,
   CreateProjectResponse,
-  ListProjectsResponse,
   GetProjectResponse,
+  ListProjectsResponse,
   UpdateProjectRequest,
   UpdateProjectResponse,
 } from "@sherpy/shared";
@@ -37,11 +37,7 @@ export class ApiClient {
   /**
    * Generic HTTP request with type safety
    */
-  private async request<TRes>(
-    method: string,
-    endpoint: string,
-    body?: unknown,
-  ): Promise<TRes> {
+  private async request<TRes>(method: string, endpoint: string, body?: unknown): Promise<TRes> {
     const token = await this.getToken();
     if (!token) {
       throw new ApiError(401, "No authentication token available");
@@ -93,7 +89,10 @@ export class ApiClient {
     return this.request("GET", `/api/projects/${projectId}`);
   }
 
-  async updateProject(projectId: string, request: UpdateProjectRequest): Promise<UpdateProjectResponse> {
+  async updateProject(
+    projectId: string,
+    request: UpdateProjectRequest,
+  ): Promise<UpdateProjectResponse> {
     return this.request("PATCH", `/api/projects/${projectId}`, request);
   }
 
@@ -145,7 +144,10 @@ export class ApiClient {
   }
 
   async exportDocument(projectId: string, documentType: string, format: string): Promise<unknown> {
-    return this.request("GET", `/api/projects/${projectId}/documents/${documentType}/export?format=${format}`);
+    return this.request(
+      "GET",
+      `/api/projects/${projectId}/documents/${documentType}/export?format=${format}`,
+    );
   }
 
   // Schedule endpoints (TODO: implement when API routes are available)

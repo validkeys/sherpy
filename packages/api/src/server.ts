@@ -26,9 +26,9 @@ import { ValidationError } from "@sherpy/shared";
 import { Config, Context, Effect, Layer, Redacted, Schema } from "effect";
 import { WebSocket, WebSocketServer } from "ws";
 import {
-  AssignmentsApi,
   AssignRequest,
   AssignResponse,
+  AssignmentsApi,
   ListAssignmentsByPersonResponse,
   ListAssignmentsByProjectResponse,
   ListAssignmentsByTaskResponse,
@@ -118,10 +118,7 @@ import { UnauthorizedError } from "./errors/auth.js";
 import { ChatSessionService, ChatSessionServiceLive } from "./services/chat-session-service.js";
 import { DocumentService, DocumentServiceLive } from "./services/document-service.js";
 import { MilestoneService, MilestoneServiceLive } from "./services/milestone-service.js";
-import {
-  AssignmentService,
-  AssignmentServiceLive,
-} from "./services/people/AssignmentService.js";
+import { AssignmentService, AssignmentServiceLive } from "./services/people/AssignmentService.js";
 import {
   AvailabilityService,
   AvailabilityServiceLive,

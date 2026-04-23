@@ -2,9 +2,9 @@
  * Auth Provider - Manages authentication state
  */
 
+import { authClient } from "@/lib/auth";
 import type { UserClaims } from "@okta/okta-auth-js";
 import { createContext, useContext, useEffect, useState } from "react";
-import { authClient } from "@/lib/auth";
 
 interface AuthState {
   isAuthenticated: boolean;

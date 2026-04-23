@@ -21,10 +21,7 @@ export function HealthIndicator({ status, tooltip }: HealthIndicatorProps) {
   const config = healthConfig[status];
 
   return (
-    <div
-      className="relative group"
-      title={tooltip || config.label}
-    >
+    <div className="relative group" title={tooltip || config.label}>
       <div
         className={cn(
           "w-2.5 h-2.5 rounded-full",

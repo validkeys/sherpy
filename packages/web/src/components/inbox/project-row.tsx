@@ -3,9 +3,9 @@
  */
 
 import { Badge } from "@/components/ui/badge";
-import { PipelineStatusBadge } from "./pipeline-status-badge";
-import { HealthIndicator, type HealthStatus } from "./health-indicator";
 import { cn } from "@/lib/utils";
+import { HealthIndicator, type HealthStatus } from "./health-indicator";
+import { PipelineStatusBadge } from "./pipeline-status-badge";
 
 interface ProjectRowProps {
   project: {
@@ -64,9 +64,7 @@ export function ProjectRow({ project, selected, onClick }: ProjectRowProps) {
         </div>
 
         {/* Timestamp */}
-        <div className="text-xs text-muted-foreground whitespace-nowrap mt-1">
-          {relativeTime}
-        </div>
+        <div className="text-xs text-muted-foreground whitespace-nowrap mt-1">{relativeTime}</div>
       </div>
     </button>
   );

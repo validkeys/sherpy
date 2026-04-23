@@ -2,10 +2,10 @@
  * Sherpy PM - Main App Component
  */
 
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./components/auth/auth-provider";
-import { LoginPage } from "./components/auth/login-page";
 import { LoginCallback } from "./components/auth/login-callback";
+import { LoginPage } from "./components/auth/login-page";
 import { ProtectedRoute } from "./components/auth/protected-route";
 import { InboxLayout } from "./components/inbox/inbox-layout";
 import { ProjectList } from "./components/inbox/project-list";

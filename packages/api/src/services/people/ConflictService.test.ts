@@ -11,8 +11,8 @@ import { LibsqlClient } from "@effect/sql-libsql";
 import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 import { runMigrations } from "../../db/migration-runner.js";
-import { AvailabilityService, AvailabilityServiceLive } from "./AvailabilityService.js";
 import { AssignmentService, AssignmentServiceLive } from "./AssignmentService.js";
+import { AvailabilityService, AvailabilityServiceLive } from "./AvailabilityService.js";
 import { ConflictService, ConflictServiceLive } from "./ConflictService.js";
 import { PersonService, PersonServiceLive } from "./PersonService.js";
 

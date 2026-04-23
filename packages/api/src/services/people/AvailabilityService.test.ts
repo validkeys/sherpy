@@ -425,9 +425,7 @@ describe("AvailabilityService", () => {
           ),
         );
 
-        const result = yield* Effect.either(
-          availabilityService.remove("non-existent-window"),
-        );
+        const result = yield* Effect.either(availabilityService.remove("non-existent-window"));
 
         assert.isTrue(Either.isLeft(result));
         if (Either.isLeft(result)) {
@@ -588,10 +586,7 @@ describe("AvailabilityService", () => {
         });
 
         // Query: 2024-06-10 to 2024-06-25 should overlap with windows 1 and 2
-        const overlapping = yield* availabilityService.listOverlapping(
-          "2024-06-10",
-          "2024-06-25",
-        );
+        const overlapping = yield* availabilityService.listOverlapping("2024-06-10", "2024-06-25");
 
         assert.strictEqual(overlapping.length, 2);
         assert.strictEqual(overlapping[0]?.startDate, "2024-06-01");
@@ -692,10 +687,7 @@ describe("AvailabilityService", () => {
         });
 
         // Query: 2024-07-01 to 2024-07-15 (no overlap)
-        const overlapping = yield* availabilityService.listOverlapping(
-          "2024-07-01",
-          "2024-07-15",
-        );
+        const overlapping = yield* availabilityService.listOverlapping("2024-07-01", "2024-07-15");
 
         assert.strictEqual(overlapping.length, 0);
       }) as Effect.Effect<void>,
@@ -735,10 +727,7 @@ describe("AvailabilityService", () => {
         });
 
         // Query: 2024-06-15 to 2024-06-30 (starts exactly when window ends - no overlap)
-        const overlapping = yield* availabilityService.listOverlapping(
-          "2024-06-15",
-          "2024-06-30",
-        );
+        const overlapping = yield* availabilityService.listOverlapping("2024-06-15", "2024-06-30");
 
         assert.strictEqual(overlapping.length, 0);
       }) as Effect.Effect<void>,

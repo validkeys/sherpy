@@ -423,9 +423,7 @@ describe("AssignmentService", () => {
           ),
         );
 
-        const result = yield* Effect.either(
-          assignmentService.unassign("non-existent-assignment"),
-        );
+        const result = yield* Effect.either(assignmentService.unassign("non-existent-assignment"));
 
         assert.isTrue(Either.isLeft(result));
         if (Either.isLeft(result)) {
@@ -693,9 +691,7 @@ describe("AssignmentService", () => {
           ),
         );
 
-        const result = yield* Effect.either(
-          assignmentService.listByPerson("non-existent-person"),
-        );
+        const result = yield* Effect.either(assignmentService.listByPerson("non-existent-person"));
 
         assert.isTrue(Either.isLeft(result));
         if (Either.isLeft(result)) {
@@ -818,9 +814,7 @@ describe("AssignmentService", () => {
           ),
         );
 
-        const result = yield* Effect.either(
-          assignmentService.listByTask("non-existent-task"),
-        );
+        const result = yield* Effect.either(assignmentService.listByTask("non-existent-task"));
 
         assert.isTrue(Either.isLeft(result));
         if (Either.isLeft(result)) {

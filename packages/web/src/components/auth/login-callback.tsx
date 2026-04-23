@@ -2,9 +2,9 @@
  * Login Callback - Handles Okta redirect and token exchange
  */
 
+import { authClient } from "@/lib/auth";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { authClient } from "@/lib/auth";
 
 export function LoginCallback() {
   const navigate = useNavigate();
@@ -31,14 +31,9 @@ export function LoginCallback() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="bg-card rounded-lg shadow-lg p-8 max-w-md w-full border">
-          <h2 className="text-2xl font-bold text-destructive mb-4">
-            Authentication Error
-          </h2>
+          <h2 className="text-2xl font-bold text-destructive mb-4">Authentication Error</h2>
           <p className="text-foreground mb-4">{error}</p>
-          <button
-            onClick={() => navigate("/login")}
-            className="text-primary underline"
-          >
+          <button onClick={() => navigate("/login")} className="text-primary underline">
             Return to login
           </button>
         </div>

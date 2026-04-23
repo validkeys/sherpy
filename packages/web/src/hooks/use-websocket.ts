@@ -2,9 +2,9 @@
  * React hook for WebSocket client
  */
 
-import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
-import { WebSocketClient, type ConnectionState, type WsEventType } from "@/lib/ws-client";
+import { type ConnectionState, WebSocketClient, type WsEventType } from "@/lib/ws-client";
+import { useEffect, useMemo, useState } from "react";
 
 /**
  * Hook that manages WebSocket lifecycle

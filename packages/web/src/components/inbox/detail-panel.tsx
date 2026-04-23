@@ -2,8 +2,8 @@
  * Inbox Detail Panel - Selected project preview
  */
 
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DetailPanelProps {
@@ -26,9 +26,7 @@ export function DetailPanel({ projectId }: DetailPanelProps) {
       <div className="p-4 border-b">
         <h2 className="text-lg font-semibold mb-2">Project Name</h2>
         <Badge className="mb-2">Active Development</Badge>
-        <p className="text-sm text-muted-foreground">
-          Project description goes here...
-        </p>
+        <p className="text-sm text-muted-foreground">Project description goes here...</p>
       </div>
 
       <ScrollArea className="flex-1">

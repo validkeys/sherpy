@@ -37,9 +37,9 @@ export class PersonAllocationByProjectParams extends Schema.Class<PersonAllocati
   personId: Schema.String,
 }) {}
 
-export class PersonAllocationByProjectResponse extends Schema.Class<
-  PersonAllocationByProjectResponse
->("PersonAllocationByProjectResponse")({
+export class PersonAllocationByProjectResponse extends Schema.Class<PersonAllocationByProjectResponse>(
+  "PersonAllocationByProjectResponse",
+)({
   allocations: Schema.Array(Schema.typeSchema(PersonProjectAllocation)),
 }) {}
 
@@ -58,10 +58,7 @@ export class ResourceAllocationApi extends HttpApiGroup.make("resourceAllocation
       .addError(ValidationError),
   )
   .add(
-    HttpApiEndpoint.get(
-      "personAllocationByProject",
-      "/people/:personId/allocations/by-project",
-    )
+    HttpApiEndpoint.get("personAllocationByProject", "/people/:personId/allocations/by-project")
       .addSuccess(PersonAllocationByProjectResponse)
       .addError(NotFoundError)
       .addError(ValidationError)

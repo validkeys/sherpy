@@ -26,10 +26,7 @@ interface PipelineStatusBadgeProps {
   size?: "sm" | "md" | "lg";
 }
 
-const statusConfig: Record<
-  string,
-  { label: string; className: string }
-> = {
+const statusConfig: Record<string, { label: string; className: string }> = {
   intake: { label: "Intake", className: "bg-slate-500 text-white" },
   "gap-analysis": { label: "Gap Analysis", className: "bg-amber-500 text-white" },
   "business-requirements": { label: "Business Req", className: "bg-blue-500 text-white" },
@@ -59,13 +56,7 @@ export function PipelineStatusBadge({ status, size = "md" }: PipelineStatusBadge
   };
 
   return (
-    <Badge
-      className={cn(
-        config.className,
-        sizeClasses[size],
-        "transition-all hover:scale-105",
-      )}
-    >
+    <Badge className={cn(config.className, sizeClasses[size], "transition-all hover:scale-105")}>
       {config.label}
     </Badge>
   );
