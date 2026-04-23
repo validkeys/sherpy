@@ -9,6 +9,7 @@ import { LoginPage } from "./components/auth/login-page";
 import { ProtectedRoute } from "./components/auth/protected-route";
 import { InboxLayout } from "./components/inbox/inbox-layout";
 import { ProjectList } from "./components/inbox/project-list";
+import { ProjectDetailPage } from "./pages/project-detail";
 
 function InboxPage() {
   return (
@@ -30,6 +31,14 @@ export function App() {
             element={
               <ProtectedRoute>
                 <InboxPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId"
+            element={
+              <ProtectedRoute>
+                <ProjectDetailPage />
               </ProtectedRoute>
             }
           />
