@@ -5,6 +5,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { formatPipelineStatus } from "@/lib/pipeline-status-utils";
 import type { PipelineStatus } from "@sherpy/shared";
 import { Check } from "lucide-react";
 
@@ -87,13 +88,27 @@ export function PipelineStatusVisualization({ currentStatus }: PipelineStatusVis
     );
   }
 
+  const currentIndex = PIPELINE_STAGES.findIndex((s) => s.status === currentStatus);
+  const totalStages = PIPELINE_STAGES.length;
+
   return (
     <Card className="p-6">
-      <h2 className="text-lg font-semibold mb-4">Pipeline Status</h2>
+      <h2 id="pipeline-status-heading" className="text-lg font-semibold mb-4">
+        Pipeline Status
+      </h2>
+
+      {/* Screen reader only text announcing current stage */}
+      <div className="sr-only">
+        Stage {currentIndex + 1} of {totalStages}: {formatPipelineStatus(currentStatus)}
+      </div>
 
       {/* Desktop: Horizontal stepper */}
       <div className="hidden lg:block">
-        <div className="flex items-center justify-between">
+        <div
+          role="group"
+          aria-labelledby="pipeline-status-heading"
+          className="flex items-center justify-between"
+        >
           {PIPELINE_STAGES.map((stage, index) => {
             const state = getStageState(stage.status, currentStatus);
             const styles = getStageStyles(state);
@@ -105,14 +120,17 @@ export function PipelineStatusVisualization({ currentStatus }: PipelineStatusVis
                 <div className="flex flex-col items-center">
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center ${styles.badge}`}
+                    aria-label={`${stage.label} - ${state}`}
                   >
-                    {Icon ? <Icon className="h-4 w-4" /> : <span className="text-xs">{index + 1}</span>}
+                    {Icon ? (
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <span className="text-xs">{index + 1}</span>
+                    )}
                   </div>
                   <span className="mt-2 text-xs text-center max-w-[80px]">{stage.label}</span>
                 </div>
-                {!isLast && (
-                  <div className={`flex-1 h-0.5 mx-2 ${styles.connector}`} />
-                )}
+                {!isLast && <div className={`flex-1 h-0.5 mx-2 ${styles.connector}`} aria-hidden="true" />}
               </div>
             );
           })}
@@ -121,31 +139,38 @@ export function PipelineStatusVisualization({ currentStatus }: PipelineStatusVis
 
       {/* Mobile: Vertical stepper */}
       <div className="lg:hidden space-y-4">
-        {PIPELINE_STAGES.map((stage, index) => {
-          const state = getStageState(stage.status, currentStatus);
-          const styles = getStageStyles(state);
-          const Icon = styles.icon;
-          const isLast = index === PIPELINE_STAGES.length - 1;
+        <div role="group" aria-labelledby="pipeline-status-heading">
+          {PIPELINE_STAGES.map((stage, index) => {
+            const state = getStageState(stage.status, currentStatus);
+            const styles = getStageStyles(state);
+            const Icon = styles.icon;
+            const isLast = index === PIPELINE_STAGES.length - 1;
 
-          return (
-            <div key={stage.status} className="flex items-start">
-              <div className="flex flex-col items-center mr-4">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${styles.badge}`}
-                >
-                  {Icon ? <Icon className="h-4 w-4" /> : <span className="text-xs">{index + 1}</span>}
+            return (
+              <div key={stage.status} className="flex items-start">
+                <div className="flex flex-col items-center mr-4">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${styles.badge}`}
+                    aria-label={`${stage.label} - ${state}`}
+                  >
+                    {Icon ? (
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <span className="text-xs">{index + 1}</span>
+                    )}
+                  </div>
+                  {!isLast && <div className={`w-0.5 h-12 mt-2 ${styles.connector}`} aria-hidden="true" />}
                 </div>
-                {!isLast && <div className={`w-0.5 h-12 mt-2 ${styles.connector}`} />}
+                <div className="flex-1 pt-1">
+                  <p className="font-medium">{stage.label}</p>
+                  {state === "current" && (
+                    <p className="text-sm text-muted-foreground">Current stage</p>
+                  )}
+                </div>
               </div>
-              <div className="flex-1 pt-1">
-                <p className="font-medium">{stage.label}</p>
-                {state === "current" && (
-                  <p className="text-sm text-muted-foreground">Current stage</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     </Card>
   );

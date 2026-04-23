@@ -8,7 +8,7 @@ import { ProjectHeader } from "@/components/project/project-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/hooks/use-api";
 import { Suspense, use, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 /**
  * Error component for project not found or fetch errors
@@ -19,9 +19,9 @@ function ProjectError({ error }: { error: Error }) {
       <div className="text-center space-y-4">
         <h1 className="text-2xl font-bold text-destructive">Error Loading Project</h1>
         <p className="text-muted-foreground">{error.message}</p>
-        <a href="/" className="text-primary hover:underline">
+        <Link to="/" className="text-primary hover:underline inline-block">
           Return to Projects
-        </a>
+        </Link>
       </div>
     </div>
   );
@@ -54,19 +54,12 @@ function ProjectDetailSkeleton() {
         </div>
       </div>
 
-      {/* Pipeline status skeleton */}
+      {/* Pipeline status skeleton - simplified for loading state */}
       <div className="p-6 border rounded-lg">
         <Skeleton className="h-6 w-32 mb-4" />
-        <div className="flex items-center justify-between">
-          {[...Array(5)].map((_, i) => (
-            <div key={`skeleton-stage-${i}`} className="flex items-center flex-1">
-              <div className="flex flex-col items-center">
-                <Skeleton className="w-8 h-8 rounded-full" />
-                <Skeleton className="h-3 w-16 mt-2" />
-              </div>
-              {i < 4 && <Skeleton className="flex-1 h-0.5 mx-2" />}
-            </div>
-          ))}
+        <div className="space-y-2">
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-4 w-3/4" />
         </div>
       </div>
 
