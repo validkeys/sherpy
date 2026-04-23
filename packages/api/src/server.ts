@@ -240,23 +240,13 @@ const ProjectsApiLive = HttpApiBuilder.group(SherryApi, "projects", (handlers) =
       )
       .handle("listProjects", ({ urlParams }) =>
         Effect.gen(function* () {
-          const projects = yield* projectService
-            .list({
-              pipelineStatus: urlParams.pipelineStatus,
-              priority: urlParams.priority,
-              search: urlParams.search,
-              limit: urlParams.limit,
-              offset: urlParams.offset,
-            })
-            .pipe(
-              Effect.catchTag("SqlError", (error) =>
-                Effect.fail(
-                  new ValidationError({
-                    message: `Database error: ${error.message ?? "Unknown error"}`,
-                  }),
-                ),
-              ),
-            );
+          const projects = yield* projectService.list({
+            pipelineStatus: urlParams.pipelineStatus,
+            priority: urlParams.priority,
+            search: urlParams.search,
+            limit: urlParams.limit,
+            offset: urlParams.offset,
+          });
 
           return new ListProjectsResponse({ projects });
         }),
