@@ -3,12 +3,12 @@
  * Provides SqlClient and runs migrations on startup
  */
 
-import { LibsqlClient } from "@effect/sql-libsql"
-import { Effect, Layer } from "effect"
-import { runMigrations } from "./migration-runner.js"
-import { homedir } from "node:os"
-import { join } from "node:path"
-import { mkdir } from "node:fs/promises"
+import { mkdir } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { LibsqlClient } from "@effect/sql-libsql";
+import { Effect, Layer } from "effect";
+import { runMigrations } from "./migration-runner.js";
 
 /**
  * SQLite database layer
@@ -17,21 +17,21 @@ import { mkdir } from "node:fs/promises"
 export const SqliteLive = Layer.unwrapEffect(
   Effect.gen(function* () {
     // Get home directory and create .sherpy folder if it doesn't exist
-    const sherpyDir = join(homedir(), ".sherpy")
-    const dbPath = join(sherpyDir, "sherpy.db")
+    const sherpyDir = join(homedir(), ".sherpy");
+    const dbPath = join(sherpyDir, "sherpy.db");
 
     // Ensure .sherpy directory exists
     yield* Effect.tryPromise({
       try: () => mkdir(sherpyDir, { recursive: true }),
       catch: () => new Error("Failed to create .sherpy directory"),
-    }).pipe(Effect.catchAll(() => Effect.void))
+    }).pipe(Effect.catchAll(() => Effect.void));
 
     // Create LibSQL client layer
     return LibsqlClient.layer({
       url: `file:${dbPath}`,
-    })
+    });
   }),
-)
+);
 
 /**
  * Migration runner layer
@@ -39,9 +39,9 @@ export const SqliteLive = Layer.unwrapEffect(
  */
 export const MigrationRunnerLive = Layer.effectDiscard(
   Effect.gen(function* () {
-    yield* runMigrations
+    yield* runMigrations;
   }),
-)
+);
 
 /**
  * Complete database layer with migrations
@@ -50,6 +50,6 @@ export const MigrationRunnerLive = Layer.effectDiscard(
 export const DatabaseLayer = Layer.mergeAll(
   SqliteLive,
   MigrationRunnerLive.pipe(Layer.provide(SqliteLive)),
-)
+);
 
-export { runMigrations }
+export { runMigrations };

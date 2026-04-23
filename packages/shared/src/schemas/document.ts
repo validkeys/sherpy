@@ -3,15 +3,15 @@
  * Represents generated documents stored in the database
  */
 
-import { Model } from "@effect/sql"
-import { Schema } from "effect"
+import { Model } from "@effect/sql";
+import { Schema } from "effect";
 
 /**
  * Document format enum
  */
-export const DocumentFormat = Schema.Literal("yaml", "markdown", "json")
+export const DocumentFormat = Schema.Literal("yaml", "markdown", "json");
 
-export type DocumentFormat = typeof DocumentFormat.Type
+export type DocumentFormat = typeof DocumentFormat.Type;
 
 /**
  * Document type identifier
@@ -25,9 +25,9 @@ export const DocumentType = Schema.Literal(
   "executive-summary",
   "developer-summary",
   "architecture-decision-record",
-)
+);
 
-export type DocumentType = typeof DocumentType.Type
+export type DocumentType = typeof DocumentType.Type;
 
 /**
  * Document entity - stores generated planning artifacts

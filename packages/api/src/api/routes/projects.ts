@@ -3,13 +3,9 @@
  * Implements CRUD operations for projects with schema validation
  */
 
-import {
-  HttpApiEndpoint,
-  HttpApiGroup,
-  HttpApiMiddleware,
-} from "@effect/platform"
-import { Schema } from "effect"
-import { Project, NotFoundError, ValidationError, ConflictError } from "@sherpy/shared"
+import { HttpApiEndpoint, HttpApiGroup, HttpApiMiddleware } from "@effect/platform";
+import { ConflictError, NotFoundError, Project, ValidationError } from "@sherpy/shared";
+import { Schema } from "effect";
 
 /**
  * Request/Response schemas for project endpoints
@@ -17,7 +13,7 @@ import { Project, NotFoundError, ValidationError, ConflictError } from "@sherpy/
 
 // POST /api/projects - Create project
 export class CreateProjectRequest extends Schema.Class<CreateProjectRequest>(
-  "CreateProjectRequest"
+  "CreateProjectRequest",
 )({
   name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(255)),
   description: Schema.optional(Schema.String),
@@ -25,22 +21,22 @@ export class CreateProjectRequest extends Schema.Class<CreateProjectRequest>(
     Schema.String.pipe(
       Schema.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
       Schema.minLength(1),
-      Schema.maxLength(100)
-    )
+      Schema.maxLength(100),
+    ),
   ),
   tags: Schema.optional(Schema.Array(Schema.String)),
   priority: Schema.optional(Schema.Literal("low", "medium", "high", "critical")),
 }) {}
 
 export class CreateProjectResponse extends Schema.Class<CreateProjectResponse>(
-  "CreateProjectResponse"
+  "CreateProjectResponse",
 )({
   project: Schema.typeSchema(Project),
 }) {}
 
 // GET /api/projects - List projects
 export class ListProjectsQueryParams extends Schema.Class<ListProjectsQueryParams>(
-  "ListProjectsQueryParams"
+  "ListProjectsQueryParams",
 )({
   pipelineStatus: Schema.optional(Schema.Array(Schema.String)),
   priority: Schema.optional(Schema.Array(Schema.String)),
@@ -50,33 +46,27 @@ export class ListProjectsQueryParams extends Schema.Class<ListProjectsQueryParam
 }) {}
 
 export class ListProjectsResponse extends Schema.Class<ListProjectsResponse>(
-  "ListProjectsResponse"
+  "ListProjectsResponse",
 )({
   projects: Schema.Array(Schema.typeSchema(Project)),
 }) {}
 
 // GET /api/projects/:projectId - Get project
-export class GetProjectParams extends Schema.Class<GetProjectParams>(
-  "GetProjectParams"
-)({
+export class GetProjectParams extends Schema.Class<GetProjectParams>("GetProjectParams")({
   projectId: Schema.String,
 }) {}
 
-export class GetProjectResponse extends Schema.Class<GetProjectResponse>(
-  "GetProjectResponse"
-)({
+export class GetProjectResponse extends Schema.Class<GetProjectResponse>("GetProjectResponse")({
   project: Schema.typeSchema(Project),
 }) {}
 
 // PATCH /api/projects/:projectId - Update project
-export class UpdateProjectParams extends Schema.Class<UpdateProjectParams>(
-  "UpdateProjectParams"
-)({
+export class UpdateProjectParams extends Schema.Class<UpdateProjectParams>("UpdateProjectParams")({
   projectId: Schema.String,
 }) {}
 
 export class UpdateProjectRequest extends Schema.Class<UpdateProjectRequest>(
-  "UpdateProjectRequest"
+  "UpdateProjectRequest",
 )({
   name: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
   description: Schema.optional(Schema.String),
@@ -86,7 +76,7 @@ export class UpdateProjectRequest extends Schema.Class<UpdateProjectRequest>(
 }) {}
 
 export class UpdateProjectResponse extends Schema.Class<UpdateProjectResponse>(
-  "UpdateProjectResponse"
+  "UpdateProjectResponse",
 )({
   project: Schema.typeSchema(Project),
 }) {}
@@ -102,19 +92,19 @@ export class ProjectsApi extends HttpApiGroup.make("projects")
       .addError(NotFoundError)
       .addError(ValidationError)
       .addError(ConflictError)
-      .setPayload(CreateProjectRequest)
+      .setPayload(CreateProjectRequest),
   )
   .add(
     HttpApiEndpoint.get("listProjects", "/projects")
       .addSuccess(ListProjectsResponse)
       .addError(ValidationError)
-      .setUrlParams(ListProjectsQueryParams)
+      .setUrlParams(ListProjectsQueryParams),
   )
   .add(
     HttpApiEndpoint.get("getProject", "/projects/:projectId")
       .addSuccess(GetProjectResponse)
       .addError(NotFoundError)
-      .setPath(GetProjectParams)
+      .setPath(GetProjectParams),
   )
   .add(
     HttpApiEndpoint.patch("updateProject", "/projects/:projectId")
@@ -122,6 +112,6 @@ export class ProjectsApi extends HttpApiGroup.make("projects")
       .addError(NotFoundError)
       .addError(ValidationError)
       .setPath(UpdateProjectParams)
-      .setPayload(UpdateProjectRequest)
+      .setPayload(UpdateProjectRequest),
   )
   .prefix("/api") {}

@@ -2,15 +2,15 @@
  * Schedule API request/response schemas using Schema.Class
  */
 
-import { Schema } from "effect"
-import { ScheduleSnapshot } from "../schedule-snapshot.js"
+import { Schema } from "effect";
+import { ScheduleSnapshot } from "../schedule-snapshot.js";
 
 /**
  * Generate Schedule Request
  */
-export class GenerateScheduleRequest extends Schema.Class<
-  GenerateScheduleRequest
->("GenerateScheduleRequest")({
+export class GenerateScheduleRequest extends Schema.Class<GenerateScheduleRequest>(
+  "GenerateScheduleRequest",
+)({
   projectId: Schema.String,
   constraints: Schema.optional(
     Schema.Record({
@@ -23,9 +23,9 @@ export class GenerateScheduleRequest extends Schema.Class<
 /**
  * Generate Schedule Response
  */
-export class GenerateScheduleResponse extends Schema.Class<
-  GenerateScheduleResponse
->("GenerateScheduleResponse")({
+export class GenerateScheduleResponse extends Schema.Class<GenerateScheduleResponse>(
+  "GenerateScheduleResponse",
+)({
   snapshot: Schema.typeSchema(ScheduleSnapshot),
   warnings: Schema.optional(Schema.Array(Schema.String)),
 }) {}
@@ -47,18 +47,18 @@ export class CreateScenarioRequest extends Schema.Class<CreateScenarioRequest>(
 /**
  * Create Scenario Response
  */
-export class CreateScenarioResponse extends Schema.Class<
-  CreateScenarioResponse
->("CreateScenarioResponse")({
+export class CreateScenarioResponse extends Schema.Class<CreateScenarioResponse>(
+  "CreateScenarioResponse",
+)({
   snapshot: Schema.typeSchema(ScheduleSnapshot),
 }) {}
 
 /**
  * What-If Reschedule Request
  */
-export class WhatIfRescheduleRequest extends Schema.Class<
-  WhatIfRescheduleRequest
->("WhatIfRescheduleRequest")({
+export class WhatIfRescheduleRequest extends Schema.Class<WhatIfRescheduleRequest>(
+  "WhatIfRescheduleRequest",
+)({
   projectId: Schema.String,
   disruptions: Schema.Array(
     Schema.Struct({
@@ -75,9 +75,9 @@ export class WhatIfRescheduleRequest extends Schema.Class<
 /**
  * What-If Reschedule Response
  */
-export class WhatIfRescheduleResponse extends Schema.Class<
-  WhatIfRescheduleResponse
->("WhatIfRescheduleResponse")({
+export class WhatIfRescheduleResponse extends Schema.Class<WhatIfRescheduleResponse>(
+  "WhatIfRescheduleResponse",
+)({
   snapshot: Schema.typeSchema(ScheduleSnapshot),
   comparison: Schema.optional(
     Schema.Struct({
@@ -91,9 +91,9 @@ export class WhatIfRescheduleResponse extends Schema.Class<
 /**
  * List Schedule Snapshots Request
  */
-export class ListScheduleSnapshotsRequest extends Schema.Class<
-  ListScheduleSnapshotsRequest
->("ListScheduleSnapshotsRequest")({
+export class ListScheduleSnapshotsRequest extends Schema.Class<ListScheduleSnapshotsRequest>(
+  "ListScheduleSnapshotsRequest",
+)({
   projectId: Schema.String,
   limit: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.positive())),
 }) {}
@@ -101,9 +101,9 @@ export class ListScheduleSnapshotsRequest extends Schema.Class<
 /**
  * List Schedule Snapshots Response
  */
-export class ListScheduleSnapshotsResponse extends Schema.Class<
-  ListScheduleSnapshotsResponse
->("ListScheduleSnapshotsResponse")({
+export class ListScheduleSnapshotsResponse extends Schema.Class<ListScheduleSnapshotsResponse>(
+  "ListScheduleSnapshotsResponse",
+)({
   snapshots: Schema.Array(Schema.typeSchema(ScheduleSnapshot)),
   total: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
 }) {}

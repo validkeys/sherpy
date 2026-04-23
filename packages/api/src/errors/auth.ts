@@ -3,8 +3,8 @@
  * Tagged errors for authentication failures
  */
 
-import { HttpApiSchema } from "@effect/platform"
-import { Schema } from "effect"
+import { HttpApiSchema } from "@effect/platform";
+import { Schema } from "effect";
 
 /**
  * UnauthorizedError - 401 authentication failure
@@ -15,7 +15,7 @@ export class UnauthorizedError extends Schema.TaggedError<UnauthorizedError>()(
   {
     message: Schema.String,
   },
-  HttpApiSchema.annotations({ status: 401 })
+  HttpApiSchema.annotations({ status: 401 }),
 ) {}
 
 /**
@@ -28,5 +28,5 @@ export class ForbiddenError extends Schema.TaggedError<ForbiddenError>()(
     message: Schema.String,
     resource: Schema.optional(Schema.String),
   },
-  HttpApiSchema.annotations({ status: 403 })
+  HttpApiSchema.annotations({ status: 403 }),
 ) {}

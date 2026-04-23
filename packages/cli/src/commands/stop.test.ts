@@ -3,9 +3,9 @@
  * Tests graceful shutdown, error handling, and PID file cleanup
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { stopCommand } from "./stop.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as daemon from "../daemon.js";
+import { stopCommand } from "./stop.js";
 
 // Mock dependencies
 vi.mock("../daemon.js");
@@ -132,9 +132,7 @@ describe("stop command", () => {
     // Assert
     expect(exitCode).toBe(0);
     expect(daemon.removePid).toHaveBeenCalled();
-    expect(console.log).toHaveBeenCalledWith(
-      expect.stringContaining("process was not running")
-    );
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining("process was not running"));
   });
 
   it("should remove PID file after successful stop", async () => {
@@ -180,9 +178,7 @@ describe("stop command", () => {
 
     // Assert
     expect(exitCode).toBe(1);
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining("Error stopping Sherpy")
-    );
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("Error stopping Sherpy"));
   });
 
   it("should wait for process to exit before cleaning up", async () => {
@@ -250,7 +246,7 @@ describe("stop command", () => {
 
     // Assert
     expect(console.log).toHaveBeenCalledWith(
-      expect.stringContaining(`Stopping Sherpy (PID: ${testPid})`)
+      expect.stringContaining(`Stopping Sherpy (PID: ${testPid})`),
     );
   });
 });

@@ -3,8 +3,8 @@
  * All errors include HTTP status annotations for @effect/platform HttpApi
  */
 
-import { HttpApiSchema } from "@effect/platform"
-import { Schema } from "effect"
+import { HttpApiSchema } from "@effect/platform";
+import { Schema } from "effect";
 
 /**
  * 404 Not Found - Resource does not exist

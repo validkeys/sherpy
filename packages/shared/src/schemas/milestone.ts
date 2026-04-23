@@ -3,20 +3,15 @@
  * Represents milestones within a project
  */
 
-import { Model } from "@effect/sql"
-import { Schema } from "effect"
+import { Model } from "@effect/sql";
+import { Schema } from "effect";
 
 /**
  * Milestone status enum
  */
-export const MilestoneStatus = Schema.Literal(
-  "pending",
-  "in-progress",
-  "blocked",
-  "complete",
-)
+export const MilestoneStatus = Schema.Literal("pending", "in-progress", "blocked", "complete");
 
-export type MilestoneStatus = typeof MilestoneStatus.Type
+export type MilestoneStatus = typeof MilestoneStatus.Type;
 
 /**
  * Milestone entity - represents a major deliverable phase in a project
@@ -30,27 +25,21 @@ export class Milestone extends Model.Class<Milestone>("Milestone")({
   orderIndex: Schema.Number.pipe(Schema.int(), Schema.greaterThanOrEqualTo(0)),
   estimatedDays: Schema.optional(
     Schema.NullOr(Schema.Number.pipe(Schema.positive(), Schema.finite())).pipe(
-      Schema.transform(
-        Schema.UndefinedOr(Schema.Number.pipe(Schema.positive(), Schema.finite())),
-        {
-          strict: false,
-          decode: (nullOrNum) => nullOrNum === null ? undefined : nullOrNum,
-          encode: (undefinedOrNum) => undefinedOrNum === undefined ? null : undefinedOrNum,
-        }
-      )
-    )
+      Schema.transform(Schema.UndefinedOr(Schema.Number.pipe(Schema.positive(), Schema.finite())), {
+        strict: false,
+        decode: (nullOrNum) => (nullOrNum === null ? undefined : nullOrNum),
+        encode: (undefinedOrNum) => (undefinedOrNum === undefined ? null : undefinedOrNum),
+      }),
+    ),
   ),
   acceptanceCriteria: Schema.optional(
     Schema.NullOr(Schema.String).pipe(
-      Schema.transform(
-        Schema.UndefinedOr(Schema.String),
-        {
-          strict: false,
-          decode: (nullOrStr) => nullOrStr === null ? undefined : nullOrStr,
-          encode: (undefinedOrStr) => undefinedOrStr === undefined ? null : undefinedOrStr,
-        }
-      )
-    )
+      Schema.transform(Schema.UndefinedOr(Schema.String), {
+        strict: false,
+        decode: (nullOrStr) => (nullOrStr === null ? undefined : nullOrStr),
+        encode: (undefinedOrStr) => (undefinedOrStr === undefined ? null : undefinedOrStr),
+      }),
+    ),
   ),
   createdAt: Model.DateTimeInsert,
   updatedAt: Model.DateTimeUpdate,

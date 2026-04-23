@@ -3,11 +3,11 @@
  * Tests daemon spawn, already-running detection, and PID file management
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { startCommand } from "./start.js";
-import * as daemon from "../daemon.js";
-import * as fs from "node:fs";
 import * as childProcess from "node:child_process";
+import * as fs from "node:fs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as daemon from "../daemon.js";
+import { startCommand } from "./start.js";
 
 // Mock dependencies
 vi.mock("../daemon.js");
@@ -62,7 +62,7 @@ describe("start command", () => {
           NODE_ENV: "production",
           PORT: "3100",
         }),
-      })
+      }),
     );
     expect(daemon.writePid).toHaveBeenCalledWith(mockPid);
     expect(mockChildProcess.unref).toHaveBeenCalled();
@@ -79,7 +79,7 @@ describe("start command", () => {
     // Assert
     expect(exitCode).toBe(0);
     expect(console.log).toHaveBeenCalledWith(
-      expect.stringContaining(`already running (PID: ${existingPid})`)
+      expect.stringContaining(`already running (PID: ${existingPid})`),
     );
     expect(childProcess.spawn).not.toHaveBeenCalled();
     expect(daemon.writePid).not.toHaveBeenCalled();
@@ -95,9 +95,7 @@ describe("start command", () => {
 
     // Assert
     expect(exitCode).toBe(1);
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining("API server not found")
-    );
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("API server not found"));
     expect(childProcess.spawn).not.toHaveBeenCalled();
     expect(daemon.writePid).not.toHaveBeenCalled();
   });
@@ -112,9 +110,7 @@ describe("start command", () => {
 
     // Assert
     expect(exitCode).toBe(1);
-    expect(console.error).toHaveBeenCalledWith(
-      expect.stringContaining("Failed to start daemon")
-    );
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining("Failed to start daemon"));
     expect(daemon.writePid).not.toHaveBeenCalled();
   });
 
@@ -163,7 +159,7 @@ describe("start command", () => {
       expect.objectContaining({
         detached: true,
         stdio: "ignore",
-      })
+      }),
     );
   });
 });

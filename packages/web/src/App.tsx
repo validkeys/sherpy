@@ -1,15 +1,41 @@
 /**
  * Sherpy PM - Main App Component
- * Placeholder UI for m5+ implementation
  */
+
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./components/auth/auth-provider";
+import { LoginPage } from "./components/auth/login-page";
+import { LoginCallback } from "./components/auth/login-callback";
+import { ProtectedRoute } from "./components/auth/protected-route";
+import { InboxLayout } from "./components/inbox/inbox-layout";
+import { ProjectList } from "./components/inbox/project-list";
+
+function InboxPage() {
+  return (
+    <InboxLayout>
+      <ProjectList />
+    </InboxLayout>
+  );
+}
 
 export function App() {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-lg p-8">
-        <h1 className="text-4xl font-bold text-gray-900 mb-4">Sherpy PM</h1>
-        <p className="text-gray-600">Local-first project management with AI scheduling</p>
-      </div>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login/callback" element={<LoginCallback />} />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <InboxPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }

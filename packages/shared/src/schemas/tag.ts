@@ -3,8 +3,8 @@
  * Represents tags for categorizing projects
  */
 
-import { Model } from "@effect/sql"
-import { Schema } from "effect"
+import { Model } from "@effect/sql";
+import { Schema } from "effect";
 
 /**
  * Tag entity - represents a tag for project categorization

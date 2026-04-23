@@ -2,9 +2,9 @@
  * Unit tests for Project domain schema
  */
 
-import { describe, expect, it } from "@effect/vitest"
-import { DateTime, Effect, Schema } from "effect"
-import { PipelineStatus, Priority, Project } from "./project"
+import { describe, expect, it } from "@effect/vitest";
+import { DateTime, Effect, Schema } from "effect";
+import { PipelineStatus, Priority, Project } from "./project";
 
 describe("Project Schema", () => {
   describe("PipelineStatus enum", () => {
@@ -25,45 +25,43 @@ describe("Project Schema", () => {
           "active-development",
           "completed",
           "archived",
-        ] as const
+        ] as const;
 
         for (const status of validStatuses) {
-          const decoded = yield* Schema.decodeUnknown(PipelineStatus)(status)
-          expect(decoded).toBe(status)
+          const decoded = yield* Schema.decodeUnknown(PipelineStatus)(status);
+          expect(decoded).toBe(status);
         }
       }),
-    )
+    );
 
     it.effect("rejects invalid pipeline status", () =>
       Effect.gen(function* () {
-        const result = yield* Schema.decodeUnknown(PipelineStatus)(
-          "invalid-status",
-        ).pipe(Effect.flip)
-        expect(result).toBeDefined()
+        const result = yield* Schema.decodeUnknown(PipelineStatus)("invalid-status").pipe(
+          Effect.flip,
+        );
+        expect(result).toBeDefined();
       }),
-    )
-  })
+    );
+  });
 
   describe("Priority enum", () => {
     it.effect("accepts valid priorities", () =>
       Effect.gen(function* () {
-        const priorities = ["low", "medium", "high", "critical"] as const
+        const priorities = ["low", "medium", "high", "critical"] as const;
         for (const priority of priorities) {
-          const decoded = yield* Schema.decodeUnknown(Priority)(priority)
-          expect(decoded).toBe(priority)
+          const decoded = yield* Schema.decodeUnknown(Priority)(priority);
+          expect(decoded).toBe(priority);
         }
       }),
-    )
+    );
 
     it.effect("rejects invalid priority", () =>
       Effect.gen(function* () {
-        const result = yield* Schema.decodeUnknown(Priority)("ultra").pipe(
-          Effect.flip,
-        )
-        expect(result).toBeDefined()
+        const result = yield* Schema.decodeUnknown(Priority)("ultra").pipe(Effect.flip);
+        expect(result).toBeDefined();
       }),
-    )
-  })
+    );
+  });
 
   describe("Project model", () => {
     it.effect("creates valid project", () =>
@@ -79,18 +77,18 @@ describe("Project Schema", () => {
           priority: "high" as const,
           createdAt: DateTime.unsafeMake(new Date()),
           updatedAt: DateTime.unsafeMake(new Date()),
-        })
+        });
 
-        expect(project.slug).toBe("test-project")
-        expect(project.name).toBe("Test Project")
-        expect(project.pipelineStatus).toBe("intake")
-        expect(project.priority).toBe("high")
+        expect(project.slug).toBe("test-project");
+        expect(project.name).toBe("Test Project");
+        expect(project.pipelineStatus).toBe("intake");
+        expect(project.priority).toBe("high");
       }),
-    )
+    );
 
     it.effect("validates slug pattern", () =>
       Effect.gen(function* () {
-        const validSlugs = ["simple", "with-dash", "project123"]
+        const validSlugs = ["simple", "with-dash", "project123"];
 
         for (const slug of validSlugs) {
           const project = new Project({
@@ -103,12 +101,12 @@ describe("Project Schema", () => {
             priority: "low" as const,
             createdAt: DateTime.unsafeMake(new Date()),
             updatedAt: DateTime.unsafeMake(new Date()),
-          })
-          expect(project.slug).toBe(slug)
+          });
+          expect(project.slug).toBe(slug);
         }
 
         // Invalid slugs
-        const invalidSlugs = ["Has Spaces", "hasCapitals", "has_underscore"]
+        const invalidSlugs = ["Has Spaces", "hasCapitals", "has_underscore"];
         for (const slug of invalidSlugs) {
           const result = yield* Effect.try(() => {
             new Project({
@@ -121,12 +119,12 @@ describe("Project Schema", () => {
               priority: "low" as const,
               createdAt: DateTime.unsafeMake(new Date()),
               updatedAt: DateTime.unsafeMake(new Date()),
-            })
-          }).pipe(Effect.flip)
-          expect(result).toBeDefined()
+            });
+          }).pipe(Effect.flip);
+          expect(result).toBeDefined();
         }
       }),
-    )
+    );
 
     it.effect("validates name length", () =>
       Effect.gen(function* () {
@@ -142,9 +140,9 @@ describe("Project Schema", () => {
             priority: "low" as const,
             createdAt: DateTime.unsafeMake(new Date()),
             updatedAt: DateTime.unsafeMake(new Date()),
-          })
-        }).pipe(Effect.flip)
-        expect(minResult).toBeDefined()
+          });
+        }).pipe(Effect.flip);
+        expect(minResult).toBeDefined();
 
         // Too long
         const maxResult = yield* Effect.try(() => {
@@ -158,11 +156,11 @@ describe("Project Schema", () => {
             priority: "low" as const,
             createdAt: DateTime.unsafeMake(new Date()),
             updatedAt: DateTime.unsafeMake(new Date()),
-          })
-        }).pipe(Effect.flip)
-        expect(maxResult).toBeDefined()
+          });
+        }).pipe(Effect.flip);
+        expect(maxResult).toBeDefined();
       }),
-    )
+    );
 
     it.effect("handles optional description", () =>
       Effect.gen(function* () {
@@ -177,8 +175,8 @@ describe("Project Schema", () => {
           priority: "low" as const,
           createdAt: DateTime.unsafeMake(new Date()),
           updatedAt: DateTime.unsafeMake(new Date()),
-        })
-        expect(withDesc.description).toBe("Has description")
+        });
+        expect(withDesc.description).toBe("Has description");
 
         const withoutDesc = new Project({
           id: "test-id",
@@ -190,9 +188,9 @@ describe("Project Schema", () => {
           priority: "low" as const,
           createdAt: DateTime.unsafeMake(new Date()),
           updatedAt: DateTime.unsafeMake(new Date()),
-        })
-        expect(withoutDesc.description).toBeUndefined()
+        });
+        expect(withoutDesc.description).toBeUndefined();
       }),
-    )
-  })
-})
+    );
+  });
+});

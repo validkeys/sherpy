@@ -3,20 +3,15 @@
  * Represents assignment of a person to a task with allocation percentage
  */
 
-import { Model } from "@effect/sql"
-import { Schema } from "effect"
+import { Model } from "@effect/sql";
+import { Schema } from "effect";
 
 /**
  * Assignment status enum
  */
-export const AssignmentStatus = Schema.Literal(
-  "planned",
-  "active",
-  "completed",
-  "cancelled",
-)
+export const AssignmentStatus = Schema.Literal("planned", "active", "completed", "cancelled");
 
-export type AssignmentStatus = typeof AssignmentStatus.Type
+export type AssignmentStatus = typeof AssignmentStatus.Type;
 
 /**
  * Assignment entity - links people to tasks with time allocation

@@ -2,23 +2,18 @@
  * Person API request/response schemas using Schema.Class
  */
 
-import { Schema } from "effect"
-import { Person } from "../person.js"
-import { Assignment } from "../assignment.js"
+import { Schema } from "effect";
+import { Assignment } from "../assignment.js";
+import { Person } from "../person.js";
 
 /**
  * Create Person Request
  */
-export class CreatePersonRequest extends Schema.Class<CreatePersonRequest>(
-  "CreatePersonRequest",
-)({
+export class CreatePersonRequest extends Schema.Class<CreatePersonRequest>("CreatePersonRequest")({
   name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(255)),
   email: Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)),
   oktaUserId: Schema.optional(Schema.String),
-  capacityHoursPerWeek: Schema.Number.pipe(
-    Schema.positive(),
-    Schema.lessThanOrEqualTo(168),
-  ),
+  capacityHoursPerWeek: Schema.Number.pipe(Schema.positive(), Schema.lessThanOrEqualTo(168)),
 }) {}
 
 /**
@@ -33,21 +28,15 @@ export class CreatePersonResponse extends Schema.Class<CreatePersonResponse>(
 /**
  * List People Request
  */
-export class ListPeopleRequest extends Schema.Class<ListPeopleRequest>(
-  "ListPeopleRequest",
-)({
+export class ListPeopleRequest extends Schema.Class<ListPeopleRequest>("ListPeopleRequest")({
   limit: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.positive())),
-  offset: Schema.optional(
-    Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
-  ),
+  offset: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative())),
 }) {}
 
 /**
  * List People Response
  */
-export class ListPeopleResponse extends Schema.Class<ListPeopleResponse>(
-  "ListPeopleResponse",
-)({
+export class ListPeopleResponse extends Schema.Class<ListPeopleResponse>("ListPeopleResponse")({
   people: Schema.Array(Schema.typeSchema(Person)),
   total: Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
 }) {}
@@ -55,9 +44,7 @@ export class ListPeopleResponse extends Schema.Class<ListPeopleResponse>(
 /**
  * Update Person Request
  */
-export class UpdatePersonRequest extends Schema.Class<UpdatePersonRequest>(
-  "UpdatePersonRequest",
-)({
+export class UpdatePersonRequest extends Schema.Class<UpdatePersonRequest>("UpdatePersonRequest")({
   id: Schema.String,
   name: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
   email: Schema.optional(Schema.String.pipe(Schema.pattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/))),
@@ -78,9 +65,7 @@ export class UpdatePersonResponse extends Schema.Class<UpdatePersonResponse>(
 /**
  * Assign Person to Task Request
  */
-export class AssignPersonRequest extends Schema.Class<AssignPersonRequest>(
-  "AssignPersonRequest",
-)({
+export class AssignPersonRequest extends Schema.Class<AssignPersonRequest>("AssignPersonRequest")({
   taskId: Schema.String,
   personId: Schema.String,
   allocationPercentage: Schema.Number.pipe(
@@ -113,8 +98,8 @@ export class UnassignPersonRequest extends Schema.Class<UnassignPersonRequest>(
 /**
  * Unassign Person Response
  */
-export class UnassignPersonResponse extends Schema.Class<
-  UnassignPersonResponse
->("UnassignPersonResponse")({
+export class UnassignPersonResponse extends Schema.Class<UnassignPersonResponse>(
+  "UnassignPersonResponse",
+)({
   success: Schema.Boolean,
 }) {}

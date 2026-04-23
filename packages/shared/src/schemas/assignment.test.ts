@@ -2,22 +2,22 @@
  * Unit tests for Assignment domain schema
  */
 
-import { describe, expect, it } from "@effect/vitest"
-import { DateTime, Effect, Schema } from "effect"
-import { Assignment, AssignmentStatus } from "./assignment"
+import { describe, expect, it } from "@effect/vitest";
+import { DateTime, Effect, Schema } from "effect";
+import { Assignment, AssignmentStatus } from "./assignment";
 
 describe("Assignment Schema", () => {
   describe("AssignmentStatus enum", () => {
     it.effect("accepts valid assignment statuses", () =>
       Effect.gen(function* () {
-        const statuses = ["planned", "active", "completed", "cancelled"] as const
+        const statuses = ["planned", "active", "completed", "cancelled"] as const;
         for (const status of statuses) {
-          const decoded = yield* Schema.decodeUnknown(AssignmentStatus)(status)
-          expect(decoded).toBe(status)
+          const decoded = yield* Schema.decodeUnknown(AssignmentStatus)(status);
+          expect(decoded).toBe(status);
         }
       }),
-    )
-  })
+    );
+  });
 
   describe("Assignment model", () => {
     it.effect("creates valid assignment", () =>
@@ -30,16 +30,16 @@ describe("Assignment Schema", () => {
           status: "active" as const,
           createdAt: DateTime.unsafeMake(new Date()),
           updatedAt: DateTime.unsafeMake(new Date()),
-        })
+        });
 
-        expect(assignment.taskId).toBe("task-123")
-        expect(assignment.allocationPercentage).toBe(50)
+        expect(assignment.taskId).toBe("task-123");
+        expect(assignment.allocationPercentage).toBe(50);
       }),
-    )
+    );
 
     it.effect("validates allocationPercentage range 0-100", () =>
       Effect.gen(function* () {
-        const validPercentages = [0, 50, 100]
+        const validPercentages = [0, 50, 100];
         for (const allocationPercentage of validPercentages) {
           const assignment = new Assignment({
             id: "test-id",
@@ -49,8 +49,8 @@ describe("Assignment Schema", () => {
             status: "active" as const,
             createdAt: DateTime.unsafeMake(new Date()),
             updatedAt: DateTime.unsafeMake(new Date()),
-          })
-          expect(assignment.allocationPercentage).toBe(allocationPercentage)
+          });
+          expect(assignment.allocationPercentage).toBe(allocationPercentage);
         }
 
         // Above 100
@@ -63,10 +63,10 @@ describe("Assignment Schema", () => {
             status: "active" as const,
             createdAt: DateTime.unsafeMake(new Date()),
             updatedAt: DateTime.unsafeMake(new Date()),
-          })
-        }).pipe(Effect.flip)
-        expect(result).toBeDefined()
+          });
+        }).pipe(Effect.flip);
+        expect(result).toBeDefined();
       }),
-    )
-  })
-})
+    );
+  });
+});

@@ -3,8 +3,8 @@
  * Represents the main project entity with pipeline status tracking
  */
 
-import { Model } from "@effect/sql"
-import { Schema } from "effect"
+import { Model } from "@effect/sql";
+import { Schema } from "effect";
 
 /**
  * Pipeline status enum - tracks project progression through Sherpy workflow
@@ -24,16 +24,16 @@ export const PipelineStatus = Schema.Literal(
   "active-development",
   "completed",
   "archived",
-)
+);
 
-export type PipelineStatus = typeof PipelineStatus.Type
+export type PipelineStatus = typeof PipelineStatus.Type;
 
 /**
  * Project priority levels
  */
-export const Priority = Schema.Literal("low", "medium", "high", "critical")
+export const Priority = Schema.Literal("low", "medium", "high", "critical");
 
-export type Priority = typeof Priority.Type
+export type Priority = typeof Priority.Type;
 
 /**
  * Project entity - represents a planning/development project in Sherpy PM

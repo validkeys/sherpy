@@ -3,9 +3,9 @@
  * PID tracking and lifecycle management
  */
 
-import { readFileSync, writeFileSync, unlinkSync, existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 
 const PID_FILE = join(homedir(), ".sherpy", "sherpy.pid");
 
@@ -33,7 +33,7 @@ export function readPid(): number | null {
 
   try {
     const pidStr = readFileSync(PID_FILE, "utf8").trim();
-    const pid = parseInt(pidStr, 10);
+    const pid = Number.parseInt(pidStr, 10);
 
     if (isNaN(pid)) {
       return null;

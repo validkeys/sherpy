@@ -3,20 +3,15 @@
  * Represents skills and person-skill associations
  */
 
-import { Model } from "@effect/sql"
-import { Schema } from "effect"
+import { Model } from "@effect/sql";
+import { Schema } from "effect";
 
 /**
  * Skill proficiency levels
  */
-export const SkillProficiency = Schema.Literal(
-  "beginner",
-  "intermediate",
-  "advanced",
-  "expert",
-)
+export const SkillProficiency = Schema.Literal("beginner", "intermediate", "advanced", "expert");
 
-export type SkillProficiency = typeof SkillProficiency.Type
+export type SkillProficiency = typeof SkillProficiency.Type;
 
 /**
  * Skill entity - represents a named skill that can be associated with people

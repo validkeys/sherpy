@@ -27,7 +27,7 @@ async function waitForExit(pid: number, timeoutMs: number): Promise<boolean> {
     if (!isProcessAlive(pid)) {
       return true;
     }
-    await new Promise(resolve => setTimeout(resolve, pollInterval));
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
   }
 
   return false;
@@ -59,7 +59,7 @@ export async function stopCommand(): Promise<number> {
       try {
         process.kill(pid, "SIGKILL");
         // Give it a moment to die
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (error) {
         // Process might already be dead
       }

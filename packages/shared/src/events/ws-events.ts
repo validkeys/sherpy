@@ -3,7 +3,7 @@
  * Server-sent events for real-time dashboard updates
  */
 
-import { Schema } from "effect"
+import { Schema } from "effect";
 
 /**
  * Project Updated Event
@@ -13,9 +13,9 @@ export const ProjectUpdatedEvent = Schema.Struct({
   timestamp: Schema.String,
   projectId: Schema.String,
   fields: Schema.Array(Schema.String),
-})
+});
 
-export type ProjectUpdatedEvent = typeof ProjectUpdatedEvent.Type
+export type ProjectUpdatedEvent = typeof ProjectUpdatedEvent.Type;
 
 /**
  * Project Pipeline Status Changed Event
@@ -26,10 +26,9 @@ export const ProjectPipelineStatusChangedEvent = Schema.Struct({
   projectId: Schema.String,
   oldStatus: Schema.String,
   newStatus: Schema.String,
-})
+});
 
-export type ProjectPipelineStatusChangedEvent =
-  typeof ProjectPipelineStatusChangedEvent.Type
+export type ProjectPipelineStatusChangedEvent = typeof ProjectPipelineStatusChangedEvent.Type;
 
 /**
  * Task Status Changed Event
@@ -41,9 +40,9 @@ export const TaskStatusChangedEvent = Schema.Struct({
   taskId: Schema.String,
   oldStatus: Schema.String,
   newStatus: Schema.String,
-})
+});
 
-export type TaskStatusChangedEvent = typeof TaskStatusChangedEvent.Type
+export type TaskStatusChangedEvent = typeof TaskStatusChangedEvent.Type;
 
 /**
  * Schedule Generated Event
@@ -54,9 +53,9 @@ export const ScheduleGeneratedEvent = Schema.Struct({
   projectId: Schema.String,
   snapshotId: Schema.String,
   scheduleType: Schema.Literal("full", "scenario", "what-if"),
-})
+});
 
-export type ScheduleGeneratedEvent = typeof ScheduleGeneratedEvent.Type
+export type ScheduleGeneratedEvent = typeof ScheduleGeneratedEvent.Type;
 
 /**
  * Assignment Created Event
@@ -68,9 +67,9 @@ export const AssignmentCreatedEvent = Schema.Struct({
   assignmentId: Schema.String,
   taskId: Schema.String,
   personId: Schema.String,
-})
+});
 
-export type AssignmentCreatedEvent = typeof AssignmentCreatedEvent.Type
+export type AssignmentCreatedEvent = typeof AssignmentCreatedEvent.Type;
 
 /**
  * Assignment Updated Event
@@ -81,9 +80,9 @@ export const AssignmentUpdatedEvent = Schema.Struct({
   projectId: Schema.String,
   assignmentId: Schema.String,
   fields: Schema.Array(Schema.String),
-})
+});
 
-export type AssignmentUpdatedEvent = typeof AssignmentUpdatedEvent.Type
+export type AssignmentUpdatedEvent = typeof AssignmentUpdatedEvent.Type;
 
 /**
  * Conflict Detected Event
@@ -95,9 +94,9 @@ export const ConflictDetectedEvent = Schema.Struct({
   conflictType: Schema.Literal("over-allocation", "resource-overlap"),
   personId: Schema.String,
   details: Schema.String,
-})
+});
 
-export type ConflictDetectedEvent = typeof ConflictDetectedEvent.Type
+export type ConflictDetectedEvent = typeof ConflictDetectedEvent.Type;
 
 /**
  * Document Generated Event
@@ -108,9 +107,9 @@ export const DocumentGeneratedEvent = Schema.Struct({
   projectId: Schema.String,
   documentId: Schema.String,
   documentType: Schema.String,
-})
+});
 
-export type DocumentGeneratedEvent = typeof DocumentGeneratedEvent.Type
+export type DocumentGeneratedEvent = typeof DocumentGeneratedEvent.Type;
 
 /**
  * Chat Message Event
@@ -122,9 +121,9 @@ export const ChatMessageEvent = Schema.Struct({
   sessionId: Schema.String,
   role: Schema.Literal("user", "assistant"),
   content: Schema.String,
-})
+});
 
-export type ChatMessageEvent = typeof ChatMessageEvent.Type
+export type ChatMessageEvent = typeof ChatMessageEvent.Type;
 
 /**
  * Union of all WebSocket event types
@@ -139,6 +138,6 @@ export const WsEvent = Schema.Union(
   ConflictDetectedEvent,
   DocumentGeneratedEvent,
   ChatMessageEvent,
-)
+);
 
-export type WsEvent = typeof WsEvent.Type
+export type WsEvent = typeof WsEvent.Type;

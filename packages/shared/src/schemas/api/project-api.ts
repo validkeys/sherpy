@@ -2,12 +2,8 @@
  * Project API request/response schemas using Schema.Class
  */
 
-import { Schema } from "effect"
-import {
-  type PipelineStatus,
-  type Priority,
-  Project,
-} from "../project.js"
+import { Schema } from "effect";
+import { type PipelineStatus, type Priority, Project } from "../project.js";
 
 /**
  * Create Project Request
@@ -38,15 +34,11 @@ export class CreateProjectResponse extends Schema.Class<CreateProjectResponse>(
 /**
  * List Projects Request
  */
-export class ListProjectsRequest extends Schema.Class<ListProjectsRequest>(
-  "ListProjectsRequest",
-)({
+export class ListProjectsRequest extends Schema.Class<ListProjectsRequest>("ListProjectsRequest")({
   tags: Schema.optional(Schema.Array(Schema.String)),
   pipelineStatus: Schema.optional(Schema.Array(Schema.String)),
   limit: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.positive())),
-  offset: Schema.optional(
-    Schema.Number.pipe(Schema.int(), Schema.nonNegative()),
-  ),
+  offset: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.nonNegative())),
 }) {}
 
 /**
@@ -62,18 +54,14 @@ export class ListProjectsResponse extends Schema.Class<ListProjectsResponse>(
 /**
  * Get Project Request
  */
-export class GetProjectRequest extends Schema.Class<GetProjectRequest>(
-  "GetProjectRequest",
-)({
+export class GetProjectRequest extends Schema.Class<GetProjectRequest>("GetProjectRequest")({
   id: Schema.String,
 }) {}
 
 /**
  * Get Project Response
  */
-export class GetProjectResponse extends Schema.Class<GetProjectResponse>(
-  "GetProjectResponse",
-)({
+export class GetProjectResponse extends Schema.Class<GetProjectResponse>("GetProjectResponse")({
   project: Schema.typeSchema(Project),
 }) {}
 

@@ -2,8 +2,8 @@
  * Chat API request/response schemas using Schema.Class
  */
 
-import { Schema } from "effect"
-import { ChatMessage, ChatSession } from "../chat-session.js"
+import { Schema } from "effect";
+import { ChatMessage, ChatSession } from "../chat-session.js";
 
 /**
  * Chat Request
@@ -11,9 +11,7 @@ import { ChatMessage, ChatSession } from "../chat-session.js"
 export class ChatRequest extends Schema.Class<ChatRequest>("ChatRequest")({
   projectId: Schema.String,
   message: Schema.String.pipe(Schema.minLength(1)),
-  contextType: Schema.optional(
-    Schema.Literal("sherpy-flow", "general", "scheduling", "planning"),
-  ),
+  contextType: Schema.optional(Schema.Literal("sherpy-flow", "general", "scheduling", "planning")),
 }) {}
 
 /**
@@ -39,9 +37,9 @@ export class GetChatHistoryRequest extends Schema.Class<GetChatHistoryRequest>(
 /**
  * Get Chat History Response
  */
-export class GetChatHistoryResponse extends Schema.Class<
-  GetChatHistoryResponse
->("GetChatHistoryResponse")({
+export class GetChatHistoryResponse extends Schema.Class<GetChatHistoryResponse>(
+  "GetChatHistoryResponse",
+)({
   session: Schema.typeSchema(ChatSession),
   messages: Schema.Array(ChatMessage),
 }) {}

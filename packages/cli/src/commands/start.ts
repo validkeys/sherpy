@@ -3,9 +3,9 @@
  */
 
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { existsSync } from "node:fs";
 import { readPid, writePid } from "../daemon.js";
 
 const PORT = 3100;
@@ -15,12 +15,12 @@ const DB_PATH = join(homedir(), ".sherpy", "sherpy.db");
  * Open URL in default browser (cross-platform)
  */
 function openBrowser(url: string): void {
-  const command = process.platform === "darwin" ? "open" :
-                  process.platform === "win32" ? "start" : "xdg-open";
+  const command =
+    process.platform === "darwin" ? "open" : process.platform === "win32" ? "start" : "xdg-open";
 
   spawn(command, [url], {
     detached: true,
-    stdio: "ignore"
+    stdio: "ignore",
   }).unref();
 }
 
@@ -68,8 +68,8 @@ export function startCommand(): number {
       ...process.env,
       NODE_ENV: "production",
       PORT: String(PORT),
-      DB_PATH: DB_PATH
-    }
+      DB_PATH: DB_PATH,
+    },
   });
 
   // Unref so CLI can exit

@@ -2,15 +2,13 @@
  * Document API request/response schemas using Schema.Class
  */
 
-import { Schema } from "effect"
-import { Document } from "../document.js"
+import { Schema } from "effect";
+import { Document } from "../document.js";
 
 /**
  * Get Documents Request
  */
-export class GetDocumentsRequest extends Schema.Class<GetDocumentsRequest>(
-  "GetDocumentsRequest",
-)({
+export class GetDocumentsRequest extends Schema.Class<GetDocumentsRequest>("GetDocumentsRequest")({
   projectId: Schema.String,
   documentType: Schema.optional(Schema.String),
 }) {}
@@ -27,9 +25,7 @@ export class GetDocumentsResponse extends Schema.Class<GetDocumentsResponse>(
 /**
  * Get Document Request
  */
-export class GetDocumentRequest extends Schema.Class<GetDocumentRequest>(
-  "GetDocumentRequest",
-)({
+export class GetDocumentRequest extends Schema.Class<GetDocumentRequest>("GetDocumentRequest")({
   projectId: Schema.String,
   documentType: Schema.String,
   version: Schema.optional(Schema.Number.pipe(Schema.int(), Schema.positive())),
@@ -38,9 +34,7 @@ export class GetDocumentRequest extends Schema.Class<GetDocumentRequest>(
 /**
  * Get Document Response
  */
-export class GetDocumentResponse extends Schema.Class<GetDocumentResponse>(
-  "GetDocumentResponse",
-)({
+export class GetDocumentResponse extends Schema.Class<GetDocumentResponse>("GetDocumentResponse")({
   document: Schema.typeSchema(Document),
 }) {}
 
@@ -57,9 +51,9 @@ export class ExportDocumentRequest extends Schema.Class<ExportDocumentRequest>(
 /**
  * Export Document Response
  */
-export class ExportDocumentResponse extends Schema.Class<
-  ExportDocumentResponse
->("ExportDocumentResponse")({
+export class ExportDocumentResponse extends Schema.Class<ExportDocumentResponse>(
+  "ExportDocumentResponse",
+)({
   downloadUrl: Schema.String,
   expiresAt: Schema.String,
 }) {}

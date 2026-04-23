@@ -3,12 +3,9 @@
  * Implements CRUD operations for milestones with schema validation
  */
 
-import {
-  HttpApiEndpoint,
-  HttpApiGroup,
-} from "@effect/platform"
-import { Schema } from "effect"
-import { Milestone, NotFoundError, ValidationError, ConflictError } from "@sherpy/shared"
+import { HttpApiEndpoint, HttpApiGroup } from "@effect/platform";
+import { ConflictError, Milestone, NotFoundError, ValidationError } from "@sherpy/shared";
+import { Schema } from "effect";
 
 /**
  * Request/Response schemas for milestone endpoints
@@ -16,13 +13,13 @@ import { Milestone, NotFoundError, ValidationError, ConflictError } from "@sherp
 
 // POST /api/projects/:projectId/milestones - Create milestone
 export class CreateMilestoneParams extends Schema.Class<CreateMilestoneParams>(
-  "CreateMilestoneParams"
+  "CreateMilestoneParams",
 )({
   projectId: Schema.String,
 }) {}
 
 export class CreateMilestoneRequest extends Schema.Class<CreateMilestoneRequest>(
-  "CreateMilestoneRequest"
+  "CreateMilestoneRequest",
 )({
   name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(255)),
   description: Schema.optional(Schema.String),
@@ -31,46 +28,44 @@ export class CreateMilestoneRequest extends Schema.Class<CreateMilestoneRequest>
 }) {}
 
 export class CreateMilestoneResponse extends Schema.Class<CreateMilestoneResponse>(
-  "CreateMilestoneResponse"
+  "CreateMilestoneResponse",
 )({
   milestone: Schema.typeSchema(Milestone),
 }) {}
 
 // GET /api/projects/:projectId/milestones - List milestones
 export class ListMilestonesParams extends Schema.Class<ListMilestonesParams>(
-  "ListMilestonesParams"
+  "ListMilestonesParams",
 )({
   projectId: Schema.String,
 }) {}
 
 export class ListMilestonesResponse extends Schema.Class<ListMilestonesResponse>(
-  "ListMilestonesResponse"
+  "ListMilestonesResponse",
 )({
   milestones: Schema.Array(Schema.typeSchema(Milestone)),
 }) {}
 
 // GET /api/milestones/:milestoneId - Get milestone
-export class GetMilestoneParams extends Schema.Class<GetMilestoneParams>(
-  "GetMilestoneParams"
-)({
+export class GetMilestoneParams extends Schema.Class<GetMilestoneParams>("GetMilestoneParams")({
   milestoneId: Schema.String,
 }) {}
 
 export class GetMilestoneResponse extends Schema.Class<GetMilestoneResponse>(
-  "GetMilestoneResponse"
+  "GetMilestoneResponse",
 )({
   milestone: Schema.typeSchema(Milestone),
 }) {}
 
 // PATCH /api/milestones/:milestoneId - Update milestone
 export class UpdateMilestoneParams extends Schema.Class<UpdateMilestoneParams>(
-  "UpdateMilestoneParams"
+  "UpdateMilestoneParams",
 )({
   milestoneId: Schema.String,
 }) {}
 
 export class UpdateMilestoneRequest extends Schema.Class<UpdateMilestoneRequest>(
-  "UpdateMilestoneRequest"
+  "UpdateMilestoneRequest",
 )({
   name: Schema.optional(Schema.String.pipe(Schema.minLength(1))),
   description: Schema.optional(Schema.String),
@@ -80,26 +75,26 @@ export class UpdateMilestoneRequest extends Schema.Class<UpdateMilestoneRequest>
 }) {}
 
 export class UpdateMilestoneResponse extends Schema.Class<UpdateMilestoneResponse>(
-  "UpdateMilestoneResponse"
+  "UpdateMilestoneResponse",
 )({
   milestone: Schema.typeSchema(Milestone),
 }) {}
 
 // PUT /api/projects/:projectId/milestones/reorder - Reorder milestones
 export class ReorderMilestonesParams extends Schema.Class<ReorderMilestonesParams>(
-  "ReorderMilestonesParams"
+  "ReorderMilestonesParams",
 )({
   projectId: Schema.String,
 }) {}
 
 export class ReorderMilestonesRequest extends Schema.Class<ReorderMilestonesRequest>(
-  "ReorderMilestonesRequest"
+  "ReorderMilestonesRequest",
 )({
   milestoneIds: Schema.Array(Schema.String),
 }) {}
 
 export class ReorderMilestonesResponse extends Schema.Class<ReorderMilestonesResponse>(
-  "ReorderMilestonesResponse"
+  "ReorderMilestonesResponse",
 )({
   success: Schema.Literal(true),
 }) {}
@@ -116,19 +111,19 @@ export class MilestonesApi extends HttpApiGroup.make("milestones")
       .addError(ValidationError)
       .addError(ConflictError)
       .setPath(CreateMilestoneParams)
-      .setPayload(CreateMilestoneRequest)
+      .setPayload(CreateMilestoneRequest),
   )
   .add(
     HttpApiEndpoint.get("listMilestones", "/projects/:projectId/milestones")
       .addSuccess(ListMilestonesResponse)
       .addError(ValidationError)
-      .setPath(ListMilestonesParams)
+      .setPath(ListMilestonesParams),
   )
   .add(
     HttpApiEndpoint.get("getMilestone", "/milestones/:milestoneId")
       .addSuccess(GetMilestoneResponse)
       .addError(NotFoundError)
-      .setPath(GetMilestoneParams)
+      .setPath(GetMilestoneParams),
   )
   .add(
     HttpApiEndpoint.patch("updateMilestone", "/milestones/:milestoneId")
@@ -136,7 +131,7 @@ export class MilestonesApi extends HttpApiGroup.make("milestones")
       .addError(NotFoundError)
       .addError(ValidationError)
       .setPath(UpdateMilestoneParams)
-      .setPayload(UpdateMilestoneRequest)
+      .setPayload(UpdateMilestoneRequest),
   )
   .add(
     HttpApiEndpoint.put("reorderMilestones", "/projects/:projectId/milestones/reorder")
@@ -144,6 +139,6 @@ export class MilestonesApi extends HttpApiGroup.make("milestones")
       .addError(NotFoundError)
       .addError(ValidationError)
       .setPath(ReorderMilestonesParams)
-      .setPayload(ReorderMilestonesRequest)
+      .setPayload(ReorderMilestonesRequest),
   )
   .prefix("/api") {}

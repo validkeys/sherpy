@@ -2,22 +2,22 @@
  * Unit tests for ScheduleSnapshot domain schema
  */
 
-import { describe, expect, it } from "@effect/vitest"
-import { DateTime, Effect, Schema } from "effect"
-import { ScheduleSnapshot, ScheduleSnapshotType } from "./schedule-snapshot"
+import { describe, expect, it } from "@effect/vitest";
+import { DateTime, Effect, Schema } from "effect";
+import { ScheduleSnapshot, ScheduleSnapshotType } from "./schedule-snapshot";
 
 describe("ScheduleSnapshot Schema", () => {
   describe("ScheduleSnapshotType enum", () => {
     it.effect("accepts valid snapshot types", () =>
       Effect.gen(function* () {
-        const types = ["full", "scenario", "what-if"] as const
+        const types = ["full", "scenario", "what-if"] as const;
         for (const type of types) {
-          const decoded = yield* Schema.decodeUnknown(ScheduleSnapshotType)(type)
-          expect(decoded).toBe(type)
+          const decoded = yield* Schema.decodeUnknown(ScheduleSnapshotType)(type);
+          expect(decoded).toBe(type);
         }
       }),
-    )
-  })
+    );
+  });
 
   describe("ScheduleSnapshot model", () => {
     it.effect("creates valid snapshot", () =>
@@ -34,13 +34,13 @@ describe("ScheduleSnapshot Schema", () => {
             estimatedCompletion: "2026-11-15",
           },
           createdAt: DateTime.unsafeMake(new Date()),
-        })
+        });
 
-        expect(snapshot.projectId).toBe("proj-123")
-        expect(snapshot.name).toBe("Baseline Schedule")
-        expect(snapshot.type).toBe("full")
+        expect(snapshot.projectId).toBe("proj-123");
+        expect(snapshot.name).toBe("Baseline Schedule");
+        expect(snapshot.type).toBe("full");
       }),
-    )
+    );
 
     it.effect("handles empty parameters and result", () =>
       Effect.gen(function* () {
@@ -52,12 +52,12 @@ describe("ScheduleSnapshot Schema", () => {
           parameters: {},
           result: {},
           createdAt: DateTime.unsafeMake(new Date()),
-        })
+        });
 
-        expect(snapshot.parameters).toEqual({})
-        expect(snapshot.result).toEqual({})
+        expect(snapshot.parameters).toEqual({});
+        expect(snapshot.result).toEqual({});
       }),
-    )
+    );
 
     it.effect("handles optional reasoning", () =>
       Effect.gen(function* () {
@@ -70,8 +70,8 @@ describe("ScheduleSnapshot Schema", () => {
           result: {},
           reasoning: "Based on current capacity",
           createdAt: DateTime.unsafeMake(new Date()),
-        })
-        expect(withReasoning.reasoning).toBe("Based on current capacity")
+        });
+        expect(withReasoning.reasoning).toBe("Based on current capacity");
 
         const withoutReasoning = new ScheduleSnapshot({
           id: "test-id",
@@ -81,9 +81,9 @@ describe("ScheduleSnapshot Schema", () => {
           parameters: {},
           result: {},
           createdAt: DateTime.unsafeMake(new Date()),
-        })
-        expect(withoutReasoning.reasoning).toBeUndefined()
+        });
+        expect(withoutReasoning.reasoning).toBeUndefined();
       }),
-    )
-  })
-})
+    );
+  });
+});
