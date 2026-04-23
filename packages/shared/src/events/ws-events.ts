@@ -6,6 +6,64 @@
 import { Schema } from "effect";
 
 /**
+ * TypeScript interfaces for actual WebSocket event payloads
+ * These match the runtime event structure used by the WebSocket client
+ */
+
+/**
+ * Project data payload in update events
+ */
+export interface ProjectEventData {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  pipelineStatus: string;
+  tags?: readonly string[];
+  assignedPeople?: readonly string[];
+  updatedAt?: string;
+  priority?: string;
+}
+
+/**
+ * Project updated event payload
+ */
+export interface ProjectUpdatedEventPayload {
+  projectId: string;
+  project: ProjectEventData;
+}
+
+/**
+ * Pipeline status changed event payload
+ */
+export interface PipelineStatusChangedEventPayload {
+  projectId: string;
+  oldStatus: string;
+  newStatus: string;
+  timestamp?: string;
+}
+
+/**
+ * Task status changed event payload
+ */
+export interface TaskStatusChangedEventPayload {
+  projectId: string;
+  taskId: string;
+  oldStatus: string;
+  newStatus: string;
+  timestamp?: string;
+}
+
+/**
+ * Assignment change event payload (created/updated)
+ */
+export interface AssignmentChangeEventPayload {
+  projectId: string;
+  personId: string;
+  timestamp?: string;
+}
+
+/**
  * Project Updated Event
  */
 export const ProjectUpdatedEvent = Schema.Struct({

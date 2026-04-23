@@ -2,15 +2,15 @@
  * Project List - Scrollable list of projects with selection and filtering
  */
 
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Wifi, WifiOff } from "lucide-react";
 import { ActiveFilters } from "./active-filters";
+import { useInboxContext } from "./filter-context";
 import type { HealthStatus } from "./health-indicator";
 import { ProjectRow } from "./project-row";
 import { SearchBar } from "./search-bar";
 
-interface Project {
+interface ProjectWithHealth {
   id: string;
   name: string;
   slug: string;
@@ -19,48 +19,20 @@ interface Project {
   tags?: readonly string[];
   assignedPeople?: readonly string[];
   updatedAt: string;
-  health?: HealthStatus;
+  health: HealthStatus;
 }
 
-type ConnectionState = "connecting" | "connected" | "disconnected" | "reconnecting";
+export function ProjectList() {
+  // Get all state from context
+  const { filters, filterActions, projectData, selection } = useInboxContext();
+  const { searchQuery, statusFilters, tagFilters, assignedToMe } = filters;
+  const { setSearchQuery, toggleStatus, toggleTag, toggleAssignedToMe, clearFilters } =
+    filterActions;
+  const { projects: projectsRaw, loading, error, connectionState } = projectData;
+  const { selectedProjectId, onProjectSelect } = selection;
 
-interface ProjectListProps {
-  onProjectSelect?: (projectId: string) => void;
-  selectedProjectId?: string;
-  searchQuery?: string;
-  onSearchChange?: (query: string) => void;
-  statusFilters?: string[];
-  tagFilters?: string[];
-  assignedToMe?: boolean;
-  onRemoveStatusFilter?: (status: string) => void;
-  onRemoveTagFilter?: (tag: string) => void;
-  onRemoveAssignedToMe?: () => void;
-  onClearFilters?: () => void;
-  projects?: Project[];
-  loading?: boolean;
-  error?: string | null;
-  connectionState?: ConnectionState;
-}
-
-export function ProjectList({
-  onProjectSelect,
-  selectedProjectId,
-  searchQuery = "",
-  onSearchChange,
-  statusFilters = [],
-  tagFilters = [],
-  assignedToMe = false,
-  onRemoveStatusFilter,
-  onRemoveTagFilter,
-  onRemoveAssignedToMe,
-  onClearFilters,
-  projects: projectsProp = [],
-  loading = false,
-  error = null,
-  connectionState = "disconnected",
-}: ProjectListProps) {
   // Add health status to projects (TODO: Calculate from milestones/tasks)
-  const projects = projectsProp.map((p) => ({
+  const projects: ProjectWithHealth[] = projectsRaw.map((p) => ({
     ...p,
     health: "healthy" as HealthStatus,
   }));
@@ -100,7 +72,7 @@ export function ProjectList({
   if (loading) {
     return (
       <div className="flex-1 flex flex-col">
-        <SearchBar value={searchQuery} onChange={onSearchChange || (() => {})} />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent mb-4"></div>
@@ -114,7 +86,7 @@ export function ProjectList({
   if (error) {
     return (
       <div className="flex-1 flex flex-col">
-        <SearchBar value={searchQuery} onChange={onSearchChange || (() => {})} />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center p-8">
             <p className="text-sm text-destructive mb-2">Failed to load projects</p>
@@ -128,7 +100,7 @@ export function ProjectList({
   if (projects.length === 0) {
     return (
       <div className="flex-1 flex flex-col">
-        <SearchBar value={searchQuery} onChange={onSearchChange || (() => {})} />
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center p-8">
             <p className="text-sm text-muted-foreground mb-2">No projects yet</p>
@@ -144,18 +116,18 @@ export function ProjectList({
 
   return (
     <div className="flex-1 flex flex-col">
-      <SearchBar value={searchQuery} onChange={onSearchChange || (() => {})} />
+      <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
       <ActiveFilters
         searchQuery={searchQuery}
         statusFilters={statusFilters}
         tagFilters={tagFilters}
         assignedToMe={assignedToMe}
-        onRemoveSearch={() => onSearchChange?.("")}
-        onRemoveStatus={onRemoveStatusFilter}
-        onRemoveTag={onRemoveTagFilter}
-        onRemoveAssignedToMe={onRemoveAssignedToMe}
-        onClearAll={onClearFilters}
+        onRemoveSearch={() => setSearchQuery("")}
+        onRemoveStatus={toggleStatus}
+        onRemoveTag={toggleTag}
+        onRemoveAssignedToMe={toggleAssignedToMe}
+        onClearAll={clearFilters}
       />
 
       <ScrollArea className="flex-1">
@@ -198,7 +170,7 @@ export function ProjectList({
             <div className="text-center">
               <p className="text-sm text-muted-foreground mb-2">No projects match your filters</p>
               {hasFilters && (
-                <button onClick={onClearFilters} className="text-xs text-primary hover:underline">
+                <button onClick={clearFilters} className="text-xs text-primary hover:underline">
                   Clear filters
                 </button>
               )}
@@ -210,7 +182,7 @@ export function ProjectList({
               key={project.id}
               project={project}
               selected={selectedProjectId === project.id}
-              onClick={() => onProjectSelect?.(project.id)}
+              onClick={() => onProjectSelect(project.id)}
             />
           ))
         )}

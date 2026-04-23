@@ -219,12 +219,13 @@ describe("ApiClient", () => {
 
     it("should call PATCH /api/projects/:id for updateProject", async () => {
       const updateRequest = {
+        id: "test-id",
         name: "Updated Project",
       };
 
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ project: { id: "test-id", ...updateRequest } }),
+        json: async () => ({ project: updateRequest }),
       });
 
       await apiClient.updateProject("test-id", updateRequest);

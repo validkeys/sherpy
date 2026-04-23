@@ -3,6 +3,12 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import type {
+  AssignmentChangeEventPayload,
+  PipelineStatusChangedEventPayload,
+  ProjectUpdatedEventPayload,
+  TaskStatusChangedEventPayload,
+} from "@sherpy/shared";
 import { useApi } from "./use-api";
 import { useWebSocket } from "./use-websocket";
 
@@ -71,7 +77,8 @@ export function useRealtimeProjects() {
   // Subscribe to WebSocket events
   useEffect(() => {
     // project:updated event handler
-    const handleProjectUpdated = (event: any) => {
+    const handleProjectUpdated = (payload: unknown) => {
+      const event = payload as ProjectUpdatedEventPayload;
       const { projectId, project } = event;
 
       setProjects((prev) => {
@@ -111,7 +118,8 @@ export function useRealtimeProjects() {
     };
 
     // project:pipelineStatusChanged event handler
-    const handlePipelineStatusChanged = (event: any) => {
+    const handlePipelineStatusChanged = (payload: unknown) => {
+      const event = payload as PipelineStatusChangedEventPayload;
       const { projectId, oldStatus, newStatus, timestamp } = event;
 
       setProjects((prev) => {
@@ -133,7 +141,8 @@ export function useRealtimeProjects() {
     };
 
     // task:statusChanged event handler
-    const handleTaskStatusChanged = (event: any) => {
+    const handleTaskStatusChanged = (payload: unknown) => {
+      const event = payload as TaskStatusChangedEventPayload;
       const { projectId, taskId, oldStatus, newStatus, timestamp } = event;
 
       // Update project's updatedAt timestamp
@@ -155,7 +164,8 @@ export function useRealtimeProjects() {
     };
 
     // assignment:created and assignment:updated event handlers
-    const handleAssignmentChange = (event: any) => {
+    const handleAssignmentChange = (payload: unknown) => {
+      const event = payload as AssignmentChangeEventPayload;
       const { projectId, personId, timestamp } = event;
 
       setProjects((prev) => {

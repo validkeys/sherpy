@@ -6,6 +6,9 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { type ConnectionState, WebSocketClient, type WsEventType } from "@/lib/ws-client";
 import { useEffect, useMemo, useState } from "react";
 
+// Re-export ConnectionState for use in other components
+export type { ConnectionState };
+
 /**
  * Hook that manages WebSocket lifecycle
  */

@@ -63,10 +63,22 @@ export function Sidebar({
   if (collapsed) {
     return (
       <div className="w-12 border-r bg-card flex flex-col items-center py-4">
-        <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="mb-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onToggleCollapse}
+          className="mb-4"
+          aria-label="Expand sidebar"
+        >
           <ChevronRight className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" onClick={onNewProject} className="mb-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onNewProject}
+          className="mb-4"
+          aria-label="New project"
+        >
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -86,7 +98,12 @@ export function Sidebar({
               <span className="text-xs text-amber-600 font-medium">DEV MODE</span>
             )}
           </div>
-          <Button variant="ghost" size="icon" onClick={onToggleCollapse}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggleCollapse}
+            aria-label="Collapse sidebar"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>

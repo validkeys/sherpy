@@ -3,9 +3,11 @@
  */
 
 import { useRealtimeProjects } from "@/hooks/use-realtime-projects";
-import { cloneElement, isValidElement, useState } from "react";
+import { useMemo, useState } from "react";
 import { CommandPalette } from "./command-palette";
 import { DetailPanel } from "./detail-panel";
+import type { InboxContextValue } from "./filter-context";
+import { InboxContextProvider } from "./filter-context";
 import { Sidebar } from "./sidebar";
 
 interface InboxLayoutProps {
@@ -86,53 +88,74 @@ export function InboxLayout({ children }: InboxLayoutProps) {
     setAssignedToMe(false);
   };
 
-  // Pass filter props and real-time data to children
-  const childrenWithProps = isValidElement(children)
-    ? cloneElement(children, {
-        onProjectSelect: handleProjectSelect,
-        selectedProjectId,
+  // Create context value
+  const contextValue = useMemo<InboxContextValue>(
+    () => ({
+      filters: {
         searchQuery,
-        onSearchChange: setSearchQuery,
         statusFilters,
         tagFilters,
         assignedToMe,
-        onRemoveStatusFilter: handleToggleStatus,
-        onRemoveTagFilter: handleToggleTag,
-        onRemoveAssignedToMe: handleToggleAssignedToMe,
-        onClearFilters: handleClearFilters,
+      },
+      filterActions: {
+        setSearchQuery,
+        toggleStatus: handleToggleStatus,
+        toggleTag: handleToggleTag,
+        toggleAssignedToMe: handleToggleAssignedToMe,
+        clearFilters: handleClearFilters,
+      },
+      projectData: {
         projects,
         loading,
         error,
         connectionState,
-      } as any)
-    : children;
+      },
+      selection: {
+        selectedProjectId,
+        onProjectSelect: handleProjectSelect,
+      },
+    }),
+    [
+      searchQuery,
+      statusFilters,
+      tagFilters,
+      assignedToMe,
+      projects,
+      loading,
+      error,
+      connectionState,
+      selectedProjectId,
+    ],
+  );
 
   return (
-    <div className="h-screen flex overflow-hidden bg-background">
-      {/* Command Palette */}
-      <CommandPalette projects={projects} onSelectProject={handleProjectSelect} />
+    <InboxContextProvider value={contextValue}>
+      <div className="h-screen flex overflow-hidden bg-background">
+        {/* Command Palette */}
+        <CommandPalette projects={projects} onSelectProject={handleProjectSelect} />
 
-      {/* Sidebar */}
-      <Sidebar
-        collapsed={sidebarCollapsed}
-        onToggleCollapse={handleToggleSidebar}
-        onNewProject={handleNewProject}
-        availableStatuses={availableStatuses}
-        availableTags={availableTags}
-        statusFilters={statusFilters}
-        tagFilters={tagFilters}
-        assignedToMe={assignedToMe}
-        onToggleStatus={handleToggleStatus}
-        onToggleTag={handleToggleTag}
-        onToggleAssignedToMe={handleToggleAssignedToMe}
-        projectCounts={projectCounts}
-      />
+        {/* Sidebar */}
+        <Sidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={handleToggleSidebar}
+          onNewProject={handleNewProject}
+          availableStatuses={availableStatuses}
+          availableTags={availableTags}
+          statusFilters={statusFilters}
+          tagFilters={tagFilters}
+          assignedToMe={assignedToMe}
+          onToggleStatus={handleToggleStatus}
+          onToggleTag={handleToggleTag}
+          onToggleAssignedToMe={handleToggleAssignedToMe}
+          projectCounts={projectCounts}
+        />
 
-      {/* Main Content (Project List) */}
-      <div className="flex-1 flex flex-col min-w-[400px]">{childrenWithProps}</div>
+        {/* Main Content (Project List) */}
+        <div className="flex-1 flex flex-col min-w-[400px]">{children}</div>
 
-      {/* Detail Panel */}
-      <DetailPanel projectId={selectedProjectId} />
-    </div>
+        {/* Detail Panel */}
+        <DetailPanel projectId={selectedProjectId} />
+      </div>
+    </InboxContextProvider>
   );
 }

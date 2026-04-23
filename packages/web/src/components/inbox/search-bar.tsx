@@ -79,6 +79,7 @@ export function SearchBar({ value, onChange, placeholder = "Search projects..." 
           size="icon"
           onClick={handleClear}
           className="absolute right-6 h-6 w-6"
+          aria-label="Clear search"
         >
           <X className="h-3 w-3" />
         </Button>
