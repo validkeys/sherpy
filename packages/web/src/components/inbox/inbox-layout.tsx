@@ -1,20 +1,12 @@
 /**
- * Inbox Layout - Three-panel email-style UI with filtering
+ * Inbox Layout - Three-panel email-style UI with filtering and real-time updates
  */
 
-import { useApi } from "@/hooks/use-api";
-import { cloneElement, isValidElement, useEffect, useState } from "react";
+import { useRealtimeProjects } from "@/hooks/use-realtime-projects";
+import { cloneElement, isValidElement, useState } from "react";
 import { CommandPalette } from "./command-palette";
 import { DetailPanel } from "./detail-panel";
 import { Sidebar } from "./sidebar";
-
-interface Project {
-  id: string;
-  name: string;
-  pipelineStatus: string;
-  tags?: readonly string[];
-  assignedPeople?: readonly string[];
-}
 
 interface InboxLayoutProps {
   children: React.ReactNode;
@@ -23,28 +15,15 @@ interface InboxLayoutProps {
 export function InboxLayout({ children }: InboxLayoutProps) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const apiClient = useApi();
+
+  // Real-time projects with WebSocket updates
+  const { projects, loading, error, connectionState } = useRealtimeProjects();
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [assignedToMe, setAssignedToMe] = useState(false);
-
-  // Fetch projects for filter metadata
-  useEffect(() => {
-    async function fetchProjects() {
-      try {
-        const response = await apiClient.listProjects();
-        setProjects([...response.projects] as Project[]);
-      } catch (err) {
-        console.error("Failed to fetch projects for filters:", err);
-      }
-    }
-
-    fetchProjects();
-  }, [apiClient]);
 
   // Compute available tags and statuses
   const availableTags = Array.from(new Set(projects.flatMap((p) => p.tags || []))).sort();
@@ -107,7 +86,7 @@ export function InboxLayout({ children }: InboxLayoutProps) {
     setAssignedToMe(false);
   };
 
-  // Pass filter props to children
+  // Pass filter props and real-time data to children
   const childrenWithProps = isValidElement(children)
     ? cloneElement(children, {
         onProjectSelect: handleProjectSelect,
@@ -121,6 +100,10 @@ export function InboxLayout({ children }: InboxLayoutProps) {
         onRemoveTagFilter: handleToggleTag,
         onRemoveAssignedToMe: handleToggleAssignedToMe,
         onClearFilters: handleClearFilters,
+        projects,
+        loading,
+        error,
+        connectionState,
       } as any)
     : children;
 

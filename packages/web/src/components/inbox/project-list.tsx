@@ -2,10 +2,9 @@
  * Project List - Scrollable list of projects with selection and filtering
  */
 
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useApi } from "@/hooks/use-api";
-import { useProjectFilters } from "@/hooks/use-project-filters";
-import { useEffect, useState } from "react";
+import { Wifi, WifiOff } from "lucide-react";
 import { ActiveFilters } from "./active-filters";
 import type { HealthStatus } from "./health-indicator";
 import { ProjectRow } from "./project-row";
@@ -23,6 +22,8 @@ interface Project {
   health?: HealthStatus;
 }
 
+type ConnectionState = "connecting" | "connected" | "disconnected" | "reconnecting";
+
 interface ProjectListProps {
   onProjectSelect?: (projectId: string) => void;
   selectedProjectId?: string;
@@ -35,6 +36,10 @@ interface ProjectListProps {
   onRemoveTagFilter?: (tag: string) => void;
   onRemoveAssignedToMe?: () => void;
   onClearFilters?: () => void;
+  projects?: Project[];
+  loading?: boolean;
+  error?: string | null;
+  connectionState?: ConnectionState;
 }
 
 export function ProjectList({
@@ -49,43 +54,16 @@ export function ProjectList({
   onRemoveTagFilter,
   onRemoveAssignedToMe,
   onClearFilters,
+  projects: projectsProp = [],
+  loading = false,
+  error = null,
+  connectionState = "disconnected",
 }: ProjectListProps) {
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const apiClient = useApi();
-
-  useEffect(() => {
-    async function fetchProjects() {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await apiClient.listProjects();
-
-        // Map API response to component format
-        const mappedProjects: Project[] = response.projects.map((p) => ({
-          id: p.id,
-          name: p.name,
-          slug: p.slug,
-          description: p.description,
-          pipelineStatus: p.pipelineStatus,
-          tags: p.tags || [],
-          assignedPeople: p.assignedPeople || [],
-          updatedAt: String(p.updatedAt),
-          health: "healthy" as HealthStatus, // TODO: Calculate from milestones/tasks
-        }));
-
-        setProjects(mappedProjects);
-      } catch (err) {
-        console.error("Failed to fetch projects:", err);
-        setError(err instanceof Error ? err.message : "Failed to load projects");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchProjects();
-  }, [apiClient]);
+  // Add health status to projects (TODO: Calculate from milestones/tasks)
+  const projects = projectsProp.map((p) => ({
+    ...p,
+    health: "healthy" as HealthStatus,
+  }));
 
   // Apply filters
   const filteredProjects = projects.filter((project) => {
@@ -182,9 +160,36 @@ export function ProjectList({
 
       <ScrollArea className="flex-1">
         <div className="border-b">
-          <div className="px-4 py-2 text-sm text-muted-foreground">
-            {filteredProjects.length} {filteredProjects.length === 1 ? "project" : "projects"}
-            {hasFilters && ` (filtered from ${projects.length})`}
+          <div className="px-4 py-2 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              {filteredProjects.length} {filteredProjects.length === 1 ? "project" : "projects"}
+              {hasFilters && ` (filtered from ${projects.length})`}
+            </span>
+
+            {/* Connection status indicator */}
+            <div className="flex items-center gap-1.5">
+              {connectionState === "connected" ? (
+                <>
+                  <Wifi className="h-3.5 w-3.5 text-green-500" />
+                  <span className="text-xs text-green-600">Live</span>
+                </>
+              ) : connectionState === "reconnecting" ? (
+                <>
+                  <WifiOff className="h-3.5 w-3.5 text-amber-500 animate-pulse" />
+                  <span className="text-xs text-amber-600">Reconnecting...</span>
+                </>
+              ) : connectionState === "connecting" ? (
+                <>
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-solid border-primary border-r-transparent" />
+                  <span className="text-xs text-muted-foreground">Connecting...</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Offline</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
 

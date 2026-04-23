@@ -56,7 +56,14 @@ export function PipelineStatusBadge({ status, size = "md" }: PipelineStatusBadge
   };
 
   return (
-    <Badge className={cn(config.className, sizeClasses[size], "transition-all hover:scale-105")}>
+    <Badge
+      className={cn(
+        config.className,
+        sizeClasses[size],
+        "transition-all duration-300 hover:scale-105",
+        "animate-in fade-in-0 zoom-in-95",
+      )}
+    >
       {config.label}
     </Badge>
   );
