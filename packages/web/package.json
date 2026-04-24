@@ -11,6 +11,7 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
+    "@assistant-ui/react": "^0.12.25",
     "@okta/okta-auth-js": "^8.0.0",
     "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",

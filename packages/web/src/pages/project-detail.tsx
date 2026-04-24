@@ -8,6 +8,8 @@ import { ProjectHeader } from "@/components/project/project-header";
 import { MilestoneList } from "@/components/project/milestone-list";
 import { DocumentList } from "@/components/project/document-list";
 import { DocumentViewer } from "@/components/project/document-viewer";
+import { ChatAssistantUIProvider } from "@/components/chat/chat-assistant-ui-provider";
+import { ProjectChatPanel } from "@/components/chat/project-chat-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/hooks/use-api";
 import { Suspense, use, useMemo, useState } from "react";
@@ -148,52 +150,57 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const milestones: Array<never> = [];
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
-      <ProjectHeader
-        name={project.name}
-        description={project.description}
-        pipelineStatus={project.pipelineStatus}
-        createdAt={String(project.createdAt)}
-      />
+    <ChatAssistantUIProvider projectId={projectId}>
+      <div className="container mx-auto px-4 py-8 space-y-6">
+        <ProjectHeader
+          name={project.name}
+          description={project.description}
+          pipelineStatus={project.pipelineStatus}
+          createdAt={String(project.createdAt)}
+        />
 
-      <PipelineStatusVisualization currentStatus={project.pipelineStatus} />
+        <PipelineStatusVisualization currentStatus={project.pipelineStatus} />
 
-      {/* Milestones section */}
-      {milestones.length > 0 ? (
-        <MilestoneList milestones={milestones} />
-      ) : (
-        <div className="p-6 border rounded-lg">
-          <h2 className="text-lg font-semibold mb-2">Milestones</h2>
-          <p className="text-muted-foreground">No milestones found for this project</p>
-        </div>
-      )}
+        {/* Milestones section */}
+        {milestones.length > 0 ? (
+          <MilestoneList milestones={milestones} />
+        ) : (
+          <div className="p-6 border rounded-lg">
+            <h2 className="text-lg font-semibold mb-2">Milestones</h2>
+            <p className="text-muted-foreground">No milestones found for this project</p>
+          </div>
+        )}
 
-      {/* Documents section */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Documents</h2>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 border rounded-lg overflow-hidden">
-          {/* Document list sidebar */}
-          <div className="border-r bg-muted/20">
-            <DocumentList
-              documents={documents}
-              selectedDocumentId={selectedDocumentId}
-              onSelectDocument={setSelectedDocumentId}
-            />
+        {/* Documents section */}
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Documents</h2>
           </div>
 
-          {/* Document viewer */}
-          <div className="min-h-[600px]">
-            <DocumentViewer
-              document={selectedDocument ?? null}
-              projectName={project.name}
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4 border rounded-lg overflow-hidden">
+            {/* Document list sidebar */}
+            <div className="border-r bg-muted/20">
+              <DocumentList
+                documents={documents}
+                selectedDocumentId={selectedDocumentId}
+                onSelectDocument={setSelectedDocumentId}
+              />
+            </div>
+
+            {/* Document viewer */}
+            <div className="min-h-[600px]">
+              <DocumentViewer
+                document={selectedDocument ?? null}
+                projectName={project.name}
+              />
+            </div>
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+      </div>
+
+      {/* Chat panel */}
+      <ProjectChatPanel />
+    </ChatAssistantUIProvider>
   );
 }
 
