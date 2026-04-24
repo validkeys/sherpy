@@ -12,9 +12,10 @@ import { ChatAssistantUIProvider } from "@/components/chat/chat-assistant-ui-pro
 import { ProjectChatPanel } from "@/components/chat/project-chat-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/hooks/use-api";
-import { Suspense, use, useMemo, useState } from "react";
+import { useProjectEvents } from "@/hooks/use-project-events";
+import { Suspense, use, useMemo, useState, useCallback, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { Document } from "@sherpy/shared";
+import type { Document, PipelineStatus } from "@sherpy/shared";
 
 /**
  * Error component for project not found or fetch errors
@@ -85,10 +86,27 @@ function ProjectDetailSkeleton() {
 function ProjectDetailContent({ projectId }: { projectId: string }) {
   const api = useApi();
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+  const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Subscribe to project events for real-time updates
+  const { latestEvent } = useProjectEvents({ projectId });
+
+  // Refresh project data when relevant events occur
+  useEffect(() => {
+    if (latestEvent) {
+      // Increment refresh key to trigger re-fetch
+      setRefreshKey((prev) => prev + 1);
+    }
+  }, [latestEvent]);
 
   // Create a promise for the project data
   // React 19's `use` hook will suspend until the promise resolves
-  const projectPromise = useMemo(() => api.getProject(projectId), [api, projectId]);
+  // Include refreshKey in dependencies to trigger re-fetch
+  const projectPromise = useMemo(
+    () => api.getProject(projectId),
+    [api, projectId, refreshKey],
+  );
   const response = use(projectPromise);
 
   if (!response.project) {
@@ -96,6 +114,13 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   }
 
   const { project } = response;
+
+  // Update local pipeline status when project data loads
+  useEffect(() => {
+    if (project.pipelineStatus && pipelineStatus !== project.pipelineStatus) {
+      setPipelineStatus(project.pipelineStatus);
+    }
+  }, [project.pipelineStatus, pipelineStatus]);
 
   // Fetch documents (mock data for now - TODO: implement API endpoint)
   const documents: Document[] = useMemo(() => {
@@ -159,7 +184,10 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
           createdAt={String(project.createdAt)}
         />
 
-        <PipelineStatusVisualization currentStatus={project.pipelineStatus} />
+        <PipelineStatusVisualization
+          projectId={projectId}
+          currentStatus={pipelineStatus || project.pipelineStatus}
+        />
 
         {/* Milestones section */}
         {milestones.length > 0 ? (
