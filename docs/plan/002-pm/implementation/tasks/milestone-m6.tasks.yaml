@@ -678,3 +678,98 @@ tasks:
       - Chat uses assistant-ui exclusively
       - Document viewer handles all file types correctly
       - Real-time updates work without page refresh
+
+  - id: m6-012
+    name: "Dogfooding session: full Sherpy flow end-to-end test"
+    description: |
+      Comprehensive end-to-end testing session using agent-browser to interact
+      with the live application. Spin up both API and web servers, then test
+      the complete Sherpy workflow from project creation through pipeline
+      stages, chat interaction, and document generation. Verify LLM connectivity
+      and all M6 features work together seamlessly.
+    estimate_minutes: 90
+    type: integration-test
+    dependencies: [m6-011]
+    files:
+      create:
+        - test-reports/2026-04-24-m6-dogfooding-session.md
+    instructions: |
+      **Objective:**
+      Run a complete dogfooding session using agent-browser to test the full
+      Sherpy PM workflow in a live environment.
+
+      **Setup Steps:**
+      1. Ensure environment variables are configured:
+         - LLM API keys (ANTHROPIC_API_KEY or equivalent)
+         - Database connection (SQLite default should work)
+         - WebSocket configuration
+      2. Start the API server:
+         - cd packages/api && pnpm run dev
+         - Verify server running on http://localhost:3101
+      3. Start the web app:
+         - cd packages/web && pnpm run dev
+         - Verify app running on http://localhost:5173
+      4. Use agent-browser skill to interact with the UI
+
+      **Test Scenarios:**
+      1. **Authentication Flow:**
+         - Navigate to http://localhost:5173
+         - Test login/registration flow
+         - Verify JWT token storage and auth state
+
+      2. **Project Creation:**
+         - Create a new project via UI
+         - Verify project appears in inbox/list
+         - Check pipeline status badge shows "intake"
+
+      3. **Project Detail View:**
+         - Click into project detail page
+         - Verify all sections render: header, pipeline status, milestones,
+           documents
+         - Check loading states and error handling
+
+      4. **Pipeline Status Visualization:**
+         - Verify current stage highlighted correctly
+         - Check stage labels and icons render
+         - Test responsive layout (desktop and mobile views if possible)
+
+      5. **Document Viewer:**
+         - Navigate to documents section
+         - Select different document types (YAML, markdown, code)
+         - Verify syntax highlighting works
+         - Test copy-to-clipboard button
+         - Attempt PDF export and verify download
+
+      6. **Chat Integration:**
+         - Open chat panel
+         - Send a message to the AI assistant
+         - Verify LLM connectivity and response
+         - Check message persistence (reload page, messages should persist)
+         - Send multiple messages and verify conversation flow
+         - Test chat panel toggle open/closed
+
+      7. **Real-time Updates:**
+         - Trigger a pipeline status change (via API or UI action)
+         - Verify WebSocket event fires and UI updates without refresh
+         - Check animation transitions on pipeline status
+
+      8. **Cross-feature Integration:**
+         - Test navigation between inbox and project detail
+         - Verify breadcrumb navigation works
+         - Check browser back/forward buttons
+         - Test search functionality in inbox
+
+      **Constraints:**
+      - ONLY use: agent-browser skill for UI interaction
+      - Document all findings in test report markdown file
+      - Take screenshots of any UI issues encountered
+      - Log any console errors or network failures
+
+      **Success Criteria:**
+      - User can complete full project workflow from creation to chat
+      - LLM responds successfully in chat interface
+      - All M6 features (detail view, documents, PDF, chat, real-time) work
+      - No critical errors block core functionality
+      - UI is responsive and performs smoothly
+      - WebSocket connection establishes and events propagate
+      - Test report documents all test cases with pass/fail status
