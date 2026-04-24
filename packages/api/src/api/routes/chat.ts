@@ -83,6 +83,56 @@ export class DeleteChatSessionResponse extends Schema.Class<DeleteChatSessionRes
   success: Schema.Literal(true),
 }) {}
 
+// POST /api/projects/:projectId/chat/messages - Send message
+export class SendChatMessageParams extends Schema.Class<SendChatMessageParams>(
+  "SendChatMessageParams",
+)({
+  projectId: Schema.String,
+}) {}
+
+export class SendChatMessageRequest extends Schema.Class<SendChatMessageRequest>(
+  "SendChatMessageRequest",
+)({
+  role: Schema.Literal("user", "assistant"),
+  content: Schema.String,
+}) {}
+
+export class ChatMessageResponse extends Schema.Class<ChatMessageResponse>("ChatMessageResponse")({
+  id: Schema.String,
+  projectId: Schema.String,
+  role: Schema.Literal("user", "assistant"),
+  content: Schema.String,
+  createdAt: Schema.String,
+}) {}
+
+export class SendChatMessageResponse extends Schema.Class<SendChatMessageResponse>(
+  "SendChatMessageResponse",
+)({
+  message: ChatMessageResponse,
+}) {}
+
+// GET /api/projects/:projectId/chat/messages - Get message history
+export class GetChatMessagesParams extends Schema.Class<GetChatMessagesParams>(
+  "GetChatMessagesParams",
+)({
+  projectId: Schema.String,
+}) {}
+
+export class GetChatMessagesQuery extends Schema.Class<GetChatMessagesQuery>(
+  "GetChatMessagesQuery",
+)({
+  limit: Schema.optional(Schema.NumberFromString.pipe(Schema.int(), Schema.positive())),
+  cursor: Schema.optional(Schema.String),
+}) {}
+
+export class GetChatMessagesResponse extends Schema.Class<GetChatMessagesResponse>(
+  "GetChatMessagesResponse",
+)({
+  messages: Schema.Array(ChatMessageResponse),
+  hasMore: Schema.Boolean,
+  nextCursor: Schema.optional(Schema.String),
+}) {}
+
 /**
  * Chat API Group - defines all chat endpoints
  * All endpoints require Authentication middleware
@@ -120,5 +170,20 @@ export class ChatApi extends HttpApiGroup.make("chat")
       .addSuccess(DeleteChatSessionResponse)
       .addError(NotFoundError)
       .setPath(DeleteChatSessionParams),
+  )
+  .add(
+    HttpApiEndpoint.post("sendChatMessage", "/projects/:projectId/chat/messages")
+      .addSuccess(SendChatMessageResponse)
+      .addError(NotFoundError)
+      .addError(ValidationError)
+      .setPath(SendChatMessageParams)
+      .setPayload(SendChatMessageRequest),
+  )
+  .add(
+    HttpApiEndpoint.get("getChatMessages", "/projects/:projectId/chat/messages")
+      .addSuccess(GetChatMessagesResponse)
+      .addError(ValidationError)
+      .setPath(GetChatMessagesParams)
+      .setUrlParams(GetChatMessagesQuery),
   )
   .prefix("/api") {}

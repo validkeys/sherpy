@@ -48,7 +48,9 @@ import {
   CreateChatSessionResponse,
   DeleteChatSessionResponse,
   GetChatHistoryResponse,
+  GetChatMessagesResponse,
   ListChatSessionsResponse,
+  SendChatMessageResponse,
   SendMessageResponse,
 } from "./api/routes/chat.js";
 import { ConflictsApi, DetectConflictsResponse } from "./api/routes/conflictsApi.js";
@@ -115,6 +117,7 @@ import { AuthService } from "./auth/jwks-cache.js";
 import { type OktaClaims, validateJwt } from "./auth/okta-jwt.js";
 import { runMigrations } from "./db/migration-runner.js";
 import { UnauthorizedError } from "./errors/auth.js";
+import { ChatService, ChatServiceLive } from "./services/chat-service.js";
 import { ChatSessionService, ChatSessionServiceLive } from "./services/chat-session-service.js";
 import { DocumentService, DocumentServiceLive } from "./services/document-service.js";
 import { MilestoneService, MilestoneServiceLive } from "./services/milestone-service.js";
@@ -472,16 +475,17 @@ const DocumentsApiLive = HttpApiBuilder.group(SherryApi, "documents", (handlers)
 
 /**
  * Chat API handler implementation
- * Delegates to ChatSessionService for chat operations
+ * Delegates to ChatSessionService and ChatService for chat operations
  */
 const ChatApiLive = HttpApiBuilder.group(SherryApi, "chat", (handlers) =>
   Effect.gen(function* () {
-    const chatService = yield* ChatSessionService;
+    const chatSessionService = yield* ChatSessionService;
+    const chatService = yield* ChatService;
 
     return handlers
       .handle("createChatSession", ({ path, payload }) =>
         Effect.gen(function* () {
-          const session = yield* chatService.create({
+          const session = yield* chatSessionService.create({
             projectId: path.projectId,
             contextType: payload.contextType,
           });
@@ -491,21 +495,21 @@ const ChatApiLive = HttpApiBuilder.group(SherryApi, "chat", (handlers) =>
       )
       .handle("listChatSessions", ({ path }) =>
         Effect.gen(function* () {
-          const sessions = yield* chatService.listByProject(path.projectId);
+          const sessions = yield* chatSessionService.listByProject(path.projectId);
 
           return new ListChatSessionsResponse({ sessions: Array.from(sessions) });
         }),
       )
       .handle("getChatHistory", ({ path }) =>
         Effect.gen(function* () {
-          const session = yield* chatService.getHistory(path.sessionId);
+          const session = yield* chatSessionService.getHistory(path.sessionId);
 
           return new GetChatHistoryResponse({ session });
         }),
       )
       .handle("sendMessage", ({ path, payload }) =>
         Effect.gen(function* () {
-          const session = yield* chatService.addMessage({
+          const session = yield* chatSessionService.addMessage({
             sessionId: path.sessionId,
             role: payload.role,
             content: payload.content,
@@ -516,9 +520,49 @@ const ChatApiLive = HttpApiBuilder.group(SherryApi, "chat", (handlers) =>
       )
       .handle("deleteChatSession", ({ path }) =>
         Effect.gen(function* () {
-          yield* chatService.delete(path.sessionId);
+          yield* chatSessionService.delete(path.sessionId);
 
           return new DeleteChatSessionResponse({ success: true });
+        }),
+      )
+      .handle("sendChatMessage", ({ path, payload }) =>
+        Effect.gen(function* () {
+          const message = yield* chatService.sendMessage({
+            projectId: path.projectId,
+            role: payload.role,
+            content: payload.content,
+          });
+
+          return new SendChatMessageResponse({
+            message: {
+              id: message.id,
+              projectId: message.projectId,
+              role: message.role,
+              content: message.content,
+              createdAt: message.createdAt.toString(),
+            },
+          });
+        }),
+      )
+      .handle("getChatMessages", ({ path, urlParams }) =>
+        Effect.gen(function* () {
+          const result = yield* chatService.getMessages({
+            projectId: path.projectId,
+            limit: urlParams.limit,
+            cursor: urlParams.cursor,
+          });
+
+          return new GetChatMessagesResponse({
+            messages: result.messages.map((m) => ({
+              id: m.id,
+              projectId: m.projectId,
+              role: m.role,
+              content: m.content,
+              createdAt: m.createdAt.toString(),
+            })),
+            hasMore: result.hasMore,
+            nextCursor: result.nextCursor,
+          });
         }),
       );
   }),
@@ -918,6 +962,7 @@ const CoreServicesLive = Layer.mergeAll(
   TaskServiceLive,
   DocumentServiceLive,
   ChatSessionServiceLive,
+  ChatServiceLive,
 );
 
 /**

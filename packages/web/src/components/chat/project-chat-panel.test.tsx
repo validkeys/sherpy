@@ -2,11 +2,30 @@
  * ProjectChatPanel component tests
  */
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import { ProjectChatPanel } from "./project-chat-panel";
 import { ChatAssistantUIProvider } from "./chat-assistant-ui-provider";
+
+// Mock the useApi hook
+vi.mock("@/hooks/use-api", () => ({
+  useApi: vi.fn(() => ({
+    getChatMessages: vi.fn().mockResolvedValue({
+      messages: [],
+      hasMore: false,
+    }),
+    sendChatMessage: vi.fn().mockResolvedValue({
+      message: {
+        id: "msg-1",
+        projectId: "test-project",
+        role: "assistant",
+        content: "Test response",
+        createdAt: new Date().toISOString(),
+      },
+    }),
+  })),
+}));
 
 // Helper to render with provider
 function renderWithProvider(ui: React.ReactElement) {

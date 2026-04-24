@@ -43,4 +43,5 @@ export const runMigrations = Effect.gen(function* () {
   yield* executeMigration("001_core_tables.sql");
   yield* executeMigration("002_people_resources.sql");
   yield* executeMigration("003_documents_chat_schedules.sql");
+  yield* executeMigration("004_chat_messages.sql");
 });

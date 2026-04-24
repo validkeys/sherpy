@@ -11,6 +11,7 @@ export * from "./skill.js";
 export * from "./availability.js";
 export * from "./document.js";
 export * from "./chat-session.js";
+export * from "./chat-message.js";
 export * from "./tag.js";
 export * from "./schedule-snapshot.js";
 export * from "./api/index.js";

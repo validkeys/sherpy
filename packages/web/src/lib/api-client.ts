@@ -167,13 +167,45 @@ export class ApiClient {
     return this.request("GET", `/api/projects/${projectId}/schedule/snapshots`);
   }
 
-  // Chat endpoints (TODO: implement when API routes are available)
-  async chat(projectId: string, message: string): Promise<unknown> {
-    return this.request("POST", `/api/projects/${projectId}/chat`, { message });
+  // Chat message endpoints
+  async sendChatMessage(
+    projectId: string,
+    role: "user" | "assistant",
+    content: string,
+  ): Promise<{
+    message: {
+      id: string;
+      projectId: string;
+      role: "user" | "assistant";
+      content: string;
+      createdAt: string;
+    };
+  }> {
+    return this.request("POST", `/api/projects/${projectId}/chat/messages`, {
+      role,
+      content,
+    });
   }
 
-  async getChatHistory(projectId: string): Promise<unknown> {
-    return this.request("GET", `/api/projects/${projectId}/chat`);
+  async getChatMessages(
+    projectId: string,
+    options?: { limit?: number; cursor?: string },
+  ): Promise<{
+    messages: Array<{
+      id: string;
+      projectId: string;
+      role: "user" | "assistant";
+      content: string;
+      createdAt: string;
+    }>;
+    hasMore: boolean;
+    nextCursor?: string;
+  }> {
+    const params = new URLSearchParams();
+    if (options?.limit) params.set("limit", String(options.limit));
+    if (options?.cursor) params.set("cursor", options.cursor);
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return this.request("GET", `/api/projects/${projectId}/chat/messages${query}`);
   }
 }
 
