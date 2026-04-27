@@ -16,7 +16,6 @@ import { useProjectEvents } from "@/hooks/use-project-events";
 import { Suspense, use, useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { Document, PipelineStatus, GetProjectResponse } from "@sherpy/shared";
-import { useDiagnostic } from "@/hooks/use-diagnostic";
 import { SuspenseCache } from "@/lib/suspense-cache";
 
 // Enterprise-grade cache with TTL and LRU eviction
@@ -107,40 +106,27 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
 
   const { latestEvent } = useProjectEvents({ projectId });
 
-  // Derive refreshKey from latestEvent (no useEffect needed)
-  const derivedRefreshKey = latestEvent ? refreshKey + 1 : refreshKey;
+  // Track previous latestEvent to detect changes
+  const prevLatestEventRef = useRef(latestEvent);
 
   // Update refreshKey when latestEvent changes
   useEffect(() => {
-    if (latestEvent && derivedRefreshKey !== refreshKey) {
-      console.log("[DIAG] ProjectDetailContent: latestEvent changed, invalidating cache");
-      setRefreshKey(derivedRefreshKey);
+    if (latestEvent && latestEvent !== prevLatestEventRef.current) {
+      prevLatestEventRef.current = latestEvent;
+      setRefreshKey(prev => prev + 1);
       // Invalidate cache for this project to force refetch
       projectCache.invalidate(projectId);
     }
-  }, [latestEvent, projectId, refreshKey, derivedRefreshKey]);
-
-  useDiagnostic("ProjectDetailContent", {
-    projectId,
-    refreshKey,
-    pipelineStatus,
-    selectedDocumentId,
-    latestEvent,
-    apiClientIdentity: api,
-  });
+  }, [latestEvent, projectId]);
 
   // Use enterprise cache - handles TTL, LRU eviction, and error cleanup
   const cacheKey = `${projectId}-${refreshKey}`;
-  console.log("[DIAG] Fetching project with cache key:", cacheKey);
 
   const projectPromise = projectCache.get(cacheKey, () => {
-    console.log("[DIAG] Cache MISS - creating NEW promise for:", cacheKey);
     return api.getProject(projectId);
   });
 
-  console.log("[DIAG] ProjectDetailContent: calling use(promise)");
   const response = use(projectPromise);
-  console.log("[DIAG] ProjectDetailContent: use() resolved successfully!");
 
   if (!response.project) {
     throw new Error("Project not found");
@@ -150,7 +136,6 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     if (project.pipelineStatus && pipelineStatus !== project.pipelineStatus) {
-      console.log("[DIAG] ProjectDetailContent: syncing pipelineStatus", project.pipelineStatus);
       setPipelineStatus(project.pipelineStatus);
     }
   }, [project.pipelineStatus, pipelineStatus]);
@@ -198,7 +183,6 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
     if (!selectedDocumentId && documents.length > 0) {
       const firstDoc = documents[0];
       if (firstDoc) {
-        console.log("[DIAG] ProjectDetailContent: initializing selectedDocumentId to first document");
         setSelectedDocumentId(firstDoc.id);
       }
     }
@@ -228,14 +212,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
         />
 
         {/* Milestones section */}
-        {milestones.length > 0 ? (
-          <MilestoneList milestones={milestones} />
-        ) : (
-          <div className="p-6 border rounded-lg">
-            <h2 className="text-lg font-semibold mb-2">Milestones</h2>
-            <p className="text-muted-foreground">No milestones found for this project</p>
-          </div>
-        )}
+        <MilestoneList milestones={milestones} />
 
         {/* Documents section */}
         <section className="space-y-4">
@@ -276,17 +253,6 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
  */
 export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
-  const renderCount = useRef(0);
-  renderCount.current++;
-
-  console.log(`[DIAG] ProjectDetailPage render #${renderCount.current}, projectId=${projectId}`);
-
-  useEffect(() => {
-    console.log("[DIAG] ProjectDetailPage MOUNTED");
-    return () => {
-      console.log("[DIAG] ProjectDetailPage UNMOUNTING");
-    };
-  }, []);
 
   if (!projectId) {
     return <ProjectError error={new Error("No project ID provided")} />;
