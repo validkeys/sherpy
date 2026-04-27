@@ -3,11 +3,56 @@
  * Chat panel using assistant-ui primitives
  */
 
-import * as ThreadPrimitive from "@assistant-ui/react";
-import { MessageCircle, X } from "lucide-react";
+import {
+  ThreadPrimitive,
+  ComposerPrimitive,
+  MessagePrimitive,
+  useThreadRuntime,
+} from "@assistant-ui/react";
+import { MessageCircle, X, User, Bot } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+/**
+ * User message bubble component
+ */
+function UserMessage() {
+  return (
+    <div className="flex items-start gap-3 justify-end">
+      <div className="flex-1 max-w-[80%]">
+        <MessagePrimitive.Content className="bg-primary text-primary-foreground px-4 py-2 rounded-lg">
+          <MessagePrimitive.InProgress>
+            <span className="text-sm">Sending...</span>
+          </MessagePrimitive.InProgress>
+        </MessagePrimitive.Content>
+      </div>
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
+        <User className="h-4 w-4 text-primary-foreground" />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Assistant message bubble component
+ */
+function AssistantMessage() {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+        <Bot className="h-4 w-4" />
+      </div>
+      <div className="flex-1 max-w-[80%]">
+        <MessagePrimitive.Content className="bg-muted px-4 py-2 rounded-lg text-sm">
+          <MessagePrimitive.InProgress>
+            <span className="text-muted-foreground">Thinking...</span>
+          </MessagePrimitive.InProgress>
+        </MessagePrimitive.Content>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Chat panel component that slides in from the right side of the screen.
@@ -53,27 +98,35 @@ export function ProjectChatPanel() {
         </div>
 
         {/* Chat content using assistant-ui primitives */}
-        <div className="flex flex-col h-[calc(100%-64px)] p-4">
-          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-            {/* Thread viewport for messages */}
-            <ThreadPrimitive.ThreadPrimitive.Viewport className="flex-1 p-4">
+        <div className="flex flex-col h-[calc(100%-64px)]">
+          {/* Thread viewport for messages */}
+          <ThreadPrimitive.Viewport className="flex-1 overflow-y-auto p-4">
+            <ThreadPrimitive.Messages
+              components={{
+                UserMessage,
+                AssistantMessage,
+              }}
+            />
+            <ThreadPrimitive.If empty>
               <div className="text-sm text-muted-foreground text-center py-8">
-                Chat interface is ready. Backend integration coming in M6-006.
+                No messages yet. Start a conversation!
               </div>
-            </ThreadPrimitive.ThreadPrimitive.Viewport>
-          </div>
+            </ThreadPrimitive.If>
+          </ThreadPrimitive.Viewport>
 
           {/* Composer for message input */}
-          <div className="border-t pt-4">
-            <ThreadPrimitive.ComposerPrimitive.Root className="flex gap-2">
-              <ThreadPrimitive.ComposerPrimitive.Input
-                className="flex-1 px-3 py-2 border rounded-md"
+          <div className="border-t p-4">
+            <ComposerPrimitive.Root className="flex gap-2">
+              <ComposerPrimitive.Input
+                className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Type a message..."
               />
-              <ThreadPrimitive.ComposerPrimitive.Send asChild>
-                <Button size="sm">Send</Button>
-              </ThreadPrimitive.ComposerPrimitive.Send>
-            </ThreadPrimitive.ComposerPrimitive.Root>
+              <ComposerPrimitive.Send asChild>
+                <Button size="sm" type="submit">
+                  Send
+                </Button>
+              </ComposerPrimitive.Send>
+            </ComposerPrimitive.Root>
           </div>
         </div>
       </aside>
