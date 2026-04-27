@@ -13,10 +13,17 @@ import { ProjectChatPanel } from "@/components/chat/project-chat-panel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/hooks/use-api";
 import { useProjectEvents } from "@/hooks/use-project-events";
-import { Suspense, use, useMemo, useState, useCallback, useEffect } from "react";
+import { Suspense, use, useMemo, useState, useCallback, useEffect, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
-import type { Document, PipelineStatus } from "@sherpy/shared";
+import type { Document, PipelineStatus, GetProjectResponse } from "@sherpy/shared";
 import { useDiagnostic } from "@/hooks/use-diagnostic";
+import { SuspenseCache } from "@/lib/suspense-cache";
+
+// Enterprise-grade cache with TTL and LRU eviction
+export const projectCache = new SuspenseCache<GetProjectResponse>({
+  maxSize: 50,           // Max 50 projects cached
+  ttl: 5 * 60 * 1000,   // 5 minute TTL
+});
 
 /**
  * Error component for project not found or fetch errors
@@ -82,7 +89,15 @@ function ProjectDetailSkeleton() {
 
 /**
  * Project detail content component
- * Wrapped in Suspense boundary to handle async data fetching
+ *
+ * Uses React 19 Suspense with enterprise-grade promise caching:
+ * - Promises cached at module level to survive Suspense remounts
+ * - Automatic TTL expiration (5 minutes)
+ * - LRU eviction (max 50 entries)
+ * - Auto-cleanup of rejected promises for retry
+ *
+ * @param projectId - UUID of the project to display
+ * @throws {Error} When project is not found (caught by ErrorBoundary)
  */
 function ProjectDetailContent({ projectId }: { projectId: string }) {
   const api = useApi();
@@ -91,6 +106,19 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const [refreshKey, setRefreshKey] = useState(0);
 
   const { latestEvent } = useProjectEvents({ projectId });
+
+  // Derive refreshKey from latestEvent (no useEffect needed)
+  const derivedRefreshKey = latestEvent ? refreshKey + 1 : refreshKey;
+
+  // Update refreshKey when latestEvent changes
+  useEffect(() => {
+    if (latestEvent && derivedRefreshKey !== refreshKey) {
+      console.log("[DIAG] ProjectDetailContent: latestEvent changed, invalidating cache");
+      setRefreshKey(derivedRefreshKey);
+      // Invalidate cache for this project to force refetch
+      projectCache.invalidate(projectId);
+    }
+  }, [latestEvent, projectId, refreshKey, derivedRefreshKey]);
 
   useDiagnostic("ProjectDetailContent", {
     projectId,
@@ -101,25 +129,18 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
     apiClientIdentity: api,
   });
 
-  useEffect(() => {
-    if (latestEvent) {
-      console.log("[DIAG] ProjectDetailContent: latestEvent CHANGED → incrementing refreshKey", latestEvent);
-      setRefreshKey((prev) => prev + 1);
-    }
-  }, [latestEvent]);
+  // Use enterprise cache - handles TTL, LRU eviction, and error cleanup
+  const cacheKey = `${projectId}-${refreshKey}`;
+  console.log("[DIAG] Fetching project with cache key:", cacheKey);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const projectPromise = useMemo(
-    () => {
-      console.log("[DIAG] ProjectDetailContent: useMemo creating NEW promise. refreshKey:", refreshKey);
-      return api.getProject(projectId);
-    },
-    [projectId, refreshKey],
-  );
+  const projectPromise = projectCache.get(cacheKey, () => {
+    console.log("[DIAG] Cache MISS - creating NEW promise for:", cacheKey);
+    return api.getProject(projectId);
+  });
 
-  console.log("[DIAG] ProjectDetailContent: calling use(promise). Same ref?", projectPromise);
+  console.log("[DIAG] ProjectDetailContent: calling use(promise)");
   const response = use(projectPromise);
-  console.log("[DIAG] ProjectDetailContent: use() resolved successfully");
+  console.log("[DIAG] ProjectDetailContent: use() resolved successfully!");
 
   if (!response.project) {
     throw new Error("Project not found");
@@ -255,14 +276,22 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
  */
 export function ProjectDetailPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const renderCount = useRef(0);
+  renderCount.current++;
+
+  console.log(`[DIAG] ProjectDetailPage render #${renderCount.current}, projectId=${projectId}`);
+
+  useEffect(() => {
+    console.log("[DIAG] ProjectDetailPage MOUNTED");
+    return () => {
+      console.log("[DIAG] ProjectDetailPage UNMOUNTING");
+    };
+  }, []);
 
   if (!projectId) {
     return <ProjectError error={new Error("No project ID provided")} />;
   }
 
-  return (
-    <Suspense fallback={<ProjectDetailSkeleton />}>
-      <ProjectDetailContent projectId={projectId} />
-    </Suspense>
-  );
+  // Suspense boundary moved to App.tsx route level to prevent remounting issues
+  return <ProjectDetailContent projectId={projectId} />;
 }

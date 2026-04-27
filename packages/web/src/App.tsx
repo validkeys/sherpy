@@ -2,6 +2,7 @@
  * Sherpy PM - Main App Component
  */
 
+import { Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider } from "./components/auth/auth-provider";
 import { LoginCallback } from "./components/auth/login-callback";
@@ -37,9 +38,11 @@ export function App() {
           <Route
             path="/projects/:projectId"
             element={
-              <ProtectedRoute>
-                <ProjectDetailPage />
-              </ProtectedRoute>
+              <Suspense fallback={<div>Loading project...</div>}>
+                <ProtectedRoute>
+                  <ProjectDetailPage />
+                </ProtectedRoute>
+              </Suspense>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

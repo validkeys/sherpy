@@ -10,7 +10,7 @@ import {
   type ChatModelAdapter,
   type ChatModelRunResult,
 } from "@assistant-ui/react";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useRef, type ReactNode } from "react";
 
 interface ChatAssistantUIProviderProps {
   projectId: string;
@@ -36,7 +36,19 @@ export function ChatAssistantUIProvider({
   >([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const renderCount = useRef(0);
+  renderCount.current++;
+  console.log(`[DIAG] ChatAssistantUIProvider render #${renderCount.current}, projectId=${projectId}, isLoading=${isLoading}`);
+
+  useEffect(() => {
+    console.log("[DIAG] ChatAssistantUIProvider MOUNTED");
+    return () => {
+      console.log("[DIAG] ChatAssistantUIProvider UNMOUNTING");
+    };
+  }, []);
+
   // Load message history on mount
+  // IMPORTANT: Only run once per projectId change, not on apiClient changes to avoid loops
   useEffect(() => {
     let cancelled = false;
 
@@ -60,9 +72,11 @@ export function ChatAssistantUIProvider({
     return () => {
       cancelled = true;
     };
-  }, [apiClient, projectId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   // Chat model adapter that sends messages to the API
+  // IMPORTANT: Stable adapter - only recreate when projectId changes, not on apiClient changes
   const adapter: ChatModelAdapter = useMemo(
     () => ({
       run: async ({ messages }): Promise<ChatModelRunResult> => {
@@ -108,21 +122,15 @@ export function ChatAssistantUIProvider({
         };
       },
     }),
-    [apiClient, projectId]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [projectId]
   );
 
   // Configure runtime with the API adapter
   const runtime = useLocalRuntime(adapter);
 
-  // Show loading state while fetching history
-  if (isLoading) {
-    return (
-      <AssistantRuntimeProvider runtime={runtime}>
-        {children}
-      </AssistantRuntimeProvider>
-    );
-  }
-
+  // IMPORTANT: Always render the same tree structure regardless of loading state
+  // Conditional rendering here causes Suspense children to remount infinitely
   return (
     <AssistantRuntimeProvider runtime={runtime}>
       {children}

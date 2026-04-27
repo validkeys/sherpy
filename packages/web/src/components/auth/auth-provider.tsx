@@ -4,7 +4,7 @@
 
 import { authClient } from "@/lib/auth";
 import type { UserClaims } from "@okta/okta-auth-js";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useMemo, useRef, useCallback } from "react";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -36,6 +36,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(!DEV_MODE);
   const [user, setUser] = useState<UserClaims | null>(DEV_MODE ? DEV_USER : null);
   const [accessToken, setAccessToken] = useState<string | null>(DEV_MODE ? DEV_TOKEN : null);
+
+  const renderCount = useRef(0);
+  renderCount.current++;
+  console.log(`[DIAG] AuthProvider render #${renderCount.current}, isLoading=${isLoading}, isAuth=${isAuthenticated}, token=${accessToken?.substring(0, 10)}`);
 
   useEffect(() => {
     // Skip Okta in dev mode
@@ -80,30 +84,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const login = async () => {
+  // IMPORTANT: Stable function references to prevent context value changes
+  const login = useCallback(async () => {
     if (DEV_MODE) {
       console.log("🚧 DEV MODE: Login bypassed");
       return;
     }
     await authClient.signInWithRedirect();
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     if (DEV_MODE) {
       console.log("🚧 DEV MODE: Logout bypassed");
       return;
     }
     await authClient.signOut();
-  };
+  }, []);
 
-  const value: AuthState = {
-    isAuthenticated,
-    isLoading,
-    user,
-    accessToken,
-    login,
-    logout,
-  };
+  // IMPORTANT: Memoize context value to prevent unnecessary re-renders of consumers
+  const value: AuthState = useMemo(
+    () => ({
+      isAuthenticated,
+      isLoading,
+      user,
+      accessToken,
+      login,
+      logout,
+    }),
+    [isAuthenticated, isLoading, user, accessToken]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

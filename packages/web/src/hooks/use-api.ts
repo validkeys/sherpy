@@ -1,24 +1,25 @@
-/**
- * React hook for typed API client
- */
-
 import { useAuth } from "@/components/auth/auth-provider";
 import { createApiClient } from "@/lib/api-client";
-import { useMemo } from "react";
+import { useMemo, useRef, useEffect } from "react";
 
-/**
- * Hook that provides typed API client with auth token injection
- */
+let apiInstanceCounter = 0;
+
 export function useApi() {
   const { accessToken } = useAuth();
+  const tokenRef = useRef(accessToken);
+  const instanceId = useMemo(() => ++apiInstanceCounter, []);
+
+  useEffect(() => {
+    tokenRef.current = accessToken;
+  }, [accessToken]);
 
   const apiClient = useMemo(() => {
-    // Empty baseUrl uses Vite proxy in dev (avoids CORS)
-    // In production, set VITE_API_URL to the API server URL
     const baseUrl = import.meta.env.VITE_API_URL || "";
-
-    return createApiClient(baseUrl, async () => accessToken);
-  }, [accessToken]);
+    console.log(`[DIAG] useApi #${instanceId}: creating NEW ApiClient (baseUrl: "${baseUrl}")`);
+    return createApiClient(baseUrl, async () => {
+      return tokenRef.current;
+    });
+  }, [instanceId]);
 
   return apiClient;
 }
