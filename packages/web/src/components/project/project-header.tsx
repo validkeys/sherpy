@@ -46,7 +46,7 @@ export function ProjectHeader({
             <ChevronRight className="h-4 w-4" />
           </li>
           <li>
-            <Link to="/" className="hover:text-foreground transition-colors">
+            <Link to="/projects" className="hover:text-foreground transition-colors">
               Projects
             </Link>
           </li>
