@@ -16,6 +16,7 @@ import { useProjectEvents } from "@/hooks/use-project-events";
 import { Suspense, use, useMemo, useState, useCallback, useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { Document, PipelineStatus } from "@sherpy/shared";
+import { useDiagnostic } from "@/hooks/use-diagnostic";
 
 /**
  * Error component for project not found or fetch errors
@@ -89,25 +90,36 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   const [pipelineStatus, setPipelineStatus] = useState<PipelineStatus | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Subscribe to project events for real-time updates
   const { latestEvent } = useProjectEvents({ projectId });
 
-  // Refresh project data when relevant events occur
+  useDiagnostic("ProjectDetailContent", {
+    projectId,
+    refreshKey,
+    pipelineStatus,
+    selectedDocumentId,
+    latestEvent,
+    apiClientIdentity: api,
+  });
+
   useEffect(() => {
     if (latestEvent) {
-      // Increment refresh key to trigger re-fetch
+      console.log("[DIAG] ProjectDetailContent: latestEvent CHANGED → incrementing refreshKey", latestEvent);
       setRefreshKey((prev) => prev + 1);
     }
   }, [latestEvent]);
 
-  // Create a promise for the project data
-  // React 19's `use` hook will suspend until the promise resolves
-  // Include refreshKey in dependencies to trigger re-fetch
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const projectPromise = useMemo(
-    () => api.getProject(projectId),
-    [api, projectId, refreshKey],
+    () => {
+      console.log("[DIAG] ProjectDetailContent: useMemo creating NEW promise. refreshKey:", refreshKey);
+      return api.getProject(projectId);
+    },
+    [projectId, refreshKey],
   );
+
+  console.log("[DIAG] ProjectDetailContent: calling use(promise). Same ref?", projectPromise);
   const response = use(projectPromise);
+  console.log("[DIAG] ProjectDetailContent: use() resolved successfully");
 
   if (!response.project) {
     throw new Error("Project not found");
@@ -115,9 +127,9 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
 
   const { project } = response;
 
-  // Update local pipeline status when project data loads
   useEffect(() => {
     if (project.pipelineStatus && pipelineStatus !== project.pipelineStatus) {
+      console.log("[DIAG] ProjectDetailContent: syncing pipelineStatus", project.pipelineStatus);
       setPipelineStatus(project.pipelineStatus);
     }
   }, [project.pipelineStatus, pipelineStatus]);
@@ -159,15 +171,20 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
     ];
   }, [projectId, project.name]);
 
-  // Auto-select first document if none selected
-  const selectedDocument = useMemo(() => {
+  // Initialize selectedDocumentId to first document if none selected
+  // IMPORTANT: State updates MUST be in useEffect, not useMemo, to avoid infinite render loops
+  useEffect(() => {
     if (!selectedDocumentId && documents.length > 0) {
       const firstDoc = documents[0];
       if (firstDoc) {
+        console.log("[DIAG] ProjectDetailContent: initializing selectedDocumentId to first document");
         setSelectedDocumentId(firstDoc.id);
-        return firstDoc;
       }
     }
+  }, [selectedDocumentId, documents]);
+
+  // Pure computation only - no side effects allowed in useMemo
+  const selectedDocument = useMemo(() => {
     return documents.find((d) => d.id === selectedDocumentId) || null;
   }, [selectedDocumentId, documents]);
 

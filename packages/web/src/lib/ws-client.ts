@@ -56,11 +56,13 @@ export class WebSocketClient {
         throw new Error("No authentication token available");
       }
 
-      this.ws = new WebSocket(this.url);
+      // IMPORTANT: Token MUST be in URL query param - server authenticates on connection, not via messages
+      // Sending token as a message after connect will fail because server validates immediately
+      const wsUrlWithToken = `${this.url}?token=${encodeURIComponent(token)}`;
+      this.ws = new WebSocket(wsUrlWithToken);
 
       this.ws.onopen = () => {
-        // Send JWT as first message for authentication
-        this.ws?.send(JSON.stringify({ type: "auth", token }));
+        // Connection already authenticated via URL param - no auth message needed
         this.connectionState = "connected";
         this.reconnectAttempts = 0;
         this.notifyStateChange();
