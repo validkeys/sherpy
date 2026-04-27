@@ -3,13 +3,19 @@
  * Expands to show individual tasks
  */
 
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import type {
+  Milestone,
+  MilestoneStatus,
+  Task,
+  TaskStatus as TaskStatusType,
+} from "@sherpy/shared";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { TaskStatusActions } from "./task-status-actions";
 import { TaskStatusBar } from "./task-status-bar";
-import type { Milestone, Task, MilestoneStatus, TaskStatus as TaskStatusType } from "@sherpy/shared";
 
 interface MilestoneWithTasks extends Milestone {
   tasks: Task[];
@@ -48,7 +54,7 @@ function getTaskStatusCounts(tasks: Task[]) {
     pending: 0,
   };
 
-  tasks.forEach((task) => {
+  for (const task of tasks) {
     if (task.status === "complete") {
       counts.complete++;
     } else if (task.status === "in-progress") {
@@ -58,16 +64,23 @@ function getTaskStatusCounts(tasks: Task[]) {
     } else if (task.status === "pending") {
       counts.pending++;
     }
-  });
+  }
 
   return counts;
 }
 
 export function MilestoneCard({ milestone }: MilestoneCardProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const taskCounts = getTaskStatusCounts(milestone.tasks);
+  const [tasks, setTasks] = useState(milestone.tasks);
+  const taskCounts = getTaskStatusCounts(tasks);
   const statusColorClass = STATUS_COLORS[milestone.status];
   const statusLabel = STATUS_LABELS[milestone.status];
+
+  const handleTaskStatusChange = (taskId: string, newStatus: TaskStatusType) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => (task.id === taskId ? { ...task, status: newStatus } : task)),
+    );
+  };
 
   return (
     <Card>
@@ -99,11 +112,11 @@ export function MilestoneCard({ milestone }: MilestoneCardProps) {
 
         <CollapsibleContent>
           <CardContent>
-            {milestone.tasks.length === 0 ? (
+            {tasks.length === 0 ? (
               <p className="text-sm text-muted-foreground">No tasks in this milestone</p>
             ) : (
               <div className="space-y-2">
-                {milestone.tasks.map((task) => (
+                {tasks.map((task) => (
                   <div
                     key={task.id}
                     className="flex items-center gap-3 rounded-md border p-3 hover:bg-accent/50"
@@ -129,6 +142,11 @@ export function MilestoneCard({ milestone }: MilestoneCardProps) {
                     <Badge variant="secondary" className={STATUS_COLORS[task.status]}>
                       {STATUS_LABELS[task.status]}
                     </Badge>
+                    <TaskStatusActions
+                      taskId={task.id}
+                      currentStatus={task.status}
+                      onStatusChange={(newStatus) => handleTaskStatusChange(task.id, newStatus)}
+                    />
                   </div>
                 ))}
               </div>
