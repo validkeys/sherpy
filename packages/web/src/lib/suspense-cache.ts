@@ -17,6 +17,7 @@ interface CacheEntry<T> {
 interface CacheOptions {
   maxSize?: number;      // Max entries before LRU eviction
   ttl?: number;          // Time to live in milliseconds
+  rejectionTTL?: number; // Time to cache rejections before retry (prevents infinite loops)
 }
 
 export class SuspenseCache<T> {
@@ -25,10 +26,12 @@ export class SuspenseCache<T> {
   private accessCounter = 0;
   private readonly maxSize: number;
   private readonly ttl: number;
+  private readonly rejectionTTL: number;
 
   constructor(options: CacheOptions = {}) {
     this.maxSize = options.maxSize ?? 100;
     this.ttl = options.ttl ?? 5 * 60 * 1000; // 5 minutes default
+    this.rejectionTTL = options.rejectionTTL ?? 10 * 1000; // 10 seconds default
   }
 
   /**
@@ -63,9 +66,8 @@ export class SuspenseCache<T> {
       () => { entry.status = 'fulfilled'; },
       () => {
         entry.status = 'rejected';
-        // Auto-remove rejected promises so they can be retried
-        this.cache.delete(key);
-        this.accessOrder.delete(key);
+        // Cache rejection to prevent infinite loop
+        // Will be retried after rejectionTTL expires
       }
     );
 
@@ -110,7 +112,14 @@ export class SuspenseCache<T> {
 
   private isValid(entry: CacheEntry<T>): boolean {
     const age = Date.now() - entry.timestamp;
-    return age < this.ttl && entry.status !== 'rejected';
+
+    // Rejected entries expire after rejectionTTL (prevents infinite loops)
+    if (entry.status === 'rejected') {
+      return age < this.rejectionTTL;
+    }
+
+    // Fulfilled/pending entries expire after normal TTL
+    return age < this.ttl;
   }
 
   private recordAccess(key: string): void {
