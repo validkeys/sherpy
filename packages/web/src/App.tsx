@@ -11,6 +11,7 @@ import { ProtectedRoute } from "./components/auth/protected-route";
 import { InboxLayout } from "./components/inbox/inbox-layout";
 import { ProjectList } from "./components/inbox/project-list";
 import { ProjectDetailPage } from "./pages/project-detail";
+import { ErrorBoundary } from "./components/error/error-boundary";
 
 function InboxPage() {
   return (
@@ -38,11 +39,13 @@ export function App() {
           <Route
             path="/projects/:projectId"
             element={
-              <Suspense fallback={<div>Loading project...</div>}>
-                <ProtectedRoute>
-                  <ProjectDetailPage />
-                </ProtectedRoute>
-              </Suspense>
+              <ErrorBoundary>
+                <Suspense fallback={<div>Loading project...</div>}>
+                  <ProtectedRoute>
+                    <ProjectDetailPage />
+                  </ProtectedRoute>
+                </Suspense>
+              </ErrorBoundary>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />
