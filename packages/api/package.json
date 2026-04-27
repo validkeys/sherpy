@@ -6,10 +6,11 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc && mkdir -p dist/db/migrations && cp src/db/migrations/*.sql dist/db/migrations/",
-    "dev": "tsc && node dist/server.js",
+    "dev": "tsc && node --env-file=.env dist/server.js",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1037.0",
     "@effect/experimental": "^0.60.0",
     "@effect/platform": "^0.81.0",
     "@effect/platform-node": "^0.78.0",

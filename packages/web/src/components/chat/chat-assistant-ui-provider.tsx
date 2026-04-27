@@ -91,32 +91,22 @@ export function ChatAssistantUIProvider({
             ? lastMessage.content
             : lastMessage.content.map((part) => (part.type === "text" ? part.text : "")).join("");
 
-        // Send user message to API
-        await apiClient.sendChatMessage(projectId, "user", userContent);
+        // Send user message to API - backend will generate and return assistant response via Bedrock/Claude
+        const { message: assistantMessage } = await apiClient.sendChatMessage(projectId, "user", userContent);
 
-        // For now, return a simple acknowledgment as assistant response
-        // In the future, this would call an AI model
-        const assistantResponse = `Message received: "${userContent}"`;
-
-        // Save assistant response
-        const { message } = await apiClient.sendChatMessage(
-          projectId,
-          "assistant",
-          assistantResponse,
-        );
-
-        // Update local history
+        // Update local history with both messages
         setMessageHistory((prev) => [
           ...prev,
-          { id: message.id, role: "user", content: userContent, createdAt: new Date().toISOString() },
-          message,
+          { id: crypto.randomUUID(), role: "user", content: userContent, createdAt: new Date().toISOString() },
+          assistantMessage,
         ]);
 
+        // Return assistant response from Bedrock/Claude
         return {
           content: [
             {
               type: "text" as const,
-              text: assistantResponse,
+              text: assistantMessage.content,
             },
           ],
         };

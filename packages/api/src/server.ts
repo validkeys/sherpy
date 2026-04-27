@@ -117,6 +117,7 @@ import { AuthService } from "./auth/jwks-cache.js";
 import { type OktaClaims, validateJwt } from "./auth/okta-jwt.js";
 import { runMigrations } from "./db/migration-runner.js";
 import { UnauthorizedError } from "./errors/auth.js";
+import { BedrockService, BedrockServiceLive } from "./services/bedrock-service.js";
 import { ChatService, ChatServiceLive } from "./services/chat-service.js";
 import { ChatSessionService, ChatSessionServiceLive } from "./services/chat-session-service.js";
 import { DocumentService, DocumentServiceLive } from "./services/document-service.js";
@@ -481,6 +482,7 @@ const ChatApiLive = HttpApiBuilder.group(SherryApi, "chat", (handlers) =>
   Effect.gen(function* () {
     const chatSessionService = yield* ChatSessionService;
     const chatService = yield* ChatService;
+    const bedrockService = yield* BedrockService;
 
     return handlers
       .handle("createChatSession", ({ path, payload }) =>
@@ -527,21 +529,86 @@ const ChatApiLive = HttpApiBuilder.group(SherryApi, "chat", (handlers) =>
       )
       .handle("sendChatMessage", ({ path, payload }) =>
         Effect.gen(function* () {
-          const message = yield* chatService.sendMessage({
-            projectId: path.projectId,
-            role: payload.role,
-            content: payload.content,
-          });
+          // If it's a user message, save it and generate assistant response via Bedrock
+          if (payload.role === "user") {
+            // Save user message
+            const userMessage = yield* chatService.sendMessage({
+              projectId: path.projectId,
+              role: "user",
+              content: payload.content,
+            });
 
-          return new SendChatMessageResponse({
-            message: {
-              id: message.id,
-              projectId: message.projectId,
-              role: message.role,
-              content: message.content,
-              createdAt: message.createdAt.toString(),
-            },
-          });
+            // Get recent message history for context (last 20 messages)
+            const history = yield* chatService.getMessages({
+              projectId: path.projectId,
+              limit: 20,
+            });
+
+            // Build message context for Claude
+            const messages = history.messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+            }));
+
+            // Add current user message
+            messages.push({
+              role: "user",
+              content: payload.content,
+            });
+
+            // System prompt for Sherpy PM assistant
+            const systemPrompt = `You are Sherpy, an AI assistant for project management and planning.
+You help users with:
+- Understanding project requirements and scope
+- Breaking down work into milestones and tasks
+- Creating implementation plans
+- Answering questions about project status and progress
+- Providing guidance on best practices
+
+Be helpful, concise, and actionable in your responses.`;
+
+            // Generate assistant response via Bedrock/Claude
+            const assistantContent = yield* bedrockService.generateChatResponse({
+              messages: messages as Array<{ role: "user" | "assistant"; content: string }>,
+              systemPrompt,
+              maxTokens: 4096,
+            });
+
+            // Save assistant response
+            const assistantMessage = yield* chatService.sendMessage({
+              projectId: path.projectId,
+              role: "assistant",
+              content: assistantContent,
+            });
+
+            // Return the assistant response
+            return new SendChatMessageResponse({
+              message: {
+                id: assistantMessage.id,
+                projectId: assistantMessage.projectId,
+                role: assistantMessage.role,
+                content: assistantMessage.content,
+                createdAt: assistantMessage.createdAt.toString(),
+              },
+            });
+          } else {
+            // If it's an assistant message (shouldn't happen from client), just save it
+            const message = yield* chatService.sendMessage({
+              projectId: path.projectId,
+              role: payload.role,
+              content: payload.content,
+            });
+
+            return new SendChatMessageResponse({
+              message: {
+                id: message.id,
+                projectId: message.projectId,
+                role: message.role,
+                content: message.content,
+                createdAt: message.createdAt.toString(),
+              },
+            });
+          }
         }),
       )
       .handle("getChatMessages", ({ path, urlParams }) =>
@@ -963,6 +1030,7 @@ const CoreServicesLive = Layer.mergeAll(
   DocumentServiceLive,
   ChatSessionServiceLive,
   ChatServiceLive,
+  BedrockServiceLive,
 );
 
 /**
