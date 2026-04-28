@@ -181,5 +181,5 @@ claude:
 #
 # postStartCommand — Runs on every container start (including restarts).
 #   Default: copies Claude settings + hooks into the persistent config volume.
-postCreateCommand: "sudo /usr/local/bin/init-firewall.sh && mkdir -p ~/.cache"
+postCreateCommand: "sudo /usr/local/bin/init-firewall.sh && mkdir -p ~/.cache && sudo chown -R node:node /workspace/node_modules /workspace/packages/api/node_modules /workspace/packages/web/node_modules"
 postStartCommand: ""
