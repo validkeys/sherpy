@@ -1,12 +1,11 @@
 /**
  * ProjectService - Domain service for project CRUD operations
  * Uses Effect.Service with Layer pattern (SA-001)
- * Uses Model.makeRepository for basic CRUD (SA-002)
- * Uses SqlResolver for filtered list queries (SA-003)
+ * Uses manual SQL queries with field aliases for snake_case to camelCase mapping
  */
 
 import { randomUUID } from "node:crypto";
-import { Model, SqlClient, SqlResolver } from "@effect/sql";
+import { SqlClient } from "@effect/sql";
 import {
   ConflictError,
   NotFoundError,
@@ -15,7 +14,7 @@ import {
   Project,
   ValidationError,
 } from "@sherpy/shared";
-import { Effect, Layer, Option, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
 
 /**
  * Project filters for list queries
@@ -62,13 +61,6 @@ export class UpdateProjectInput extends Schema.Class<UpdateProjectInput>("Update
 export class ProjectService extends Effect.Service<ProjectService>()("ProjectService", {
   effect: Effect.gen(function* () {
     const sql = yield* SqlClient.SqlClient;
-
-    // Create repository using Model.makeRepository (SA-002)
-    const repo = yield* Model.makeRepository(Project, {
-      tableName: "projects",
-      idColumn: "id",
-      spanPrefix: "ProjectRepository",
-    });
 
     /**
      * Generate a slug from a project name
@@ -124,10 +116,20 @@ export class ProjectService extends Effect.Service<ProjectService>()("ProjectSer
             )
           `;
 
-        // Fetch the created project using the repository to get proper schema decoding
-        const project = yield* repo.findById(id);
+        // Fetch the created project with field aliases to match schema
+        const rows = yield* sql`
+          SELECT
+            id, slug, name, description,
+            pipeline_status as "pipelineStatus",
+            assigned_people as "assignedPeople",
+            tags, priority,
+            created_at as "createdAt",
+            updated_at as "updatedAt"
+          FROM projects
+          WHERE id = ${id}
+        `;
 
-        if (Option.isNone(project)) {
+        if (rows.length === 0 || !rows[0]) {
           return yield* Effect.fail(
             new NotFoundError({
               entity: "Project",
@@ -137,7 +139,18 @@ export class ProjectService extends Effect.Service<ProjectService>()("ProjectSer
           );
         }
 
-        return project.value;
+        // Decode the row using the Project schema
+        const project = yield* Schema.decodeUnknown(Project)(rows[0]).pipe(
+          Effect.catchTag("ParseError", (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: `Failed to parse project data: ${error.message}`,
+              }),
+            ),
+          ),
+        );
+
+        return project;
       }).pipe(
         Effect.catchTag("SqlError", (error) =>
           Effect.fail(
@@ -348,20 +361,69 @@ export class ProjectService extends Effect.Service<ProjectService>()("ProjectSer
         const existing = yield* get(id);
 
         // Update only provided fields
-        const updated = yield* repo.update({
-          id,
-          slug: existing.slug,
-          name: input.name ?? existing.name,
-          description: input.description ?? existing.description,
-          pipelineStatus: (input.pipelineStatus ?? existing.pipelineStatus) as PipelineStatus,
-          assignedPeople: existing.assignedPeople,
-          tags: input.tags ?? existing.tags,
-          priority: (input.priority ?? existing.priority) as Priority,
-          updatedAt: undefined, // Let Model.DateTimeUpdate handle this
-        });
+        const name = input.name ?? existing.name;
+        const description = input.description ?? existing.description ?? "";
+        const pipelineStatus = (input.pipelineStatus ?? existing.pipelineStatus) as PipelineStatus;
+        const tags = input.tags ?? existing.tags;
+        const priority = (input.priority ?? existing.priority) as Priority;
+        const now = new Date().toISOString();
 
-        return updated;
-      });
+        yield* sql`
+          UPDATE projects
+          SET
+            name = ${name},
+            description = ${description},
+            pipeline_status = ${pipelineStatus},
+            tags = ${JSON.stringify(tags)},
+            priority = ${priority},
+            updated_at = ${now}
+          WHERE id = ${id}
+        `;
+
+        // Fetch the updated project with field aliases
+        const rows = yield* sql`
+          SELECT
+            id, slug, name, description,
+            pipeline_status as "pipelineStatus",
+            assigned_people as "assignedPeople",
+            tags, priority,
+            created_at as "createdAt",
+            updated_at as "updatedAt"
+          FROM projects
+          WHERE id = ${id}
+        `;
+
+        if (rows.length === 0 || !rows[0]) {
+          return yield* Effect.fail(
+            new NotFoundError({
+              entity: "Project",
+              id,
+              message: `Project not found after update`,
+            }),
+          );
+        }
+
+        // Decode the row using the Project schema
+        const project = yield* Schema.decodeUnknown(Project)(rows[0]).pipe(
+          Effect.catchTag("ParseError", (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: `Failed to parse project data: ${error.message}`,
+              }),
+            ),
+          ),
+        );
+
+        return project;
+      }).pipe(
+        Effect.catchTag("SqlError", (error) =>
+          Effect.fail(
+            new ValidationError({
+              message: `Database error: ${error.message ?? "Unknown error"}`,
+            }),
+          ),
+        ),
+      );
 
     return {
       create,
