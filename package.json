@@ -8,7 +8,8 @@
   },
   "scripts": {
     "dev": "concurrently \"pnpm:dev:api\" \"pnpm:dev:web\"",
-    "dev:api": "echo 'API dev server will be implemented in m2+'",
+    "dev:mode": "DEV_MODE=true VITE_DEV_MODE=true concurrently \"pnpm:dev:api\" \"pnpm:dev:web\"",
+    "dev:api": "pnpm --filter @sherpy/api dev",
     "dev:web": "pnpm --filter @sherpy/web dev",
     "build": "pnpm -r run build",
     "test": "vitest run",

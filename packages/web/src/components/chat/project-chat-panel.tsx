@@ -3,16 +3,16 @@
  * Chat panel using assistant-ui primitives
  */
 
-import {
-  ThreadPrimitive,
-  ComposerPrimitive,
-  MessagePrimitive,
-  useThreadRuntime,
-} from "@assistant-ui/react";
-import { MessageCircle, X, User, Bot } from "lucide-react";
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  ComposerPrimitive,
+  MessagePrimitive,
+  ThreadPrimitive,
+  useThreadRuntime,
+} from "@assistant-ui/react";
+import { Bot, MessageCircle, User, X } from "lucide-react";
+import { useState } from "react";
 
 /**
  * User message bubble component
@@ -21,11 +21,7 @@ function UserMessage() {
   return (
     <div className="flex items-start gap-3 justify-end">
       <div className="flex-1 max-w-[80%]">
-        <MessagePrimitive.Content className="bg-primary text-primary-foreground px-4 py-2 rounded-lg">
-          <MessagePrimitive.InProgress>
-            <span className="text-sm">Sending...</span>
-          </MessagePrimitive.InProgress>
-        </MessagePrimitive.Content>
+        <MessagePrimitive.Content className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm" />
       </div>
       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary">
         <User className="h-4 w-4 text-primary-foreground" />
@@ -44,11 +40,7 @@ function AssistantMessage() {
         <Bot className="h-4 w-4" />
       </div>
       <div className="flex-1 max-w-[80%]">
-        <MessagePrimitive.Content className="bg-muted px-4 py-2 rounded-lg text-sm">
-          <MessagePrimitive.InProgress>
-            <span className="text-muted-foreground">Thinking...</span>
-          </MessagePrimitive.InProgress>
-        </MessagePrimitive.Content>
+        <MessagePrimitive.Content className="bg-muted px-4 py-2 rounded-lg text-sm" />
       </div>
     </div>
   );
@@ -81,7 +73,7 @@ export function ProjectChatPanel() {
         className={cn(
           "fixed top-0 right-0 h-full bg-background border-l shadow-lg z-40 transition-transform duration-300",
           "w-full md:w-[400px]",
-          isOpen ? "translate-x-0" : "translate-x-full"
+          isOpen ? "translate-x-0" : "translate-x-full",
         )}
       >
         {/* Panel header */}
@@ -121,10 +113,8 @@ export function ProjectChatPanel() {
                 className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Type a message..."
               />
-              <ComposerPrimitive.Send asChild>
-                <Button size="sm" type="submit">
-                  Send
-                </Button>
+              <ComposerPrimitive.Send className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3">
+                Send
               </ComposerPrimitive.Send>
             </ComposerPrimitive.Root>
           </div>

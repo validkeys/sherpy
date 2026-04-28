@@ -1,0 +1,185 @@
+# ==============================================================================
+# kdev sandbox configuration
+# ==============================================================================
+#
+#   kdev up        Build and start the container
+#   kdev shell     Attach an interactive shell
+#   kdev down      Stop and remove the container
+#
+# Docs: https://github.com/validkeys/kdev-container
+#
+
+# --- Project identity --------------------------------------------------------
+# Used to derive the Docker container name (kdev-<name>).
+# Defaults to the current directory name if omitted.
+name: sherpy
+
+# --- Base image --------------------------------------------------------------
+# Node.js version for the base image tag (validkeys/kdev-base:node-<version>).
+# The base image includes: Node.js, pnpm, Neovim, Zsh, Zellij, fzf, gh CLI,
+# Claude Code, and a network firewall.
+image:
+  node: "25"
+
+# --- Environment variables ----------------------------------------------------
+# Key-value pairs injected as container environment variables.
+# These are merged with defaults (CLAUDE_CONFIG_DIR, DEVCONTAINER, etc.)
+# and override them on collision.
+env:
+  NODE_OPTIONS: "--max-old-space-size=4096"
+  # MY_API_KEY: "from-your-dotenv"
+
+# --- Environment from host ----------------------------------------------------
+# Variable names whose values are read from the host shell at container start.
+# Only variables that are actually set in the host environment are passed through.
+# Useful for credentials that should not be committed to sandbox.yaml.
+envFromHost:
+  - CLAUDE_CODE_USE_BEDROCK
+  - AWS_REGION
+  - ANTHROPIC_MODEL
+  - ANTHROPIC_SMALL_FAST_MODEL
+  - AWS_PROFILE
+  - CLAUDE_CODE_MAX_OUTPUT_TOKENS
+  - CLAUDE_SHOW_GIT_BRANCH
+  - CLAUDE_STATUS_FORMAT
+  - CLAUDE_STTAUSLINE_TEMPLATE
+  # - AWS_ACCESS_KEY_ID
+  # - AWS_SECRET_ACCESS_KEY
+  # - AWS_SESSION_TOKEN
+  # - AWS_REGION
+  # - ANTHROPIC_BASE_URL
+  # GitHub CLI — fine-grained PAT with minimal required permissions.
+  # Create at: https://github.com/settings/tokens?type=beta
+  # Prefer a fine-grained PAT scoped to a single repo over a classic token.
+  # - GH_TOKEN
+
+# --- Environment from macOS Keychain -------------------------------------------
+# Fetches secrets from the host macOS Keychain at container start time.
+# Each entry maps a keychain item (service + account) to a container env var.
+# Requires: macOS (uses `security` CLI), keychain items must exist on the host.
+# Create items: security add-generic-password -s "service" -a "account" -w "secret"
+# Update items: security add-generic-password -U -s "service" -a "account" -w "new"
+envFromKeychain:
+  # - env: DATABASE_URL
+  #   service: "myapp-postgres"
+  #   account: "production"
+  # - env: API_KEY
+  #   service: "my-api"
+  #   account: "default"
+
+# --- Port forwarding ----------------------------------------------------------
+# Host-to-container port mappings (1:1). Only listed ports are accessible
+# from the host.
+ports:
+  # - 3000
+  # - 5432
+
+# --- Services ------------------------------------------------------------------
+# Optional services installed into the container image at build time.
+# Enabled services are baked into the Docker image — toggle the boolean
+# and run Generating .sandbox/ from templates...
+Building image: kdev-container:latest
+Build complete: kdev-container:latest to apply changes.
+#
+# Available services:
+#
+#   ollama: true
+#     Installs the Ollama binary (via official install script).  The
+#     entrypoint starts  on localhost:11434 automatically.
+#     Models are shared with the host via the ~/.ollama bind mount.
+#     Adds registry.ollama.com to the firewall for model pulls.
+#
+#   chromium: true
+#     Installs agent-browser (npm global) and downloads a Chrome binary
+#     via Chrome for Testing.  Provides full browser automation through
+#     the Chrome DevTools Protocol (CDP) for E2E testing, scraping, etc.
+#     Headed mode is the default — toggle via env vars without rebuilding.
+#     No runtime firewall rules needed (CDP is localhost-only).
+services:
+  # ollama: true
+  chromium: true
+
+# --- Host port forwarding -----------------------------------------------------
+# Ports on localhost that reach services on the Docker host.
+# Lets the container connect to other Docker containers (e.g. a compose stack)
+# via localhost:<port> — no .env changes needed.
+hostPorts:
+  # - 5432   # postgres
+  # - 6379   # redis
+
+# --- Additional volume mounts -------------------------------------------------
+# Docker mount specs appended to the default set. Defaults already include:
+#   - Named volumes for bash history, Claude config, and ~/.local
+#   - Bind mounts for ~/.agents/skills (read-only) and ~/.claude.json
+#   - Workspace bind-mount at /workspace
+#
+# Syntax: source=<path>,target=<path>,type=<bind|volume>[,readonly=true]
+mounts:
+  # SSH keys — lets git push/pull work inside the container.
+  # The entrypoint copies these with correct permissions.
+  - "source=${HOME}/.ssh,target=/tmp/.ssh-mount,type=bind,readonly=true"
+  # AWS config — enables Bedrock/SSO credential resolution for Claude Code.
+  - "source=${HOME}/.aws,target=/home/node/.aws,type=bind"
+  # Ollama models — shares host models so they don't need re-downloading.
+  # - "source=${HOME}/.ollama,target=/home/node/.ollama,type=bind"
+  # Neovim config — mount your host config so your editor settings persist.
+  - "source=${HOME}/.config/nvim,target=/home/node/.config/nvim,type=bind"
+  # GitHub CLI auth — mounts your host gh credentials read-only.
+  # Use this if you want gh to use your full host session (all repos/orgs).
+  # For tighter scope, prefer GH_TOKEN in envFromHost above instead.
+  - "source=${HOME}/.config/gh,target=/home/node/.config/gh,type=bind,readonly=true"
+  # Named volumes for node_modules and dist — isolates them from host bind mount
+  # This improves performance and prevents host/container architecture conflicts
+  - "source=sherpy-node-modules,target=/workspace/node_modules,type=volume"
+  - "source=sherpy-api-node-modules,target=/workspace/packages/api/node_modules,type=volume"
+  - "source=sherpy-web-node-modules,target=/workspace/packages/web/node_modules,type=volume"
+  - "source=sherpy-api-dist,target=/workspace/packages/api/dist,type=volume"
+  - "source=sherpy-web-dist,target=/workspace/packages/web/dist,type=volume"
+
+# --- Agent Skills ------------------------------------------------------------
+# Skill sources installed into the container image at build time via
+# `npx skills add <source> --all -g -y`.  Supports GitHub shorthand
+# (owner/repo), full URLs, or local paths.  Changes require `kdev build`.
+skills:
+  - vercel-labs/agent-skills
+  - validkeys/sherpy
+  - vercel-labs/agent-browser
+  - validkeys/agent-instruction
+  # - https://github.com/owner/repo
+
+# --- Network firewall ---------------------------------------------------------
+# The container blocks ALL outbound traffic by default. These domains are
+# always allowed and do not need to be listed:
+#   github.com (all GitHub IP ranges), registry.npmjs.org,
+#   nodejs.org, api.anthropic.com, sentry.io, statsig.anthropic.com,
+#   statsig.com
+#
+# Add project-specific API domains here.
+firewall:
+  allow:
+    - "bedrock-runtime.ca-central-1.amazonaws.com"
+    - "sts.amazonaws.com"
+    - "sts.ca-central-1.amazonaws.com"
+    - "oidc.ca-central-1.amazonaws.com"
+    - "portal.sso.ca-central-1.amazonaws.com"
+    - "host.docker.internal"
+# --- Claude Code settings -----------------------------------------------------
+# Path to a JSON file with Claude Code permission rules. Copied into the
+# container on every start. If empty, the default base settings are used
+# (broad read/write/bash permissions suitable for a sandboxed environment).
+#
+# Relative paths resolve from the project root.
+claude:
+  settings: ""
+  # settings: ".claude-settings.json"
+
+# --- Lifecycle hooks ----------------------------------------------------------
+# postCreateCommand — Runs once after the container is first created.
+#   Default: initializes the network firewall.
+#   Chain with install steps: "sudo /usr/local/bin/init-firewall.sh && pnpm install"
+#   Cache directory fix: ensures ~/.cache exists with correct permissions for p10k
+#
+# postStartCommand — Runs on every container start (including restarts).
+#   Default: copies Claude settings + hooks into the persistent config volume.
+postCreateCommand: "sudo /usr/local/bin/init-firewall.sh && mkdir -p ~/.cache"
+postStartCommand: ""
