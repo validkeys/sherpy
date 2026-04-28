@@ -4,10 +4,12 @@
 
 import { useRealtimeProjects } from "@/hooks/use-realtime-projects";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CommandPalette } from "./command-palette";
 import { DetailPanel } from "./detail-panel";
 import type { InboxContextValue } from "./filter-context";
 import { InboxContextProvider } from "./filter-context";
+import { NewProjectDialog } from "./new-project-dialog";
 import { Sidebar } from "./sidebar";
 
 interface InboxLayoutProps {
@@ -15,8 +17,10 @@ interface InboxLayoutProps {
 }
 
 export function InboxLayout({ children }: InboxLayoutProps) {
+  const navigate = useNavigate();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | undefined>();
+  const [newProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
 
   // Real-time projects with WebSocket updates
   const { projects, loading, error, connectionState } = useRealtimeProjects();
@@ -59,12 +63,17 @@ export function InboxLayout({ children }: InboxLayoutProps) {
   };
 
   const handleNewProject = () => {
-    console.log("New project clicked");
-    // TODO: Open new project dialog
+    setNewProjectDialogOpen(true);
+  };
+
+  const handleProjectCreated = (projectId: string) => {
+    // Navigate to the newly created project
+    navigate(`/projects/${projectId}`);
   };
 
   const handleProjectSelect = (projectId: string) => {
-    setSelectedProjectId(projectId);
+    // Navigate to the project detail page
+    navigate(`/projects/${projectId}`);
   };
 
   const handleToggleStatus = (status: string) => {
@@ -133,6 +142,13 @@ export function InboxLayout({ children }: InboxLayoutProps) {
       <div className="h-screen flex overflow-hidden bg-background">
         {/* Command Palette */}
         <CommandPalette projects={projects} onSelectProject={handleProjectSelect} />
+
+        {/* New Project Dialog */}
+        <NewProjectDialog
+          open={newProjectDialogOpen}
+          onOpenChange={setNewProjectDialogOpen}
+          onProjectCreated={handleProjectCreated}
+        />
 
         {/* Sidebar */}
         <Sidebar

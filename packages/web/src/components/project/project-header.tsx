@@ -5,10 +5,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import {
-  formatPipelineStatus,
-  getPipelineStatusVariant,
-} from "@/lib/pipeline-status-utils";
+import { formatPipelineStatus, getPipelineStatusVariant } from "@/lib/pipeline-status-utils";
 import type { PipelineStatus } from "@sherpy/shared";
 import { ChevronRight, Home } from "lucide-react";
 import { Link } from "react-router-dom";

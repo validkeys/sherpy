@@ -2,13 +2,16 @@
  * MilestoneList component tests
  */
 
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { MilestoneList } from "./milestone-list";
 import type { Milestone, Task } from "@sherpy/shared";
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { MilestoneList } from "./milestone-list";
 
 // Helper to create test milestone
-function createMilestone(overrides: Partial<Milestone> = {}, tasks: Task[] = []): Milestone & { tasks: Task[] } {
+function createMilestone(
+  overrides: Partial<Milestone> = {},
+  tasks: Task[] = [],
+): Milestone & { tasks: Task[] } {
   return {
     id: `m${Math.random()}`,
     projectId: "p1",

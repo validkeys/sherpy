@@ -39,3 +39,15 @@ coverage/
 .tmp/
 temp/
 *.tmp
+
+# kdev-container generated files
+.sandbox/
+
+# Local SQLite databases
+*.db
+*.db-journal
+
+# Screenshots and test artifacts
+*.png
+*.jpg
+*.jpeg

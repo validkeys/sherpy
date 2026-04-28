@@ -2,8 +2,8 @@
  * ChatAssistantUIProvider component tests
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ChatAssistantUIProvider } from "./chat-assistant-ui-provider";
 
 // Mock the useApi hook
@@ -34,7 +34,7 @@ describe("ChatAssistantUIProvider", () => {
     render(
       <ChatAssistantUIProvider projectId="p1">
         <div>Test Child</div>
-      </ChatAssistantUIProvider>
+      </ChatAssistantUIProvider>,
     );
     await waitFor(() => {
       expect(screen.getByText("Test Child")).toBeInTheDocument();
@@ -45,7 +45,7 @@ describe("ChatAssistantUIProvider", () => {
     const { container } = render(
       <ChatAssistantUIProvider projectId="p1">
         <div>Content</div>
-      </ChatAssistantUIProvider>
+      </ChatAssistantUIProvider>,
     );
 
     // Provider should wrap children
@@ -59,7 +59,7 @@ describe("ChatAssistantUIProvider", () => {
     const { rerender } = render(
       <ChatAssistantUIProvider projectId="project-123">
         <div>Content</div>
-      </ChatAssistantUIProvider>
+      </ChatAssistantUIProvider>,
     );
 
     await waitFor(() => {
@@ -69,7 +69,7 @@ describe("ChatAssistantUIProvider", () => {
     rerender(
       <ChatAssistantUIProvider projectId="project-456">
         <div>Content</div>
-      </ChatAssistantUIProvider>
+      </ChatAssistantUIProvider>,
     );
 
     await waitFor(() => {
@@ -82,7 +82,7 @@ describe("ChatAssistantUIProvider", () => {
       render(
         <ChatAssistantUIProvider projectId="test-project">
           <div>Test</div>
-        </ChatAssistantUIProvider>
+        </ChatAssistantUIProvider>,
       );
     }).not.toThrow();
 

@@ -2,9 +2,9 @@
  * Search Bar Component Tests
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SearchBar } from "./search-bar";
 
 describe("SearchBar", () => {
@@ -32,7 +32,7 @@ describe("SearchBar", () => {
 
     it("should render search icon", () => {
       const { container } = render(<SearchBar value="" onChange={mockOnChange} />);
-      const icon = container.querySelector('svg');
+      const icon = container.querySelector("svg");
       expect(icon).toBeInTheDocument();
     });
 

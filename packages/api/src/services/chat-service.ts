@@ -74,7 +74,8 @@ export class ChatService extends Effect.Service<ChatService>()("ChatService", {
         );
 
         // Fetch the created message with proper column aliasing
-        const rows = yield* sql.unsafe(`
+        const rows = yield* sql
+          .unsafe(`
           SELECT
             id,
             project_id as "projectId",
@@ -83,15 +84,16 @@ export class ChatService extends Effect.Service<ChatService>()("ChatService", {
             created_at as "createdAt"
           FROM chat_messages
           WHERE id = '${id.replace(/'/g, "''")}'
-        `).pipe(
-          Effect.catchTag("SqlError", (error) =>
-            Effect.fail(
-              new ValidationError({
-                message: `Database error: ${error.message ?? "Unknown error"}`,
-              }),
+        `)
+          .pipe(
+            Effect.catchTag("SqlError", (error) =>
+              Effect.fail(
+                new ValidationError({
+                  message: `Database error: ${error.message ?? "Unknown error"}`,
+                }),
+              ),
             ),
-          ),
-        );
+          );
 
         if (rows.length === 0) {
           return yield* new NotFoundError({
@@ -126,9 +128,9 @@ export class ChatService extends Effect.Service<ChatService>()("ChatService", {
         // Use OFFSET-based pagination for simplicity (cursor is the offset number)
         const fetchLimit = limit + 1;
         const projectIdEscaped = input.projectId.replace(/'/g, "''");
-        const offset = cursor ? parseInt(String(cursor), 10) : 0;
+        const offset = cursor ? Number.parseInt(String(cursor), 10) : 0;
 
-        let query = `
+        const query = `
           SELECT
             id,
             project_id as "projectId",

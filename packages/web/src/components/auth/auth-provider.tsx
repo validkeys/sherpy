@@ -4,7 +4,15 @@
 
 import { authClient } from "@/lib/auth";
 import type { UserClaims } from "@okta/okta-auth-js";
-import { createContext, useContext, useEffect, useState, useMemo, useRef, useCallback } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -39,7 +47,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const renderCount = useRef(0);
   renderCount.current++;
-  console.log(`[DIAG] AuthProvider render #${renderCount.current}, isLoading=${isLoading}, isAuth=${isAuthenticated}, token=${accessToken?.substring(0, 10)}`);
+  console.log(
+    `[DIAG] AuthProvider render #${renderCount.current}, isLoading=${isLoading}, isAuth=${isAuthenticated}, token=${accessToken?.substring(0, 10)}`,
+  );
 
   useEffect(() => {
     // Skip Okta in dev mode
@@ -111,7 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       logout,
     }),
-    [isAuthenticated, isLoading, user, accessToken]
+    [isAuthenticated, isLoading, user, accessToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -3,11 +3,11 @@
  * Tests for infinite remount bug with Suspense + AuthProvider
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, waitFor, screen } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { ProjectDetailPage, projectCache } from "./project-detail";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ProjectDetailPage, projectCache } from "./project-detail";
 
 // Mock Okta auth client (must be before AuthProvider import)
 vi.mock("@/lib/auth", () => ({
@@ -121,7 +121,7 @@ describe("ProjectDetailPage - Infinite Remount Bug", () => {
         // NOT 100+ renders like the bug produces
         expect(renderCounts.projectPage).toBeLessThan(10);
       },
-      { timeout: 3000 }
+      { timeout: 3000 },
     );
 
     // Verify the component actually rendered
@@ -139,7 +139,7 @@ describe("ProjectDetailPage - Infinite Remount Bug", () => {
             <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
           </Routes>
         </MemoryRouter>
-      </AuthProvider>
+      </AuthProvider>,
     );
 
     // Wait for the promise to resolve
@@ -147,7 +147,7 @@ describe("ProjectDetailPage - Infinite Remount Bug", () => {
       () => {
         expect(mockGetProject).toHaveBeenCalled();
       },
-      { timeout: 2000 }
+      { timeout: 2000 },
     );
 
     // Give it a moment to stabilize
@@ -189,14 +189,14 @@ describe("ProjectDetailPage - Infinite Remount Bug", () => {
             <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
           </Routes>
         </MemoryRouter>
-      </AuthProvider>
+      </AuthProvider>,
     );
 
     await waitFor(
       () => {
         expect(mockGetProject).toHaveBeenCalled();
       },
-      { timeout: 2000 }
+      { timeout: 2000 },
     );
 
     // Should not have created 100+ API clients

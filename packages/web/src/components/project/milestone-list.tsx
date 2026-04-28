@@ -3,8 +3,8 @@
  * Shows milestones sorted by order with section header and empty state
  */
 
-import { MilestoneCard } from "./milestone-card";
 import type { Milestone, Task } from "@sherpy/shared";
+import { MilestoneCard } from "./milestone-card";
 
 interface MilestoneWithTasks extends Milestone {
   tasks: Task[];

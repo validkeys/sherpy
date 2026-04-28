@@ -2,9 +2,9 @@
  * Inbox Layout Component Tests
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InboxLayout } from "./inbox-layout";
 
 // Mock child components and hooks
@@ -38,9 +38,7 @@ vi.mock("./sidebar", () => ({
 
 vi.mock("./detail-panel", () => ({
   DetailPanel: ({ projectId }: { projectId?: string }) => (
-    <div data-testid="detail-panel">
-      Detail Panel {projectId ? `(${projectId})` : "(none)"}
-    </div>
+    <div data-testid="detail-panel">Detail Panel {projectId ? `(${projectId})` : "(none)"}</div>
   ),
 }));
 
@@ -54,7 +52,7 @@ describe("InboxLayout", () => {
       render(
         <InboxLayout>
           <div>Main Content</div>
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       expect(screen.getByTestId("sidebar")).toBeInTheDocument();
@@ -66,7 +64,7 @@ describe("InboxLayout", () => {
       render(
         <InboxLayout>
           <div>Main Content</div>
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       expect(screen.getByTestId("command-palette")).toBeInTheDocument();
@@ -76,7 +74,7 @@ describe("InboxLayout", () => {
       render(
         <InboxLayout>
           <div data-testid="custom-content">Custom Component</div>
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       expect(screen.getByTestId("custom-content")).toBeInTheDocument();
@@ -88,7 +86,7 @@ describe("InboxLayout", () => {
       render(
         <InboxLayout>
           <div>Content</div>
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       expect(screen.getByText("Sidebar Expanded")).toBeInTheDocument();
@@ -100,7 +98,7 @@ describe("InboxLayout", () => {
       render(
         <InboxLayout>
           <div>Content</div>
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       const toggleButton = screen.getByText("Toggle");
@@ -115,7 +113,7 @@ describe("InboxLayout", () => {
       render(
         <InboxLayout>
           <div>Content</div>
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       expect(screen.getByText("Detail Panel (none)")).toBeInTheDocument();
@@ -143,7 +141,7 @@ describe("InboxLayout", () => {
       render(
         <InboxLayout>
           <TestChild />
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       expect(screen.getByText(/Search: empty/)).toBeInTheDocument();
@@ -157,7 +155,7 @@ describe("InboxLayout", () => {
       const { container } = render(
         <InboxLayout>
           <div>Content</div>
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       const mainContainer = container.firstChild;
@@ -170,7 +168,7 @@ describe("InboxLayout", () => {
       render(
         <InboxLayout>
           <div data-testid="main-content">Content</div>
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       expect(screen.getByTestId("sidebar")).toBeInTheDocument();
@@ -184,7 +182,7 @@ describe("InboxLayout", () => {
       const { container } = render(
         <InboxLayout>
           <div>Content</div>
-        </InboxLayout>
+        </InboxLayout>,
       );
 
       const mainContent = container.querySelector(".min-w-\\[400px\\]");

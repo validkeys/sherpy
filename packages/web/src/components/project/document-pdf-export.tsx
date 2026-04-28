@@ -5,8 +5,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Download } from "lucide-react";
 import type { Document } from "@sherpy/shared";
+import { Download } from "lucide-react";
 
 interface DocumentPdfExportProps {
   document: Document | null;

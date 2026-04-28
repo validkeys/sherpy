@@ -11,12 +11,12 @@
 interface CacheEntry<T> {
   promise: Promise<T>;
   timestamp: number;
-  status: 'pending' | 'fulfilled' | 'rejected';
+  status: "pending" | "fulfilled" | "rejected";
 }
 
 interface CacheOptions {
-  maxSize?: number;      // Max entries before LRU eviction
-  ttl?: number;          // Time to live in milliseconds
+  maxSize?: number; // Max entries before LRU eviction
+  ttl?: number; // Time to live in milliseconds
   rejectionTTL?: number; // Time to cache rejections before retry (prevents infinite loops)
 }
 
@@ -58,17 +58,19 @@ export class SuspenseCache<T> {
     const entry: CacheEntry<T> = {
       promise,
       timestamp: Date.now(),
-      status: 'pending',
+      status: "pending",
     };
 
     // Track fulfillment/rejection
     promise.then(
-      () => { entry.status = 'fulfilled'; },
       () => {
-        entry.status = 'rejected';
+        entry.status = "fulfilled";
+      },
+      () => {
+        entry.status = "rejected";
         // Cache rejection to prevent infinite loop
         // Will be retried after rejectionTTL expires
-      }
+      },
     );
 
     this.cache.set(key, entry);
@@ -114,7 +116,7 @@ export class SuspenseCache<T> {
     const age = Date.now() - entry.timestamp;
 
     // Rejected entries expire after rejectionTTL (prevents infinite loops)
-    if (entry.status === 'rejected') {
+    if (entry.status === "rejected") {
       return age < this.rejectionTTL;
     }
 
@@ -129,7 +131,7 @@ export class SuspenseCache<T> {
   private evictLRU(): void {
     // Find least recently used entry
     let lruKey: string | null = null;
-    let lruAccess = Infinity;
+    let lruAccess = Number.POSITIVE_INFINITY;
 
     for (const [key, accessTime] of this.accessOrder.entries()) {
       if (accessTime < lruAccess) {

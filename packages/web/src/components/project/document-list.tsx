@@ -3,11 +3,11 @@
  * Displays a sidebar list of project documents with type icons and selection state
  */
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Document } from "@sherpy/shared";
-import { FileText, FileCode, FileJson } from "lucide-react";
+import { FileCode, FileJson, FileText } from "lucide-react";
 
 interface DocumentListProps {
   documents: Document[];
@@ -73,9 +73,7 @@ export function DocumentList({
 }: DocumentListProps) {
   if (documents.length === 0) {
     return (
-      <div className="p-4 text-center text-sm text-muted-foreground">
-        No documents available
-      </div>
+      <div className="p-4 text-center text-sm text-muted-foreground">No documents available</div>
     );
   }
 
@@ -92,7 +90,7 @@ export function DocumentList({
               className={cn(
                 "w-full text-left rounded-lg p-3 transition-colors",
                 "hover:bg-accent hover:text-accent-foreground",
-                isSelected && "bg-accent text-accent-foreground"
+                isSelected && "bg-accent text-accent-foreground",
               )}
             >
               <div className="flex items-start gap-2">

@@ -4,6 +4,7 @@
  */
 
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+import { fromNodeProviderChain } from "@aws-sdk/credential-providers";
 import { ValidationError } from "@sherpy/shared";
 import { Config, Effect, Layer } from "effect";
 
@@ -25,17 +26,53 @@ export interface GenerateChatResponseInput {
 export class BedrockService extends Effect.Service<BedrockService>()("BedrockService", {
   effect: Effect.gen(function* () {
     // Load AWS configuration from environment
-    const awsRegion = yield* Config.string("AWS_REGION").pipe(
-      Config.withDefault("us-east-1"),
+    // Support BEDROCK_AWS_REGION with fallback to AWS_REGION (matches lumen pattern)
+    const awsRegion = yield* Effect.promise(() =>
+      Promise.resolve(
+        process.env.BEDROCK_AWS_REGION ||
+          process.env.AWS_REGION ||
+          "ca-central-1", // Default to ca-central-1 to match lumen
+      ),
     );
 
-    const modelId = yield* Config.string("BEDROCK_MODEL_ID").pipe(
-      Config.withDefault("anthropic.claude-3-5-sonnet-20241022-v2:0"),
+    // Model ID - support both BEDROCK_DEFAULT_MODEL (lumen pattern) and BEDROCK_MODEL_ID
+    // Note: Must use inference profile IDs (e.g., amer.*, us.*, eu.*) not direct model IDs
+    const modelId = yield* Effect.promise(() =>
+      Promise.resolve(
+        process.env.BEDROCK_DEFAULT_MODEL ||
+          process.env.BEDROCK_MODEL_ID ||
+          // Default to Claude Sonnet 4 via AMER cross-region inference profile
+          "amer.anthropic.claude-sonnet-4-20250514-v1:0",
+      ),
     );
+
+    // AWS Profile for SSO (optional)
+    const awsProfile = process.env.AWS_PROFILE;
+
+    // Create credentials provider
+    // Priority:
+    // 1. Explicit BEDROCK_AWS_* or AWS_* env vars
+    // 2. AWS SDK credential provider chain (SSO, IAM roles, shared credentials)
+    const bedrockAccessKeyId =
+      process.env.BEDROCK_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID;
+    const bedrockSecretAccessKey =
+      process.env.BEDROCK_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY;
+    const bedrockSessionToken =
+      process.env.BEDROCK_AWS_SESSION_TOKEN || process.env.AWS_SESSION_TOKEN;
+
+    // Always use AWS SDK credential provider chain for SSO/STS support
+    // This handles: AWS SSO profiles, IAM roles, shared credentials file, env vars
+    console.log(
+      `[BedrockService] Region: ${awsRegion}, Model: ${modelId}${awsProfile ? `, Profile: ${awsProfile}` : ""}`,
+    );
+    const credentials = fromNodeProviderChain({
+      profile: awsProfile,
+    });
 
     // Initialize Bedrock client
     const client = new BedrockRuntimeClient({
       region: awsRegion,
+      credentials,
     });
 
     /**

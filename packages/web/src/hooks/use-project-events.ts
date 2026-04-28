@@ -3,14 +3,17 @@
  * Filters events by project ID and provides latest event state
  */
 
-import { useEffect, useRef, useState } from "react";
 import type {
   PipelineStatusChangedEventPayload,
   TaskStatusChangedEventPayload,
 } from "@sherpy/shared";
+import { useEffect, useRef, useState } from "react";
 import { useWebSocket } from "./use-websocket";
 
-export type ProjectEventType = "pipeline-status-changed" | "task-status-changed" | "milestone-completed";
+export type ProjectEventType =
+  | "pipeline-status-changed"
+  | "task-status-changed"
+  | "milestone-completed";
 
 export interface ProjectEvent {
   type: ProjectEventType;
@@ -55,7 +58,9 @@ export function useProjectEvents({ projectId, debounceMs = 300 }: UseProjectEven
       }
 
       const timeout = window.setTimeout(() => {
-        console.log(`[DIAG] useProjectEvents #${instanceId}: setting latestEvent (pipeline-status-changed)`);
+        console.log(
+          `[DIAG] useProjectEvents #${instanceId}: setting latestEvent (pipeline-status-changed)`,
+        );
         setLatestEvent({
           type: "pipeline-status-changed",
           projectId: event.projectId,
@@ -79,7 +84,9 @@ export function useProjectEvents({ projectId, debounceMs = 300 }: UseProjectEven
       }
 
       const timeout = window.setTimeout(() => {
-        console.log(`[DIAG] useProjectEvents #${instanceId}: setting latestEvent (task-status-changed)`);
+        console.log(
+          `[DIAG] useProjectEvents #${instanceId}: setting latestEvent (task-status-changed)`,
+        );
         setLatestEvent({
           type: "task-status-changed",
           projectId: event.projectId,

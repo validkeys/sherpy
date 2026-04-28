@@ -2,11 +2,11 @@
  * DocumentPdfExport component tests
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { Document } from "@sherpy/shared";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DocumentPdfExport } from "./document-pdf-export";
-import type { Document } from "@sherpy/shared";
 
 // Helper to create test document
 function createDocument(overrides: Partial<Document> = {}): Document {
@@ -117,16 +117,14 @@ describe("DocumentPdfExport", () => {
 
   it("displays download icon in button", () => {
     const doc = createDocument();
-    const { container } = render(
-      <DocumentPdfExport document={doc} projectName="Test Project" />
-    );
+    const { container } = render(<DocumentPdfExport document={doc} projectName="Test Project" />);
 
     // Download icon should be present
     const button = screen.getByRole("button", { name: /export pdf/i });
     expect(button).toBeInTheDocument();
 
     // Check for SVG (lucide-react icons render as SVG)
-    const svg = container.querySelector('svg');
+    const svg = container.querySelector("svg");
     expect(svg).toBeInTheDocument();
   });
 

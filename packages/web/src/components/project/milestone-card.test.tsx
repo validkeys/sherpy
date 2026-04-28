@@ -2,14 +2,17 @@
  * MilestoneCard component tests
  */
 
-import { describe, it, expect } from "vitest";
+import type { Milestone, Task } from "@sherpy/shared";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
+import { describe, expect, it } from "vitest";
 import { MilestoneCard } from "./milestone-card";
-import type { Milestone, Task } from "@sherpy/shared";
 
 // Helper to create test milestone
-function createMilestone(overrides: Partial<Milestone> = {}, tasks: Task[] = []): Milestone & { tasks: Task[] } {
+function createMilestone(
+  overrides: Partial<Milestone> = {},
+  tasks: Task[] = [],
+): Milestone & { tasks: Task[] } {
   return {
     id: "m1",
     projectId: "p1",
@@ -143,7 +146,9 @@ describe("MilestoneCard", () => {
 
     milestones.forEach((milestone) => {
       const { container } = render(<MilestoneCard milestone={milestone} />);
-      const statusBadge = container.querySelector(".bg-gray-500, .bg-blue-500, .bg-red-500, .bg-green-500");
+      const statusBadge = container.querySelector(
+        ".bg-gray-500, .bg-blue-500, .bg-red-500, .bg-green-500",
+      );
       expect(statusBadge).toBeInTheDocument();
     });
   });

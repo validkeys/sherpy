@@ -5,9 +5,9 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { formatPipelineStatus } from "@/lib/pipeline-status-utils";
-import { useProjectEvents } from "@/hooks/use-project-events";
 import { useDiagnostic } from "@/hooks/use-diagnostic";
+import { useProjectEvents } from "@/hooks/use-project-events";
+import { formatPipelineStatus } from "@/lib/pipeline-status-utils";
 import type { PipelineStatus, PipelineStatusChangedEventPayload } from "@sherpy/shared";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -123,9 +123,7 @@ export function PipelineStatusVisualization({
       <Card className="p-6">
         <div className="text-center">
           <Badge variant="secondary">Archived</Badge>
-          <p className="mt-2 text-sm text-muted-foreground">
-            This project has been archived
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">This project has been archived</p>
         </div>
       </Card>
     );

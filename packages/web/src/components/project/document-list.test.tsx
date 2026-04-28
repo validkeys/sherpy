@@ -2,11 +2,11 @@
  * DocumentList component tests
  */
 
-import { describe, it, expect, vi } from "vitest";
+import type { Document } from "@sherpy/shared";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { DocumentList } from "./document-list";
-import type { Document } from "@sherpy/shared";
 
 // Helper to create test document
 function createDocument(overrides: Partial<Document> = {}): Document {
@@ -35,7 +35,9 @@ describe("DocumentList", () => {
       createDocument({ documentType: "technical-requirements", format: "markdown" }),
       createDocument({ documentType: "implementation-plan", format: "yaml" }),
     ];
-    render(<DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />);
+    render(
+      <DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />,
+    );
 
     expect(screen.getByText("Business Requirements")).toBeInTheDocument();
     expect(screen.getByText("Technical Requirements")).toBeInTheDocument();
@@ -47,7 +49,9 @@ describe("DocumentList", () => {
       createDocument({ documentType: "business-requirements", format: "yaml" }),
       createDocument({ documentType: "technical-requirements", format: "markdown" }),
     ];
-    render(<DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />);
+    render(
+      <DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />,
+    );
 
     expect(screen.getByText("yaml")).toBeInTheDocument();
     expect(screen.getByText("markdown")).toBeInTheDocument();
@@ -60,7 +64,13 @@ describe("DocumentList", () => {
       createDocument({ id: "doc1", documentType: "business-requirements" }),
       createDocument({ id: "doc2", documentType: "technical-requirements" }),
     ];
-    render(<DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={onSelectDocument} />);
+    render(
+      <DocumentList
+        documents={documents}
+        selectedDocumentId={null}
+        onSelectDocument={onSelectDocument}
+      />,
+    );
 
     await user.click(screen.getByText("Business Requirements"));
     expect(onSelectDocument).toHaveBeenCalledWith("doc1");
@@ -74,7 +84,9 @@ describe("DocumentList", () => {
       createDocument({ id: "doc1", documentType: "business-requirements" }),
       createDocument({ id: "doc2", documentType: "technical-requirements" }),
     ];
-    const { container } = render(<DocumentList documents={documents} selectedDocumentId="doc1" onSelectDocument={vi.fn()} />);
+    const { container } = render(
+      <DocumentList documents={documents} selectedDocumentId="doc1" onSelectDocument={vi.fn()} />,
+    );
 
     const selectedItem = container.querySelector('[data-selected="true"]');
     expect(selectedItem).toBeInTheDocument();
@@ -82,10 +94,10 @@ describe("DocumentList", () => {
   });
 
   it("displays document version", () => {
-    const documents = [
-      createDocument({ documentType: "business-requirements", version: 2 }),
-    ];
-    render(<DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />);
+    const documents = [createDocument({ documentType: "business-requirements", version: 2 })];
+    render(
+      <DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />,
+    );
 
     expect(screen.getByText("v2")).toBeInTheDocument();
   });
@@ -96,7 +108,9 @@ describe("DocumentList", () => {
       createDocument({ documentType: "qa-test-plan" }),
       createDocument({ documentType: "executive-summary" }),
     ];
-    render(<DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />);
+    render(
+      <DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />,
+    );
 
     expect(screen.getByText("Architecture Decision Record")).toBeInTheDocument();
     expect(screen.getByText("QA Test Plan")).toBeInTheDocument();
@@ -106,10 +120,10 @@ describe("DocumentList", () => {
   it("displays created date in relative format", () => {
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const documents = [
-      createDocument({ createdAt: yesterday as any }),
-    ];
-    render(<DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />);
+    const documents = [createDocument({ createdAt: yesterday as any })];
+    render(
+      <DocumentList documents={documents} selectedDocumentId={null} onSelectDocument={vi.fn()} />,
+    );
 
     // Should show some form of relative time (depends on implementation)
     expect(screen.getByText(/ago|yesterday/i)).toBeInTheDocument();

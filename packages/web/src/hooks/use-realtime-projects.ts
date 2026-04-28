@@ -2,13 +2,13 @@
  * Real-time projects hook - Fetches projects and updates via WebSocket
  */
 
-import { useCallback, useEffect, useState } from "react";
 import type {
   AssignmentChangeEventPayload,
   PipelineStatusChangedEventPayload,
   ProjectUpdatedEventPayload,
   TaskStatusChangedEventPayload,
 } from "@sherpy/shared";
+import { useCallback, useEffect, useState } from "react";
 import { useApi } from "./use-api";
 import { useWebSocket } from "./use-websocket";
 

@@ -25,7 +25,11 @@ export const PIPELINE_STATUS_CONFIG: Record<
     color: "blue",
   },
   "style-anchors": { label: "Style Anchors", variant: "default", color: "purple" },
-  "implementation-planning": { label: "Implementation Planning", variant: "default", color: "purple" },
+  "implementation-planning": {
+    label: "Implementation Planning",
+    variant: "default",
+    color: "purple",
+  },
   "plan-review": { label: "Plan Review", variant: "default", color: "purple" },
   "architecture-decisions": {
     label: "Architecture Decisions",

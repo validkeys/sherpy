@@ -6,7 +6,7 @@
  * functionality and event handling that can be reliably tested with mocks.
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WebSocketClient } from "./ws-client";
 
 describe("WebSocketClient", () => {

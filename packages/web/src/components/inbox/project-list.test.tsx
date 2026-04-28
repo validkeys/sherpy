@@ -2,9 +2,9 @@
  * Project List Component Tests
  */
 
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import type { InboxContextValue } from "./filter-context";
 import { InboxContextProvider } from "./filter-context";
 import { ProjectList } from "./project-list";
@@ -101,7 +101,12 @@ describe("ProjectList", () => {
   describe("error state", () => {
     it("should show error message", () => {
       renderWithContext({
-        projectData: { projects: [], loading: false, error: "Failed to load", connectionState: "disconnected" },
+        projectData: {
+          projects: [],
+          loading: false,
+          error: "Failed to load",
+          connectionState: "disconnected",
+        },
       });
       expect(screen.getByText("Failed to load projects")).toBeInTheDocument();
       expect(screen.getByText("Failed to load")).toBeInTheDocument();
@@ -109,7 +114,12 @@ describe("ProjectList", () => {
 
     it("should show search bar during error", () => {
       renderWithContext({
-        projectData: { projects: [], loading: false, error: "Failed to load", connectionState: "disconnected" },
+        projectData: {
+          projects: [],
+          loading: false,
+          error: "Failed to load",
+          connectionState: "disconnected",
+        },
         filters: { searchQuery: "", statusFilters: [], tagFilters: [], assignedToMe: false },
       });
       expect(screen.getByPlaceholderText("Search projects...")).toBeInTheDocument();
@@ -129,7 +139,12 @@ describe("ProjectList", () => {
   describe("project rendering", () => {
     it("should render list of projects", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
       });
 
       expect(screen.getByText("Project Alpha")).toBeInTheDocument();
@@ -139,7 +154,12 @@ describe("ProjectList", () => {
 
     it("should show project count", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
       });
       expect(screen.getByText("3 projects")).toBeInTheDocument();
     });
@@ -148,14 +168,24 @@ describe("ProjectList", () => {
       const singleProject = mockProjects[0];
       if (!singleProject) throw new Error("Mock project not found");
       renderWithContext({
-        projectData: { projects: [singleProject], loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: [singleProject],
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
       });
       expect(screen.getByText("1 project")).toBeInTheDocument();
     });
 
     it("should render pipeline status badges", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
       });
       expect(screen.getByText("Active")).toBeInTheDocument();
       expect(screen.getByText("Intake")).toBeInTheDocument();
@@ -169,7 +199,12 @@ describe("ProjectList", () => {
       const onSelect = vi.fn();
 
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
         selection: { selectedProjectId: undefined, onProjectSelect: onSelect },
       });
 
@@ -183,7 +218,12 @@ describe("ProjectList", () => {
 
     it("should highlight selected project", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
         selection: { selectedProjectId: "2", onProjectSelect: vi.fn() },
       });
 
@@ -195,7 +235,12 @@ describe("ProjectList", () => {
   describe("filtering", () => {
     it("should filter projects by search query", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
         filters: { searchQuery: "alpha", statusFilters: [], tagFilters: [], assignedToMe: false },
       });
 
@@ -206,8 +251,18 @@ describe("ProjectList", () => {
 
     it("should filter by pipeline status", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
-        filters: { searchQuery: "", statusFilters: ["active-development"], tagFilters: [], assignedToMe: false },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
+        filters: {
+          searchQuery: "",
+          statusFilters: ["active-development"],
+          tagFilters: [],
+          assignedToMe: false,
+        },
       });
 
       expect(screen.getByText("Project Alpha")).toBeInTheDocument();
@@ -217,8 +272,18 @@ describe("ProjectList", () => {
 
     it("should filter by tags", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
-        filters: { searchQuery: "", statusFilters: [], tagFilters: ["backend"], assignedToMe: false },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
+        filters: {
+          searchQuery: "",
+          statusFilters: [],
+          tagFilters: ["backend"],
+          assignedToMe: false,
+        },
       });
 
       expect(screen.queryByText("Project Alpha")).not.toBeInTheDocument();
@@ -228,7 +293,12 @@ describe("ProjectList", () => {
 
     it("should show filtered count", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
         filters: { searchQuery: "beta", statusFilters: [], tagFilters: [], assignedToMe: false },
       });
 
@@ -237,8 +307,18 @@ describe("ProjectList", () => {
 
     it("should show no matches message", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
-        filters: { searchQuery: "nonexistent", statusFilters: [], tagFilters: [], assignedToMe: false },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
+        filters: {
+          searchQuery: "nonexistent",
+          statusFilters: [],
+          tagFilters: [],
+          assignedToMe: false,
+        },
       });
 
       expect(screen.getByText("No projects match your filters")).toBeInTheDocument();
@@ -247,7 +327,12 @@ describe("ProjectList", () => {
     it("should show clear filters button when filtered", () => {
       const onClearFilters = vi.fn();
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
         filters: { searchQuery: "xyz", statusFilters: [], tagFilters: [], assignedToMe: false },
         filterActions: {
           setSearchQuery: vi.fn(),
@@ -266,28 +351,48 @@ describe("ProjectList", () => {
   describe("connection status", () => {
     it("should show Live indicator when connected", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "connected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "connected",
+        },
       });
       expect(screen.getByText("Live")).toBeInTheDocument();
     });
 
     it("should show Reconnecting indicator when reconnecting", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "reconnecting" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "reconnecting",
+        },
       });
       expect(screen.getByText("Reconnecting...")).toBeInTheDocument();
     });
 
     it("should show Connecting indicator when connecting", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "connecting" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "connecting",
+        },
       });
       expect(screen.getByText("Connecting...")).toBeInTheDocument();
     });
 
     it("should show Offline indicator when disconnected", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
       });
       expect(screen.getByText("Offline")).toBeInTheDocument();
     });
@@ -296,7 +401,12 @@ describe("ProjectList", () => {
   describe("active filters display", () => {
     it("should show search filter badge", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
         filters: { searchQuery: "test", statusFilters: [], tagFilters: [], assignedToMe: false },
       });
       expect(screen.getByText(/Search:/)).toBeInTheDocument();
@@ -304,8 +414,18 @@ describe("ProjectList", () => {
 
     it("should show status filter badges in active filters section", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
-        filters: { searchQuery: "", statusFilters: ["intake"], tagFilters: [], assignedToMe: false },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
+        filters: {
+          searchQuery: "",
+          statusFilters: ["intake"],
+          tagFilters: [],
+          assignedToMe: false,
+        },
       });
       // The ActiveFilters component should show the filter badge
       const filterSection = screen.getByText("Filters:").closest("div");
@@ -314,8 +434,18 @@ describe("ProjectList", () => {
 
     it("should show tag filter badges", () => {
       renderWithContext({
-        projectData: { projects: mockProjects, loading: false, error: null, connectionState: "disconnected" },
-        filters: { searchQuery: "", statusFilters: [], tagFilters: ["frontend"], assignedToMe: false },
+        projectData: {
+          projects: mockProjects,
+          loading: false,
+          error: null,
+          connectionState: "disconnected",
+        },
+        filters: {
+          searchQuery: "",
+          statusFilters: [],
+          tagFilters: ["frontend"],
+          assignedToMe: false,
+        },
       });
       expect(screen.getByText("tag:frontend")).toBeInTheDocument();
     });

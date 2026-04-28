@@ -45,6 +45,7 @@ import {
 } from "./api/routes/availabilityApi.js";
 import {
   ChatApi,
+  ChatMessageResponse,
   CreateChatSessionResponse,
   DeleteChatSessionResponse,
   GetChatHistoryResponse,
@@ -583,13 +584,13 @@ Be helpful, concise, and actionable in your responses.`;
 
             // Return the assistant response
             return new SendChatMessageResponse({
-              message: {
+              message: new ChatMessageResponse({
                 id: assistantMessage.id,
                 projectId: assistantMessage.projectId,
                 role: assistantMessage.role,
                 content: assistantMessage.content,
                 createdAt: String(assistantMessage.createdAt),
-              },
+              }),
             });
           } else {
             // If it's an assistant message (shouldn't happen from client), just save it
@@ -600,13 +601,13 @@ Be helpful, concise, and actionable in your responses.`;
             });
 
             return new SendChatMessageResponse({
-              message: {
+              message: new ChatMessageResponse({
                 id: message.id,
                 projectId: message.projectId,
                 role: message.role,
                 content: message.content,
                 createdAt: String(message.createdAt),
-              },
+              }),
             });
           }
         }),
@@ -620,13 +621,16 @@ Be helpful, concise, and actionable in your responses.`;
           });
 
           return new GetChatMessagesResponse({
-            messages: result.messages.map((m) => ({
-              id: m.id,
-              projectId: m.projectId,
-              role: m.role,
-              content: m.content,
-              createdAt: String(m.createdAt),
-            })),
+            messages: result.messages.map(
+              (m) =>
+                new ChatMessageResponse({
+                  id: m.id,
+                  projectId: m.projectId,
+                  role: m.role,
+                  content: m.content,
+                  createdAt: String(m.createdAt),
+                }),
+            ),
             hasMore: result.hasMore,
             nextCursor: result.nextCursor,
           });

@@ -1,6 +1,6 @@
 import { useAuth } from "@/components/auth/auth-provider";
 import { createApiClient } from "@/lib/api-client";
-import { useMemo, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 export function useApi() {
   const { accessToken } = useAuth();

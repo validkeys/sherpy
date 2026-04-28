@@ -3,15 +3,15 @@
  * Displays document content with syntax highlighting and controls
  */
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Copy, FileText, Check, Hash } from "lucide-react";
-import { Highlight, themes } from "prism-react-renderer";
-import type { Document } from "@sherpy/shared";
 import { cn } from "@/lib/utils";
+import type { Document } from "@sherpy/shared";
+import { Check, Copy, FileText, Hash } from "lucide-react";
+import { Highlight, themes } from "prism-react-renderer";
+import { useState } from "react";
 import { DocumentPdfExport } from "./document-pdf-export";
 
 interface DocumentViewerProps {
@@ -75,9 +75,7 @@ export function DocumentViewer({ document, projectName = "Project" }: DocumentVi
       <div className="flex items-center justify-center h-full p-8">
         <div className="text-center space-y-2">
           <FileText className="h-12 w-12 mx-auto text-muted-foreground" />
-          <p className="text-lg font-medium text-muted-foreground">
-            Select a document to view
-          </p>
+          <p className="text-lg font-medium text-muted-foreground">Select a document to view</p>
           <p className="text-sm text-muted-foreground">
             Choose a document from the list to see its contents
           </p>
@@ -131,11 +129,7 @@ export function DocumentViewer({ document, projectName = "Project" }: DocumentVi
                   onClick={handleCopy}
                   aria-label="Copy to clipboard"
                 >
-                  {copied ? (
-                    <Check className="h-4 w-4" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -152,16 +146,12 @@ export function DocumentViewer({ document, projectName = "Project" }: DocumentVi
       <ScrollArea className="flex-1">
         <div className="p-4">
           {document.content ? (
-            <Highlight
-              theme={themes.github}
-              code={document.content}
-              language={language}
-            >
+            <Highlight theme={themes.github} code={document.content} language={language}>
               {({ className, style, tokens, getLineProps, getTokenProps }) => (
                 <pre
                   className={cn(
                     className,
-                    "text-sm font-mono p-4 rounded-lg border bg-muted/50 overflow-x-auto"
+                    "text-sm font-mono p-4 rounded-lg border bg-muted/50 overflow-x-auto",
                   )}
                   style={style}
                 >
@@ -183,9 +173,7 @@ export function DocumentViewer({ document, projectName = "Project" }: DocumentVi
               )}
             </Highlight>
           ) : (
-            <div className="p-8 text-center text-muted-foreground">
-              No content available
-            </div>
+            <div className="p-8 text-center text-muted-foreground">No content available</div>
           )}
         </div>
       </ScrollArea>

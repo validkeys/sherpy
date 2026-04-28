@@ -6,11 +6,11 @@
 import { useApi } from "@/hooks/use-api";
 import {
   AssistantRuntimeProvider,
-  useLocalRuntime,
   type ChatModelAdapter,
   type ChatModelRunResult,
+  useLocalRuntime,
 } from "@assistant-ui/react";
-import { useEffect, useMemo, useState, useRef, type ReactNode } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 interface ChatAssistantUIProviderProps {
   projectId: string;
@@ -21,10 +21,7 @@ interface ChatAssistantUIProviderProps {
  * Provider component that configures assistant-ui runtime for project-scoped chat.
  * Integrates with backend API for message persistence.
  */
-export function ChatAssistantUIProvider({
-  projectId,
-  children,
-}: ChatAssistantUIProviderProps) {
+export function ChatAssistantUIProvider({ projectId, children }: ChatAssistantUIProviderProps) {
   const apiClient = useApi();
   const [messageHistory, setMessageHistory] = useState<
     Array<{
@@ -38,7 +35,9 @@ export function ChatAssistantUIProvider({
 
   const renderCount = useRef(0);
   renderCount.current++;
-  console.log(`[DIAG] ChatAssistantUIProvider render #${renderCount.current}, projectId=${projectId}, isLoading=${isLoading}`);
+  console.log(
+    `[DIAG] ChatAssistantUIProvider render #${renderCount.current}, projectId=${projectId}, isLoading=${isLoading}`,
+  );
 
   useEffect(() => {
     console.log("[DIAG] ChatAssistantUIProvider MOUNTED");
@@ -80,9 +79,12 @@ export function ChatAssistantUIProvider({
   const adapter: ChatModelAdapter = useMemo(
     () => ({
       run: async ({ messages }): Promise<ChatModelRunResult> => {
+        console.log("[ChatAdapter] run() called with messages:", messages);
+
         // Get the last user message
         const lastMessage = messages[messages.length - 1];
         if (!lastMessage || lastMessage.role !== "user") {
+          console.error("[ChatAdapter] Invalid message state - last message:", lastMessage);
           throw new Error("Invalid message state");
         }
 
@@ -91,13 +93,26 @@ export function ChatAssistantUIProvider({
             ? lastMessage.content
             : lastMessage.content.map((part) => (part.type === "text" ? part.text : "")).join("");
 
+        console.log("[ChatAdapter] Sending message:", userContent);
+
         // Send user message to API - backend will generate and return assistant response via Bedrock/Claude
-        const { message: assistantMessage } = await apiClient.sendChatMessage(projectId, "user", userContent);
+        const { message: assistantMessage } = await apiClient.sendChatMessage(
+          projectId,
+          "user",
+          userContent,
+        );
+
+        console.log("[ChatAdapter] Received assistant response:", assistantMessage);
 
         // Update local history with both messages
         setMessageHistory((prev) => [
           ...prev,
-          { id: crypto.randomUUID(), role: "user", content: userContent, createdAt: new Date().toISOString() },
+          {
+            id: crypto.randomUUID(),
+            role: "user",
+            content: userContent,
+            createdAt: new Date().toISOString(),
+          },
           assistantMessage,
         ]);
 
@@ -113,7 +128,7 @@ export function ChatAssistantUIProvider({
       },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [projectId]
+    [projectId],
   );
 
   // Configure runtime with the API adapter
@@ -121,9 +136,5 @@ export function ChatAssistantUIProvider({
 
   // IMPORTANT: Always render the same tree structure regardless of loading state
   // Conditional rendering here causes Suspense children to remount infinitely
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      {children}
-    </AssistantRuntimeProvider>
-  );
+  return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>;
 }

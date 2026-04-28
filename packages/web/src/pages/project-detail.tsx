@@ -3,25 +3,25 @@
  * Main view for individual project with pipeline status, milestones, and documents
  */
 
-import { PipelineStatusVisualization } from "@/components/project/pipeline-status";
-import { ProjectHeader } from "@/components/project/project-header";
-import { MilestoneList } from "@/components/project/milestone-list";
-import { DocumentList } from "@/components/project/document-list";
-import { DocumentViewer } from "@/components/project/document-viewer";
 import { ChatAssistantUIProvider } from "@/components/chat/chat-assistant-ui-provider";
 import { ProjectChatPanel } from "@/components/chat/project-chat-panel";
+import { DocumentList } from "@/components/project/document-list";
+import { DocumentViewer } from "@/components/project/document-viewer";
+import { MilestoneList } from "@/components/project/milestone-list";
+import { PipelineStatusVisualization } from "@/components/project/pipeline-status";
+import { ProjectHeader } from "@/components/project/project-header";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useApi } from "@/hooks/use-api";
 import { useProjectEvents } from "@/hooks/use-project-events";
-import { Suspense, use, useMemo, useState, useCallback, useEffect, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
-import type { Document, PipelineStatus, GetProjectResponse } from "@sherpy/shared";
 import { SuspenseCache } from "@/lib/suspense-cache";
+import type { Document, GetProjectResponse, PipelineStatus } from "@sherpy/shared";
+import { Suspense, use, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 
 // Enterprise-grade cache with TTL and LRU eviction
 export const projectCache = new SuspenseCache<GetProjectResponse>({
-  maxSize: 50,           // Max 50 projects cached
-  ttl: 5 * 60 * 1000,   // 5 minute TTL
+  maxSize: 50, // Max 50 projects cached
+  ttl: 5 * 60 * 1000, // 5 minute TTL
 });
 
 /**
@@ -113,7 +113,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
   useEffect(() => {
     if (latestEvent && latestEvent !== prevLatestEventRef.current) {
       prevLatestEventRef.current = latestEvent;
-      setRefreshKey(prev => prev + 1);
+      setRefreshKey((prev) => prev + 1);
       // Invalidate cache for this project to force refetch
       projectCache.invalidate(projectId);
     }
@@ -232,10 +232,7 @@ function ProjectDetailContent({ projectId }: { projectId: string }) {
 
             {/* Document viewer */}
             <div className="min-h-[600px]">
-              <DocumentViewer
-                document={selectedDocument ?? null}
-                projectName={project.name}
-              />
+              <DocumentViewer document={selectedDocument ?? null} projectName={project.name} />
             </div>
           </div>
         </section>

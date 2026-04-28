@@ -2,11 +2,11 @@
  * DocumentViewer component tests
  */
 
-import { describe, it, expect, vi } from "vitest";
+import type { Document } from "@sherpy/shared";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { DocumentViewer } from "./document-viewer";
-import type { Document } from "@sherpy/shared";
 
 // Helper to create test document
 function createDocument(overrides: Partial<Document> = {}): Document {
@@ -50,10 +50,10 @@ describe("DocumentViewer", () => {
     const { container } = render(<DocumentViewer document={doc} />);
 
     // Content should be visible - check for presence in the code block
-    const codeBlock = container.querySelector('pre');
+    const codeBlock = container.querySelector("pre");
     expect(codeBlock).toBeInTheDocument();
-    expect(codeBlock?.textContent).toContain('key');
-    expect(codeBlock?.textContent).toContain('value');
+    expect(codeBlock?.textContent).toContain("key");
+    expect(codeBlock?.textContent).toContain("value");
   });
 
   it("renders markdown content with syntax highlighting", () => {
@@ -63,10 +63,10 @@ describe("DocumentViewer", () => {
     });
     const { container } = render(<DocumentViewer document={doc} />);
 
-    const codeBlock = container.querySelector('pre');
+    const codeBlock = container.querySelector("pre");
     expect(codeBlock).toBeInTheDocument();
-    expect(codeBlock?.textContent).toContain('# Heading');
-    expect(codeBlock?.textContent).toContain('Paragraph text');
+    expect(codeBlock?.textContent).toContain("# Heading");
+    expect(codeBlock?.textContent).toContain("Paragraph text");
   });
 
   it("renders JSON content with syntax highlighting", () => {
@@ -76,7 +76,7 @@ describe("DocumentViewer", () => {
     });
     const { container } = render(<DocumentViewer document={doc} />);
 
-    const codeBlock = container.querySelector('pre');
+    const codeBlock = container.querySelector("pre");
     expect(codeBlock).toBeInTheDocument();
     expect(codeBlock?.textContent).toContain('"name"');
     expect(codeBlock?.textContent).toContain('"test"');
@@ -95,7 +95,7 @@ describe("DocumentViewer", () => {
     const writeTextMock = vi.fn().mockResolvedValue(undefined);
 
     // Mock navigator.clipboard
-    Object.defineProperty(navigator, 'clipboard', {
+    Object.defineProperty(navigator, "clipboard", {
       value: { writeText: writeTextMock },
       writable: true,
       configurable: true,
@@ -129,15 +129,15 @@ describe("DocumentViewer", () => {
     const toggleButton = screen.getByRole("button", { name: /line numbers/i });
 
     // Line numbers should be on by default
-    expect(container.querySelector('.line-number')).toBeInTheDocument();
+    expect(container.querySelector(".line-number")).toBeInTheDocument();
 
     // Toggle off
     await user.click(toggleButton);
-    expect(container.querySelector('.line-number')).not.toBeInTheDocument();
+    expect(container.querySelector(".line-number")).not.toBeInTheDocument();
 
     // Toggle back on
     await user.click(toggleButton);
-    expect(container.querySelector('.line-number')).toBeInTheDocument();
+    expect(container.querySelector(".line-number")).toBeInTheDocument();
   });
 
   it("displays line numbers when enabled", () => {
@@ -147,7 +147,7 @@ describe("DocumentViewer", () => {
     const { container } = render(<DocumentViewer document={doc} />);
 
     // Should have line number elements
-    const lineNumbers = container.querySelectorAll('.line-number');
+    const lineNumbers = container.querySelectorAll(".line-number");
     expect(lineNumbers.length).toBeGreaterThan(0);
   });
 

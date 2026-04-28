@@ -36,7 +36,10 @@ export function useWebSocket() {
       return;
     }
 
-    console.log(`[DIAG] useWebSocket #${instanceId}: connect effect running. accessToken:`, accessToken.substring(0, 15));
+    console.log(
+      `[DIAG] useWebSocket #${instanceId}: connect effect running. accessToken:`,
+      accessToken.substring(0, 15),
+    );
     wsClient.connect();
 
     const unsubscribe = wsClient.on("_connectionStateChanged", (state) => {
@@ -58,7 +61,9 @@ export function useWebSocket() {
     [wsClient],
   );
 
-  console.log(`[DIAG] useWebSocket #${instanceId}: returning { connectionState: ${connectionState}, subscribe: ${subscribe !== null ? "fn" : "null"} }`);
+  console.log(
+    `[DIAG] useWebSocket #${instanceId}: returning { connectionState: ${connectionState}, subscribe: ${subscribe !== null ? "fn" : "null"} }`,
+  );
 
   return {
     connectionState,

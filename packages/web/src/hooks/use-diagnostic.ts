@@ -23,9 +23,7 @@ export function useDiagnostic(name: string, values: Record<string, unknown>) {
   }
 
   if (count === 1) {
-    console.log(
-      `[DIAG] ${name} #${count} MOUNT (+${elapsed}ms)`,
-    );
+    console.log(`[DIAG] ${name} #${count} MOUNT (+${elapsed}ms)`);
   } else {
     console.log(
       `[DIAG] ${name} #${count} re-render (+${elapsed}ms)${changedKeys.length > 0 ? ` CHANGED: [${changedKeys.join(", ")}]` : " (no tracked values changed)"}`,
@@ -34,8 +32,10 @@ export function useDiagnostic(name: string, values: Record<string, unknown>) {
       for (const key of changedKeys) {
         const prev = prevValues.current[key];
         const next = values[key];
-        const prevStr = prev instanceof Object ? JSON.stringify(prev)?.substring(0, 80) : String(prev);
-        const nextStr = next instanceof Object ? JSON.stringify(next)?.substring(0, 80) : String(next);
+        const prevStr =
+          prev instanceof Object ? JSON.stringify(prev)?.substring(0, 80) : String(prev);
+        const nextStr =
+          next instanceof Object ? JSON.stringify(next)?.substring(0, 80) : String(next);
         console.log(`[DIAG]   ${key}: ${prevStr} → ${nextStr}`);
       }
     }

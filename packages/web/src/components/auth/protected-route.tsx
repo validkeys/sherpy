@@ -2,16 +2,18 @@
  * Protected Route - Requires authentication
  */
 
+import { useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "./auth-provider";
-import { useEffect, useRef } from "react";
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const renderCount = useRef(0);
   renderCount.current++;
 
-  console.log(`[DIAG] ProtectedRoute render #${renderCount.current}, isLoading=${isLoading}, isAuthenticated=${isAuthenticated}`);
+  console.log(
+    `[DIAG] ProtectedRoute render #${renderCount.current}, isLoading=${isLoading}, isAuthenticated=${isAuthenticated}`,
+  );
 
   useEffect(() => {
     console.log("[DIAG] ProtectedRoute MOUNTED");

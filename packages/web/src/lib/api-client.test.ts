@@ -2,7 +2,7 @@
  * API Client Integration Tests
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiClient, ApiError } from "./api-client";
 
 describe("ApiClient", () => {
@@ -28,9 +28,7 @@ describe("ApiClient", () => {
       mockGetToken.mockResolvedValue(null);
 
       await expect(apiClient.listProjects()).rejects.toThrow(ApiError);
-      await expect(apiClient.listProjects()).rejects.toThrow(
-        "No authentication token available"
-      );
+      await expect(apiClient.listProjects()).rejects.toThrow("No authentication token available");
     });
 
     it("should send request with correct headers", async () => {
@@ -50,7 +48,7 @@ describe("ApiClient", () => {
             "Content-Type": "application/json",
             Authorization: "Bearer test-token",
           },
-        })
+        }),
       );
     });
 
@@ -173,7 +171,7 @@ describe("ApiClient", () => {
         "http://localhost:3100/api/projects",
         expect.objectContaining({
           method: "GET",
-        })
+        }),
       );
     });
 
@@ -189,7 +187,7 @@ describe("ApiClient", () => {
         "http://localhost:3100/api/projects/test-project-id",
         expect.objectContaining({
           method: "GET",
-        })
+        }),
       );
     });
 
@@ -213,7 +211,7 @@ describe("ApiClient", () => {
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify(createRequest),
-        })
+        }),
       );
     });
 
@@ -235,7 +233,7 @@ describe("ApiClient", () => {
         expect.objectContaining({
           method: "PATCH",
           body: JSON.stringify(updateRequest),
-        })
+        }),
       );
     });
   });

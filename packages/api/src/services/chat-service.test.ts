@@ -12,8 +12,8 @@ import { assert, describe, expect, it } from "@effect/vitest";
 import { NotFoundError, ValidationError } from "@sherpy/shared";
 import { Effect, Layer } from "effect";
 import { runMigrations } from "../db/migration-runner.js";
-import { ProjectService, ProjectServiceLive } from "./project-service.js";
 import { ChatService, ChatServiceLive } from "./chat-service.js";
+import { ProjectService, ProjectServiceLive } from "./project-service.js";
 
 /**
  * Create a temporary SQLite database for testing

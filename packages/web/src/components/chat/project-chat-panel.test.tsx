@@ -2,11 +2,11 @@
  * ProjectChatPanel component tests
  */
 
-import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
-import { ProjectChatPanel } from "./project-chat-panel";
+import { describe, expect, it, vi } from "vitest";
 import { ChatAssistantUIProvider } from "./chat-assistant-ui-provider";
+import { ProjectChatPanel } from "./project-chat-panel";
 
 // Mock the useApi hook
 vi.mock("@/hooks/use-api", () => ({
@@ -29,11 +29,7 @@ vi.mock("@/hooks/use-api", () => ({
 
 // Helper to render with provider
 function renderWithProvider(ui: React.ReactElement) {
-  return render(
-    <ChatAssistantUIProvider projectId="test-project">
-      {ui}
-    </ChatAssistantUIProvider>
-  );
+  return render(<ChatAssistantUIProvider projectId="test-project">{ui}</ChatAssistantUIProvider>);
 }
 
 describe("ProjectChatPanel", () => {
