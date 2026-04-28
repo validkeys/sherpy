@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { formatPipelineStatus } from "@/lib/pipeline-status-utils";
 import { useProjectEvents } from "@/hooks/use-project-events";
+import { useDiagnostic } from "@/hooks/use-diagnostic";
 import type { PipelineStatus, PipelineStatusChangedEventPayload } from "@sherpy/shared";
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -84,12 +85,21 @@ export function PipelineStatusVisualization({
   const [isAnimating, setIsAnimating] = useState(false);
   const { latestEvent } = useProjectEvents({ projectId });
 
+  useDiagnostic("PipelineStatusVisualization", {
+    projectId,
+    initialStatus,
+    currentStatus,
+    isAnimating,
+    latestEvent,
+  });
+
   // Update status when WebSocket event received
   useEffect(() => {
     if (latestEvent?.type === "pipeline-status-changed") {
       const payload = latestEvent.payload as PipelineStatusChangedEventPayload;
       const newStatus = payload.newStatus as PipelineStatus;
       if (newStatus !== currentStatus) {
+        console.log("[DIAG] PipelineStatus: event → setting currentStatus", newStatus);
         setIsAnimating(true);
         setCurrentStatus(newStatus);
 
@@ -102,6 +112,7 @@ export function PipelineStatusVisualization({
   // Sync with prop changes (e.g., on initial load or manual refresh)
   useEffect(() => {
     if (initialStatus !== currentStatus) {
+      console.log("[DIAG] PipelineStatus: syncing initialStatus → currentStatus", initialStatus);
       setCurrentStatus(initialStatus);
     }
   }, [initialStatus, currentStatus]);

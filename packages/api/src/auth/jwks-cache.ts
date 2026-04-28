@@ -29,6 +29,36 @@ export class AuthService extends Context.Tag("AuthService")<
   static readonly Live = Layer.effect(
     this,
     Effect.gen(function* () {
+      // Check if dev mode is enabled
+      const devMode = yield* Config.boolean("DEV_MODE").pipe(
+        Config.withDefault(false),
+        Effect.orDie,
+      );
+
+      // In dev mode, bypass all authentication
+      if (devMode) {
+        // SECURITY: Prevent DEV_MODE in production
+        const nodeEnv = process.env.NODE_ENV;
+        if (nodeEnv === "production") {
+          return yield* Effect.fail(
+            new Error("DEV_MODE cannot be enabled in production environment"),
+          );
+        }
+
+        yield* Effect.log("⚠️  DEV_MODE enabled - bypassing JWT authentication");
+        return {
+          validateToken: (_token: string) =>
+            Effect.succeed(
+              new OktaClaims({
+                sub: "dev-user-123",
+                email: "dev@sherpy.local",
+                name: "Dev User",
+              }),
+            ),
+        } as const;
+      }
+
+      // Production mode - use Okta JWT validation
       const oktaDomain = yield* Config.string("OKTA_DOMAIN").pipe(
         Config.withDefault("https://dev-123456.okta.com"),
       );

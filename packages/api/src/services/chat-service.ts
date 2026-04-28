@@ -73,17 +73,35 @@ export class ChatService extends Effect.Service<ChatService>()("ChatService", {
           ),
         );
 
-        // Fetch the created message using the repository for proper schema decoding
-        const messageOption = yield* repo.findById(id);
+        // Fetch the created message with proper column aliasing
+        const rows = yield* sql.unsafe(`
+          SELECT
+            id,
+            project_id as "projectId",
+            role,
+            content,
+            created_at as "createdAt"
+          FROM chat_messages
+          WHERE id = '${id.replace(/'/g, "''")}'
+        `).pipe(
+          Effect.catchTag("SqlError", (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: `Database error: ${error.message ?? "Unknown error"}`,
+              }),
+            ),
+          ),
+        );
 
-        if (messageOption._tag === "None") {
+        if (rows.length === 0) {
           return yield* new NotFoundError({
             entity: "ChatMessage",
             id,
           });
         }
 
-        return messageOption.value;
+        // Return the raw row data (already has correct field names from aliasing)
+        return rows[0] as typeof ChatMessageEntity.Type;
       });
 
     /**
@@ -133,19 +151,9 @@ export class ChatService extends Effect.Service<ChatService>()("ChatService", {
           ),
         );
 
-        // Decode each row using the ChatMessageEntity schema
-        const messages = yield* Effect.all(
-          rows.map((row) => Schema.decodeUnknown(ChatMessageEntity)(row)),
-          { concurrency: "unbounded" },
-        ).pipe(
-          Effect.catchTag("ParseError", (error) =>
-            Effect.fail(
-              new ValidationError({
-                message: `Failed to decode messages: ${error.message}`,
-              }),
-            ),
-          ),
-        );
+        // Return rows directly (already have correct field names from aliasing)
+        // Don't use Schema.decodeUnknown to avoid DateTime object conversion
+        const messages = rows as Array<typeof ChatMessageEntity.Type>;
 
         // Check if there are more messages beyond the limit
         const hasMore = messages.length > limit;

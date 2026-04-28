@@ -588,7 +588,7 @@ Be helpful, concise, and actionable in your responses.`;
                 projectId: assistantMessage.projectId,
                 role: assistantMessage.role,
                 content: assistantMessage.content,
-                createdAt: assistantMessage.createdAt.toString(),
+                createdAt: String(assistantMessage.createdAt),
               },
             });
           } else {
@@ -605,7 +605,7 @@ Be helpful, concise, and actionable in your responses.`;
                 projectId: message.projectId,
                 role: message.role,
                 content: message.content,
-                createdAt: message.createdAt.toString(),
+                createdAt: String(message.createdAt),
               },
             });
           }
@@ -625,7 +625,7 @@ Be helpful, concise, and actionable in your responses.`;
               projectId: m.projectId,
               role: m.role,
               content: m.content,
-              createdAt: m.createdAt.toString(),
+              createdAt: String(m.createdAt),
             })),
             hasMore: result.hasMore,
             nextCursor: result.nextCursor,

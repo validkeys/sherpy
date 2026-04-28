@@ -257,9 +257,20 @@ export class ProjectService extends Effect.Service<ProjectService>()("ProjectSer
      */
     const get = (id: string): Effect.Effect<typeof Project.Type, NotFoundError> =>
       Effect.gen(function* () {
-        const project = yield* repo.findById(id);
+        // Manual query with field aliases to match Project schema
+        const rows = yield* sql`
+          SELECT
+            id, slug, name, description,
+            pipeline_status as "pipelineStatus",
+            assigned_people as "assignedPeople",
+            tags, priority,
+            created_at as "createdAt",
+            updated_at as "updatedAt"
+          FROM projects
+          WHERE id = ${id}
+        `.pipe(Effect.orDie); // Convert SQL errors to defects
 
-        if (Option.isNone(project)) {
+        if (rows.length === 0) {
           return yield* Effect.fail(
             new NotFoundError({
               entity: "Project",
@@ -269,7 +280,11 @@ export class ProjectService extends Effect.Service<ProjectService>()("ProjectSer
           );
         }
 
-        return project.value;
+        // Decode the row using the Project schema
+        const project = yield* Schema.decodeUnknown(Project)(rows[0]).pipe(
+          Effect.orDie, // Convert parse errors to defects
+        );
+        return project;
       });
 
     /**
