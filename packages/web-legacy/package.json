@@ -1,5 +1,5 @@
 {
-  "name": "@sherpy/web",
+  "name": "@sherpy/web-legacy",
   "version": "0.0.0",
   "type": "module",
   "scripts": {

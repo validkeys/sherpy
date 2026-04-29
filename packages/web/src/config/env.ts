@@ -17,10 +17,10 @@ interface Env {
  */
 function getRequiredEnv(key: string): string {
   const value = import.meta.env[key];
-  if (value === undefined || value === '') {
+  if (value === undefined || value === "") {
     throw new Error(
       `Missing required environment variable: ${key}. ` +
-        `Please check your .env.local file and ensure it matches .env.example.`
+        `Please check your .env.local file and ensure it matches .env.example.`,
     );
   }
   return value;
@@ -32,11 +32,9 @@ function getRequiredEnv(key: string): string {
  */
 function getOptionalEnv(key: string, defaultValue: string): string {
   const value = import.meta.env[key];
-  if (value === undefined || value === '') {
+  if (value === undefined || value === "") {
     if (import.meta.env.DEV) {
-      console.warn(
-        `Environment variable ${key} not set, using default: ${defaultValue}`
-      );
+      console.warn(`Environment variable ${key} not set, using default: ${defaultValue}`);
     }
     return defaultValue;
   }
@@ -47,7 +45,7 @@ function getOptionalEnv(key: string, defaultValue: string): string {
  * Parses a string boolean value.
  */
 function parseBoolean(value: string): boolean {
-  return value.toLowerCase() === 'true';
+  return value.toLowerCase() === "true";
 }
 
 /**
@@ -55,26 +53,22 @@ function parseBoolean(value: string): boolean {
  * This runs at module initialization, ensuring env vars are validated at app startup.
  */
 function createEnv(): Env {
-  const apiUrl = getRequiredEnv('VITE_API_URL');
-  const wsUrl = getRequiredEnv('VITE_WS_URL');
-  const devMode = parseBoolean(
-    getOptionalEnv('VITE_DEV_MODE', String(import.meta.env.DEV))
-  );
+  const apiUrl = getRequiredEnv("VITE_API_URL");
+  const wsUrl = getRequiredEnv("VITE_WS_URL");
+  const devMode = parseBoolean(getOptionalEnv("VITE_DEV_MODE", String(import.meta.env.DEV)));
 
   // Validate URL formats
   try {
     new URL(apiUrl);
   } catch {
     throw new Error(
-      `Invalid VITE_API_URL: "${apiUrl}". Must be a valid URL (e.g., http://localhost:3000)`
+      `Invalid VITE_API_URL: "${apiUrl}". Must be a valid URL (e.g., http://localhost:3000)`,
     );
   }
 
   // Validate WebSocket URL format
-  if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
-    throw new Error(
-      `Invalid VITE_WS_URL: "${wsUrl}". Must start with ws:// or wss://`
-    );
+  if (!wsUrl.startsWith("ws://") && !wsUrl.startsWith("wss://")) {
+    throw new Error(`Invalid VITE_WS_URL: "${wsUrl}". Must start with ws:// or wss://`);
   }
 
   return {

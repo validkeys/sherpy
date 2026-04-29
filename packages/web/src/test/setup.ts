@@ -1,6 +1,6 @@
-import '@testing-library/jest-dom';
-import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+import "@testing-library/jest-dom";
+import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
 
 // Cleanup after each test
 afterEach(() => {
@@ -8,7 +8,7 @@ afterEach(() => {
 });
 
 // Mock window.matchMedia (required for some components)
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
   value: (query: string) => ({
     matches: false,
@@ -26,8 +26,8 @@ Object.defineProperty(window, 'matchMedia', {
 (globalThis as typeof globalThis & { IntersectionObserver: unknown }).IntersectionObserver =
   class IntersectionObserver {
     readonly root = null;
-    readonly rootMargin = '';
-    readonly scrollMargin = '';
+    readonly rootMargin = "";
+    readonly scrollMargin = "";
     readonly thresholds = [];
     constructor() {}
     disconnect() {}

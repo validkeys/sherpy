@@ -6,18 +6,18 @@
  * persistence across page reloads.
  */
 
-import { atom } from 'jotai';
-import { atomWithStorage } from 'jotai/utils';
-import type { WorkflowStep, StepStatus } from '../types';
-import { WORKFLOW_STEPS } from '../types';
+import { atom } from "jotai";
+import { atomWithStorage } from "jotai/utils";
+import type { StepStatus, WorkflowStep } from "../types";
+import { WORKFLOW_STEPS } from "../types";
 
 /**
  * Current workflow step with localStorage persistence.
  * Defaults to 'intake' (first step in pipeline).
  */
 export const currentStepAtom = atomWithStorage<WorkflowStep>(
-  'sherpy:workflow:currentStep',
-  'intake'
+  "sherpy:workflow:currentStep",
+  "intake",
 );
 
 /**
@@ -25,8 +25,8 @@ export const currentStepAtom = atomWithStorage<WorkflowStep>(
  * Tracks which steps have been marked as complete.
  */
 export const completedStepsAtom = atomWithStorage<WorkflowStep[]>(
-  'sherpy:workflow:completedSteps',
-  []
+  "sherpy:workflow:completedSteps",
+  [],
 );
 
 /**
@@ -46,11 +46,11 @@ export const stepStatusesAtom = atom((get) => {
 
   WORKFLOW_STEPS.forEach((step) => {
     if (completedSteps.includes(step.id)) {
-      statuses.set(step.id, 'complete');
+      statuses.set(step.id, "complete");
     } else if (step.id === currentStep) {
-      statuses.set(step.id, 'current');
+      statuses.set(step.id, "current");
     } else {
-      statuses.set(step.id, 'pending');
+      statuses.set(step.id, "pending");
     }
   });
 
@@ -98,7 +98,7 @@ export const nextStepAtom = atom(
     if (nextStep) {
       set(currentStepAtom, nextStep);
     }
-  }
+  },
 );
 
 /**
@@ -118,19 +118,16 @@ export const prevStepAtom = atom(
     if (prevStep) {
       set(currentStepAtom, prevStep);
     }
-  }
+  },
 );
 
 /**
  * Mark a step as complete by adding it to the completedStepsAtom.
  * Write-only atom that prevents duplicate entries.
  */
-export const markStepCompleteAtom = atom(
-  null,
-  (get, set, step: WorkflowStep) => {
-    const completedSteps = get(completedStepsAtom);
-    if (!completedSteps.includes(step)) {
-      set(completedStepsAtom, [...completedSteps, step]);
-    }
+export const markStepCompleteAtom = atom(null, (get, set, step: WorkflowStep) => {
+  const completedSteps = get(completedStepsAtom);
+  if (!completedSteps.includes(step)) {
+    set(completedStepsAtom, [...completedSteps, step]);
   }
-);
+});

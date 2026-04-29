@@ -13,6 +13,7 @@ export default defineConfig({
     outDir: "dist",
   },
   server: {
+    host: "0.0.0.0",
     allowedHosts: ["host.docker.internal", "localhost", "0.0.0.0"],
     proxy: {
       "/api": {

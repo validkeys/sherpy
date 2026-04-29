@@ -5,10 +5,10 @@
  * Connects to jotai atoms for state management and renders the step list.
  */
 
-import { useAtomValue, useSetAtom } from 'jotai';
-import { currentStepAtom, stepStatusesAtom } from '../state/workflow-atoms';
-import { WORKFLOW_STEPS } from '../types';
-import { SidebarStep } from './sidebar-step';
+import { useAtomValue, useSetAtom } from "jotai";
+import { currentStepAtom, stepStatusesAtom } from "../state/workflow-atoms";
+import { WORKFLOW_STEPS } from "../types";
+import { SidebarStep } from "./sidebar-step";
 
 /**
  * Sidebar displays the complete workflow step list with interactive navigation.
@@ -41,7 +41,7 @@ export function Sidebar() {
       <nav className="flex-1 overflow-y-auto p-4">
         <div className="space-y-2">
           {WORKFLOW_STEPS.map((step) => {
-            const status = stepStatuses.get(step.id) || 'pending';
+            const status = stepStatuses.get(step.id) || "pending";
             const isActive = step.id === currentStep;
 
             return (

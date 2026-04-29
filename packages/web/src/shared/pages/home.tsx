@@ -1,4 +1,4 @@
-import { Sidebar } from '@/features/sidebar';
+import { Sidebar } from "@/features/sidebar";
 
 /**
  * Home page component
@@ -18,8 +18,8 @@ export function HomePage() {
           <div className="bg-white rounded-lg border p-6">
             <h2 className="text-xl font-semibold mb-2">Main Content Area</h2>
             <p className="text-gray-600">
-              This is where the content for each workflow step will be displayed.
-              Select a step from the sidebar to begin.
+              This is where the content for each workflow step will be displayed. Select a step from
+              the sidebar to begin.
             </p>
           </div>
         </div>

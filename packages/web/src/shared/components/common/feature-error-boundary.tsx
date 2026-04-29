@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { ErrorBoundary } from '@/lib/error-boundary';
+import { ErrorBoundary } from "@/lib/error-boundary";
+import type { ReactNode } from "react";
 
 /**
  * Feature Error Boundary Props

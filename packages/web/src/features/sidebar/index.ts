@@ -14,18 +14,10 @@
  */
 
 // Main component
-export { Sidebar } from './components/sidebar';
+export { Sidebar } from "./components/sidebar";
 
 // Types
-export type {
-  WorkflowStep,
-  WorkflowStepConfig,
-  StepStatus,
-} from './types';
+export type { WorkflowStep, WorkflowStepConfig, StepStatus } from "./types";
 
 // State atoms (for app-level usage, not cross-feature)
-export {
-  currentStepAtom,
-  completedStepsAtom,
-  stepStatusesAtom,
-} from './state/workflow-atoms';
+export { currentStepAtom, completedStepsAtom, stepStatusesAtom } from "./state/workflow-atoms";

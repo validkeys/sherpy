@@ -5,25 +5,26 @@
  * Uses CVA for variant styling and lucide-react for icons.
  */
 
-import { forwardRef } from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { Check, ArrowRight, Circle } from 'lucide-react';
-import type { StepStatus } from '../types';
+import { type VariantProps, cva } from "class-variance-authority";
+import { ArrowRight, Check, Circle } from "lucide-react";
+import type React from "react";
+import { forwardRef } from "react";
+import type { StepStatus } from "../types";
 
 const stepIndicatorVariants = cva(
-  'inline-flex items-center justify-center rounded-full w-6 h-6 text-sm font-medium transition-colors',
+  "inline-flex items-center justify-center rounded-full w-6 h-6 text-sm font-medium transition-colors",
   {
     variants: {
       status: {
-        complete: 'bg-green-500 text-white',
-        current: 'bg-blue-500 text-white',
-        pending: 'bg-gray-300 text-gray-600',
+        complete: "bg-green-500 text-white",
+        current: "bg-blue-500 text-white",
+        pending: "bg-gray-300 text-gray-600",
       },
     },
     defaultVariants: {
-      status: 'pending',
+      status: "pending",
     },
-  }
+  },
 );
 
 export interface StepIndicatorProps
@@ -43,23 +44,14 @@ export interface StepIndicatorProps
  */
 export const StepIndicator = forwardRef<HTMLDivElement, StepIndicatorProps>(
   ({ status, className, ...props }, ref) => {
-    const Icon =
-      status === 'complete'
-        ? Check
-        : status === 'current'
-          ? ArrowRight
-          : Circle;
+    const Icon = status === "complete" ? Check : status === "current" ? ArrowRight : Circle;
 
     return (
-      <div
-        ref={ref}
-        className={stepIndicatorVariants({ status, className })}
-        {...props}
-      >
+      <div ref={ref} className={stepIndicatorVariants({ status, className })} {...props}>
         <Icon size={16} />
       </div>
     );
-  }
+  },
 );
 
-StepIndicator.displayName = 'StepIndicator';
+StepIndicator.displayName = "StepIndicator";

@@ -1,8 +1,8 @@
-import { createBrowserRouter } from 'react-router-dom';
-import { RootLayout } from '@/shared/layouts/root-layout';
-import { HomePage } from '@/shared/pages/home';
-import { NotFoundPage } from '@/shared/pages/not-found';
-import { ErrorBoundaryDemoPage } from '@/shared/pages';
+import { RootLayout } from "@/shared/layouts/root-layout";
+import { ErrorBoundaryDemoPage } from "@/shared/pages";
+import { HomePage } from "@/shared/pages/home";
+import { NotFoundPage } from "@/shared/pages/not-found";
+import { createBrowserRouter } from "react-router-dom";
 
 /**
  * Application router configuration
@@ -19,7 +19,7 @@ import { ErrorBoundaryDemoPage } from '@/shared/pages';
  */
 export const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <RootLayout />,
     children: [
       {
@@ -27,11 +27,11 @@ export const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path: 'error-boundary-demo',
+        path: "error-boundary-demo",
         element: <ErrorBoundaryDemoPage />,
       },
       {
-        path: '*',
+        path: "*",
         element: <NotFoundPage />,
       },
     ],

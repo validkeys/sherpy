@@ -1,11 +1,11 @@
-import { useCallback } from 'react';
-import { classifyError, logError, type ClassifiedError } from '@/lib/error-utils';
+import { type ClassifiedError, classifyError, logError } from "@/lib/error-utils";
+import { useCallback } from "react";
 
 interface UseErrorHandlerOptions {
   onError?: (error: ClassifiedError) => void;
   showToast?: boolean;
   toast?: (options: {
-    variant?: 'default' | 'destructive';
+    variant?: "default" | "destructive";
     title: string;
     description: string;
   }) => void;
@@ -13,14 +13,8 @@ interface UseErrorHandlerOptions {
 
 interface ErrorHandler {
   handleError: (error: unknown, context?: Record<string, unknown>) => ClassifiedError;
-  handleAsyncError: (
-    fn: () => Promise<void>,
-    context?: Record<string, unknown>,
-  ) => Promise<void>;
-  retry: <T>(
-    fn: () => Promise<T>,
-    options?: { maxRetries?: number; delay?: number },
-  ) => Promise<T>;
+  handleAsyncError: (fn: () => Promise<void>, context?: Record<string, unknown>) => Promise<void>;
+  retry: <T>(fn: () => Promise<T>, options?: { maxRetries?: number; delay?: number }) => Promise<T>;
 }
 
 export function useErrorHandler(options: UseErrorHandlerOptions = {}): ErrorHandler {
@@ -34,8 +28,8 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}): ErrorHand
 
       if (showToast && toast) {
         toast({
-          variant: 'destructive',
-          title: 'Error',
+          variant: "destructive",
+          title: "Error",
           description: classifiedError.userMessage,
         });
       }
@@ -59,7 +53,7 @@ export function useErrorHandler(options: UseErrorHandlerOptions = {}): ErrorHand
   );
 
   const retry = useCallback(
-    async <T,>(
+    async <T>(
       fn: () => Promise<T>,
       options: { maxRetries?: number; delay?: number } = {},
     ): Promise<T> => {

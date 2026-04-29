@@ -5,28 +5,29 @@
  * and click handler. Building block for the sidebar step list.
  */
 
-import { forwardRef } from 'react';
-import { cva, type VariantProps } from 'class-variance-authority';
-import { StepIndicator } from './step-indicator';
-import type { WorkflowStepConfig, StepStatus } from '../types';
+import { type VariantProps, cva } from "class-variance-authority";
+import type React from "react";
+import { forwardRef } from "react";
+import type { StepStatus, WorkflowStepConfig } from "../types";
+import { StepIndicator } from "./step-indicator";
 
 const sidebarStepVariants = cva(
-  'flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-gray-100',
+  "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors hover:bg-gray-100",
   {
     variants: {
       isActive: {
-        true: 'bg-blue-50 border-2 border-blue-200',
-        false: 'border-2 border-transparent',
+        true: "bg-blue-50 border-2 border-blue-200",
+        false: "border-2 border-transparent",
       },
     },
     defaultVariants: {
       isActive: false,
     },
-  }
+  },
 );
 
 export interface SidebarStepProps
-  extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onClick'>,
+  extends Omit<React.HTMLAttributes<HTMLDivElement>, "onClick">,
     VariantProps<typeof sidebarStepVariants> {
   /** Workflow step configuration with metadata */
   step: WorkflowStepConfig;
@@ -52,7 +53,7 @@ export interface SidebarStepProps
 export const SidebarStep = forwardRef<HTMLDivElement, SidebarStepProps>(
   ({ step, status, isActive, onClick, className, ...props }, ref) => {
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === 'Enter' || event.key === ' ') {
+      if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
         onClick();
       }
@@ -67,7 +68,7 @@ export const SidebarStep = forwardRef<HTMLDivElement, SidebarStepProps>(
         onClick={onClick}
         onKeyDown={handleKeyDown}
         aria-label={`Navigate to ${step.name}`}
-        aria-current={isActive ? 'step' : undefined}
+        aria-current={isActive ? "step" : undefined}
         {...props}
       >
         <StepIndicator status={status} />
@@ -77,7 +78,7 @@ export const SidebarStep = forwardRef<HTMLDivElement, SidebarStepProps>(
         </div>
       </div>
     );
-  }
+  },
 );
 
-SidebarStep.displayName = 'SidebarStep';
+SidebarStep.displayName = "SidebarStep";

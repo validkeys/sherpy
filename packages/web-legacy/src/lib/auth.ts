@@ -4,10 +4,14 @@
 
 import { OktaAuth } from "@okta/okta-auth-js";
 
+// Development mode bypass check
+const DEV_MODE = import.meta.env.VITE_DEV_MODE === "true";
+
 // Initialize OktaAuth with PKCE configuration
+// In DEV_MODE, provide dummy values to prevent initialization errors
 export const authClient = new OktaAuth({
-  issuer: import.meta.env.VITE_OKTA_DOMAIN || "",
-  clientId: import.meta.env.VITE_OKTA_CLIENT_ID || "",
+  issuer: DEV_MODE ? "https://dev.okta.local/oauth2/default" : (import.meta.env.VITE_OKTA_DOMAIN || ""),
+  clientId: DEV_MODE ? "dev-client-id" : (import.meta.env.VITE_OKTA_CLIENT_ID || ""),
   redirectUri: `${window.location.origin}/login/callback`,
   postLogoutRedirectUri: window.location.origin,
   scopes: ["openid", "profile", "email"],

@@ -1,4 +1,4 @@
-import { Button } from './button';
+import { Button } from "./button";
 
 /**
  * Button Demo Component
@@ -47,8 +47,8 @@ export function ButtonDemo() {
       <section>
         <h2 className="text-2xl font-bold mb-4">Interactive Example</h2>
         <div className="flex flex-wrap gap-4">
-          <Button onClick={() => alert('Button clicked!')}>Click Me</Button>
-          <Button variant="secondary" onClick={() => alert('Secondary button clicked!')}>
+          <Button onClick={() => alert("Button clicked!")}>Click Me</Button>
+          <Button variant="secondary" onClick={() => alert("Secondary button clicked!")}>
             Secondary Action
           </Button>
         </div>

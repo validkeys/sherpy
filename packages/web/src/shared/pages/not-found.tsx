@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { cn } from '@/utils/cn';
+import { cn } from "@/utils/cn";
+import { Link } from "react-router-dom";
 
 /**
  * 404 Not Found page component
@@ -8,7 +8,7 @@ import { cn } from '@/utils/cn';
  */
 export function NotFoundPage() {
   return (
-    <div className={cn('min-h-screen flex items-center justify-center')}>
+    <div className={cn("min-h-screen flex items-center justify-center")}>
       <div className="text-center">
         <h1 className="text-6xl font-bold text-foreground mb-4">404</h1>
         <h2 className="text-2xl font-semibold text-foreground mb-4">Page Not Found</h2>

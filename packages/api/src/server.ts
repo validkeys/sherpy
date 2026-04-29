@@ -1005,11 +1005,9 @@ const MigrationRunnerLive = Layer.effectDiscard(
 
 /**
  * Database layer with LibSQL (SQLite)
- * TODO: Make URL configurable via environment variable
+ * Uses SqliteLive from db/index.ts which auto-creates ~/.sherpy directory
  */
-const DatabaseLayer = LibsqlClient.layer({
-  url: `file:${join(homedir(), ".sherpy", "sherpy.db")}`,
-});
+import { SqliteLive as DatabaseLayer } from "./db/index.js";
 
 /**
  * People services layer - merges all people-related services
@@ -1081,7 +1079,7 @@ const WebSocketServerLive = Layer.scopedDiscard(
 
     // Create WebSocket server on port 3101 (separate from HTTP API)
     // In production, this would be proxied through a reverse proxy like Nginx
-    const wss = new WebSocketServer({ port: 3101, host: "127.0.0.1" });
+    const wss = new WebSocketServer({ port: 3101, host: "0.0.0.0" });
 
     // Track active connections
     let connectionId = 0;
@@ -1162,7 +1160,7 @@ const WebSocketServerLive = Layer.scopedDiscard(
       }),
     );
 
-    yield* Effect.log("WebSocket server listening on ws://127.0.0.1:3101");
+    yield* Effect.log("WebSocket server listening on ws://0.0.0.0:3101");
   }),
 );
 
@@ -1185,7 +1183,7 @@ const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   Layer.provide(SherryApiLive),
   Layer.provide(FetchHttpClient.layer),
   Layer.provide(NodeFileSystem.layer),
-  Layer.provide(NodeHttpServer.layer(createServer, { port: 3100, host: "127.0.0.1" })),
+  Layer.provide(NodeHttpServer.layer(createServer, { port: 3100, host: "0.0.0.0" })),
 );
 
 /**

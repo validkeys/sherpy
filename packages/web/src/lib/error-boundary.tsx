@@ -1,6 +1,6 @@
-import type { ReactNode } from 'react';
-import { Component } from 'react';
-import { classifyError, logError, type ClassifiedError } from '@/lib/error-utils';
+import { type ClassifiedError, classifyError, logError } from "@/lib/error-utils";
+import type { ReactNode } from "react";
+import { Component } from "react";
 
 /**
  * Error Boundary Props
@@ -191,9 +191,7 @@ function DefaultErrorFallback({ error, reset }: DefaultErrorFallbackProps): Reac
         {!import.meta.env.DEV && (
           <div className="mb-4 rounded border border-gray-200 bg-gray-50 p-3 text-center">
             <p className="text-xs text-gray-500">Error ID: {classifiedError.errorId}</p>
-            <p className="mt-1 text-xs text-gray-500">
-              Please share this ID if you need support.
-            </p>
+            <p className="mt-1 text-xs text-gray-500">Please share this ID if you need support.</p>
           </div>
         )}
 
@@ -205,7 +203,7 @@ function DefaultErrorFallback({ error, reset }: DefaultErrorFallbackProps): Reac
             Try Again
           </button>
           <button
-            onClick={() => (window.location.href = '/')}
+            onClick={() => (window.location.href = "/")}
             className="flex-1 rounded border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
           >
             Go Home

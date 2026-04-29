@@ -71,8 +71,9 @@ envFromKeychain:
 # Host-to-container port mappings (1:1). Only listed ports are accessible
 # from the host.
 ports:
-  # - 3000
-  # - 5432
+  - 5173  # Web dev server (Vite)
+  - 3100  # API server
+  - 3101  # API server alternate port
 
 # --- Services ------------------------------------------------------------------
 # Optional services installed into the container image at build time.
