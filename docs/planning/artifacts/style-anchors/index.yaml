@@ -1,0 +1,252 @@
+version: 1.0.0
+project: Sherpy Flow UI Refactor
+generated: 2026-04-28
+
+technical_requirements_ref: ../../requirements/technical-requirements.yaml
+
+categories:
+  - id: architecture
+    name: Architecture
+    description: Feature-based organization and project structure patterns
+    anchors:
+      - feature-module-structure
+
+  - id: data-fetching
+    name: Data Fetching
+    description: React Query patterns for API integration
+    anchors:
+      - react-query-api-layer
+      - react-query-mutations
+
+  - id: state-management
+    name: State Management
+    description: Jotai atoms and Bunshi dependency injection
+    anchors:
+      - jotai-feature-state
+
+  - id: ui-components
+    name: UI Components
+    description: Shadcn component patterns with CVA variants
+    anchors:
+      - shadcn-component-pattern
+
+  - id: chat
+    name: Chat Integration
+    description: Assistant UI integration for streaming chat
+    anchors:
+      - assistant-ui-integration
+
+anchors:
+  - id: feature-module-structure
+    name: Feature Module Structure
+    file: feature-module-structure.md
+    category: architecture
+    source:
+      type: external
+      repository: https://github.com/alan2207/bulletproof-react
+      path: /apps/react-vite/src/features/
+      description: Bulletproof React feature-based architecture
+    applies_to:
+      architecture_patterns:
+        - feature-based-architecture
+      task_types:
+        - code
+        - refactor
+    tags:
+      - feature-based
+      - organization
+      - folder-structure
+
+  - id: react-query-api-layer
+    name: React Query API Layer Pattern
+    file: react-query-api-layer.md
+    category: data-fetching
+    source:
+      type: external
+      repository: https://github.com/alan2207/bulletproof-react
+      path: /apps/react-vite/src/features/discussions/api/get-discussions.ts
+      description: Three-part pattern - fetcher + queryOptions + hook
+    applies_to:
+      architecture_patterns:
+        - react-query-integration
+      task_types:
+        - code
+        - api
+    tags:
+      - react-query
+      - api
+      - hooks
+      - three-part-pattern
+
+  - id: react-query-mutations
+    name: React Query Mutation Pattern
+    file: react-query-mutations.md
+    category: data-fetching
+    source:
+      type: external
+      repository: https://github.com/alan2207/bulletproof-react
+      path: /apps/react-vite/src/features/discussions/api/create-discussion.ts
+      description: Mutations with Zod validation and cache invalidation
+    applies_to:
+      architecture_patterns:
+        - react-query-integration
+      task_types:
+        - code
+        - api
+    tags:
+      - react-query
+      - mutations
+      - validation
+      - zod
+      - cache-invalidation
+
+  - id: jotai-feature-state
+    name: Jotai Feature State with Bunshi
+    file: jotai-feature-state.md
+    category: state-management
+    source:
+      type: documentation
+      url: https://jotai.org/docs/introduction
+      description: Jotai atoms with Bunshi dependency injection
+    applies_to:
+      architecture_patterns:
+        - jotai-state-management
+      task_types:
+        - code
+    tags:
+      - jotai
+      - bunshi
+      - atoms
+      - client-state
+
+  - id: shadcn-component-pattern
+    name: Shadcn Component Pattern with CVA
+    file: shadcn-component-pattern.md
+    category: ui-components
+    source:
+      type: documentation
+      url: https://ui.shadcn.com/docs/components/button
+      description: Shadcn component with Radix UI + CVA variants
+    applies_to:
+      architecture_patterns:
+        - shadcn-components
+      task_types:
+        - code
+        - ui
+    tags:
+      - shadcn
+      - radix-ui
+      - cva
+      - variants
+      - composition
+
+  - id: assistant-ui-integration
+    name: Assistant UI Integration Pattern
+    file: assistant-ui-integration.md
+    category: chat
+    source:
+      type: documentation
+      url: https://www.assistant-ui.com/docs
+      description: Assistant UI integration for streaming chat
+    applies_to:
+      architecture_patterns:
+        - assistant-ui-chat
+      task_types:
+        - code
+        - chat
+    tags:
+      - assistant-ui
+      - chat
+      - streaming
+      - websocket
+
+usage_matrix:
+  # Map architecture patterns to recommended anchors
+  by_pattern:
+    feature-based-architecture:
+      - feature-module-structure
+      - react-query-api-layer
+      - jotai-feature-state
+
+    react-query-integration:
+      - react-query-api-layer
+      - react-query-mutations
+
+    jotai-state-management:
+      - jotai-feature-state
+      - feature-module-structure
+
+    shadcn-components:
+      - shadcn-component-pattern
+
+    assistant-ui-chat:
+      - assistant-ui-integration
+      - react-query-api-layer
+
+  # Map task types to recommended anchors
+  by_task_type:
+    code:
+      primary:
+        - feature-module-structure
+        - react-query-api-layer
+      supporting:
+        - jotai-feature-state
+        - shadcn-component-pattern
+
+    api:
+      primary:
+        - react-query-api-layer
+        - react-query-mutations
+      supporting:
+        - feature-module-structure
+
+    ui:
+      primary:
+        - shadcn-component-pattern
+      supporting:
+        - feature-module-structure
+
+    chat:
+      primary:
+        - assistant-ui-integration
+      supporting:
+        - react-query-api-layer
+        - feature-module-structure
+
+    refactor:
+      primary:
+        - feature-module-structure
+      supporting:
+        - react-query-api-layer
+        - jotai-feature-state
+
+    test:
+      # Tests reference the patterns being tested
+      note: Use anchors for patterns under test
+
+meta:
+  total_anchors: 6
+  total_categories: 5
+  collection_date: 2026-04-28
+  collector: Claude Sonnet 4.5
+
+  # Reference documentation created during research
+  additional_docs:
+    - file: ../../bulletproof-react-style-anchors.md
+      description: Comprehensive bulletproof-react pattern reference
+    - file: ../../style-anchors-quick-reference.md
+      description: Quick reference for common patterns
+    - file: ../../ui-refactor-feature-mapping.md
+      description: Application of patterns to sidebar and chat features
+
+  notes: |
+    Style anchors collected based on bulletproof-react architecture patterns,
+    adapted for the Sherpy Flow UI Refactor project. Patterns cover:
+    - Feature-based organization
+    - React Query for data fetching
+    - Jotai/Bunshi for state management
+    - Shadcn components with CVA
+    - Assistant UI for chat integration
+
+    Additional reference documentation available in docs/planning/ provides
+    comprehensive examples and guidance for implementing these patterns.

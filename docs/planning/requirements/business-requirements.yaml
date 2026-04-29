@@ -1,0 +1,466 @@
+project:
+  name: Sherpy Flow UI Refactor
+  version: 1.0.0
+  generated: 2026-04-28
+
+overview:
+  problem: |
+    The current UI for the sherpy workflow is inadequate, causing user confusion and inefficiency.
+    Users experience confusing navigation (hard to know what step comes next), too much flexibility
+    (easy to skip steps or go off track), unclear progress tracking (don't know where they are in
+    the workflow), and an overly manual process (too much typing, not guided enough).
+
+  value_proposition: |
+    A locked-in, repeatable set of steps for walking users through the sherpy workflow. This provides
+    a better user experience through guided automation, ensuring users complete project planning
+    efficiently while generating comprehensive planning artifacts.
+
+  scope:
+    in_scope:
+      - Complete UI overhaul with redesigned interface and user flow
+      - Fixed position sidebar (1/3 screen width) showing all 10 workflow steps with status indicators
+      - Tabbed main content area with Chat and Files views
+      - Automatic skill invocation based on workflow step (no manual commands)
+      - Hybrid chat experience (primarily guided interview, occasional free-form allowed)
+      - Files tab with hierarchical tree view and inline preview
+      - Database-driven state tracking for workflow progress
+      - Resume capability with ability to go back and add information to completed steps
+      - Cascade update mechanism to propagate changes from earlier steps to later artifacts
+      - Streaming AI responses with real-time feedback
+      - Keyboard navigation support
+      - WCAG 2.1 AA compliance using shadcn components
+
+    out_of_scope:
+      - Backend/API architectural changes
+      - Other product areas beyond sherpy workflow intake
+      - Mobile optimization (desktop/web only)
+      - New features beyond existing sherpy-flow capabilities
+      - Multi-user collaboration features
+
+personas:
+  - id: PM-001
+    name: Product Manager
+    type: Product/project managers - Non-technical stakeholders
+    description: |
+      Non-technical product or project managers who need to plan software projects and generate
+      comprehensive planning documentation.
+
+    goals:
+      - Complete project planning efficiently and accurately
+      - Generate comprehensive planning artifacts (requirements, timelines, test plans)
+      - Navigate the sherpy workflow without confusion or training
+      - Add or update information at any workflow step as needs evolve
+
+    pain_points:
+      - Current UI makes it hard to know what step comes next
+      - Too easy to skip steps or go off track
+      - Unclear where they are in the overall workflow
+      - Too much manual typing and command entry
+      - Difficulty returning to completed steps to add new information
+
+    behaviors:
+      - Primarily follows linear workflow but may pause after business requirements
+      - Returns to add new requirements before continuing to later steps
+      - Prefers guided interview format over free-form conversation
+      - Expects clear visual feedback on progress and next steps
+
+use_cases:
+  - id: UC-001
+    title: New Project Intake
+    description: Starting a fresh project from scratch through the complete sherpy workflow
+    primary_actor: PM-001
+
+    preconditions:
+      - User has access to the sherpy flow UI
+      - Database backend is available
+      - Sherpy-flow skills are functional
+
+    main_flow:
+      - User opens intake page
+      - User enters initial business requirements
+      - System automatically invokes business-requirements-interview skill
+      - System guides user through 10-step workflow with automatic skill invocation
+      - System generates all planning artifacts and stores in database
+      - User views generated files in Files tab
+
+    postconditions:
+      - Complete planning artifacts generated
+      - Workflow state saved in database
+      - User can resume or modify at any step
+
+    priority: high
+
+  - id: UC-002
+    title: Resume Partially Completed Project
+    description: Continuing work on a project that was started but not completed
+    primary_actor: PM-001
+
+    preconditions:
+      - Project exists in database with partial completion
+      - Some workflow steps already completed
+
+    main_flow:
+      - User selects existing project
+      - System loads workflow state from database
+      - System displays progress with completed steps marked (✓), current step (→), pending steps (○)
+      - User continues from current step or navigates to different step
+      - System resumes guided workflow
+
+    postconditions:
+      - Workflow progress updated
+      - New artifacts generated and saved
+
+    priority: high
+
+  - id: UC-003
+    title: Update Requirements with Cascade Propagation
+    description: Going back to modify business requirements after later steps are complete, with changes propagating forward
+    primary_actor: PM-001
+
+    preconditions:
+      - Business requirements completed
+      - Later workflow steps (technical requirements, implementation plan, etc.) already completed
+
+    main_flow:
+      - User navigates back to Step 2 (Business Requirements)
+      - User adds new requirements or modifies existing ones
+      - System detects changes to foundational step
+      - System walks through all succeeding steps to update existing artifacts
+      - System presents updated documents for review
+
+    postconditions:
+      - Business requirements updated
+      - All downstream artifacts updated with new information
+      - Workflow consistency maintained
+
+    priority: high
+
+  - id: UC-004
+    title: Review Generated Planning Artifacts
+    description: Viewing and navigating through completed planning documentation
+    primary_actor: PM-001
+
+    preconditions:
+      - Workflow completed or partially completed
+      - Artifacts generated and stored in database
+
+    main_flow:
+      - User switches to Files tab
+      - User sees hierarchical tree view (requirements/, implementation/, delivery/, etc.)
+      - User clicks on file to preview inline
+      - User navigates between files
+
+    postconditions:
+      - User has viewed planning artifacts
+
+    priority: medium
+
+functional_requirements:
+  - id: FR-001
+    title: Fixed Position Workflow Sidebar
+    description: Display all 10 sherpy workflow steps in a fixed sidebar taking up 1/3 of screen width
+    rationale: Users need constant visibility of workflow structure and progress
+    acceptance_criteria:
+      - Sidebar always visible, cannot be collapsed
+      - Takes up exactly 1/3 of screen width
+      - Shows all 10 steps with names matching sherpy-flow skill
+      - Displays status icons (✓ complete, → current, ○ pending)
+    priority: must-have
+    user_stories:
+      - As a PM, I want to see all workflow steps at all times so I know where I am and what's next
+
+  - id: FR-002
+    title: Interactive Step Navigation
+    description: Allow users to click workflow steps to navigate between them
+    rationale: Users need flexibility to move between steps, especially to add information
+    acceptance_criteria:
+      - Each step in sidebar is clickable
+      - Clicking step navigates to that step in the workflow
+      - Current step is visually highlighted
+      - Navigation updates main content area
+    priority: must-have
+    user_stories:
+      - As a PM, I want to click on any workflow step so I can add more information or review that stage
+
+  - id: FR-003
+    title: Tabbed Main Content Area
+    description: Main content area with two tabs - Chat and Files
+    rationale: Separate concerns between conversation/workflow and artifact viewing
+    acceptance_criteria:
+      - Two clearly labeled tabs (Chat, Files)
+      - Smooth tab switching with no page reload
+      - Active tab visually distinguished
+      - Tab state persists during workflow navigation
+    priority: must-have
+    user_stories:
+      - As a PM, I want separate Chat and Files tabs so I can focus on the interview or review artifacts
+
+  - id: FR-004
+    title: Automatic Skill Invocation
+    description: Skills are automatically invoked based on current workflow step without user commands
+    rationale: Reduce manual effort and prevent user errors from typing wrong commands
+    acceptance_criteria:
+      - Skills auto-invoked when navigating to workflow step
+      - No manual /skill-name commands required
+      - User sees skill execution feedback (loading states, progress)
+      - Skills receive correct base_directory parameter
+    priority: must-have
+    user_stories:
+      - As a PM, I want skills to run automatically so I don't have to remember commands
+
+  - id: FR-005
+    title: Hybrid Chat Experience
+    description: Primarily guided interview with option for occasional free-form messages
+    rationale: Balance structure (interview) with flexibility (free conversation when needed)
+    acceptance_criteria:
+      - Default mode is structured interview (one question at a time)
+      - User can type free-form message instead of answering question
+      - System gracefully handles free-form input
+      - System returns to structured interview after free-form exchange
+    priority: must-have
+    user_stories:
+      - As a PM, I want to primarily follow guided questions but occasionally ask clarifying questions
+
+  - id: FR-006
+    title: Files Tab with Tree View
+    description: Hierarchical display of all generated planning artifacts organized by folder
+    rationale: Users need to navigate and understand the structure of generated documentation
+    acceptance_criteria:
+      - Tree view shows requirements/, implementation/, delivery/, architecture/, artifacts/, summaries/ folders
+      - Files are displayed under correct folders
+      - Expand/collapse folders
+      - Visual distinction between folders and files
+    priority: must-have
+    user_stories:
+      - As a PM, I want to see planning artifacts in a tree structure so I understand the organization
+
+  - id: FR-007
+    title: Inline File Preview
+    description: Click files in tree view to display contents inline without opening external editor
+    rationale: Quick access to file contents without leaving the workflow UI
+    acceptance_criteria:
+      - Clicking file displays contents in preview pane
+      - Preview supports YAML and Markdown rendering
+      - Preview is read-only (no editing)
+      - Clear visual feedback for selected file
+    priority: must-have
+    user_stories:
+      - As a PM, I want to click on a file to preview its contents so I can review without opening external apps
+
+  - id: FR-008
+    title: Database-Driven State Tracking
+    description: All workflow state, progress, and artifact data stored in database
+    rationale: Enable resume capability, state persistence, and programmatic file generation
+    acceptance_criteria:
+      - Database stores project metadata, workflow step status, artifact contents
+      - No dependency on file system for state
+      - Files only created on explicit user request/export
+      - State persists across sessions
+    priority: must-have
+    user_stories:
+      - As a PM, I want my workflow progress saved so I can resume later from where I left off
+
+  - id: FR-009
+    title: Cascade Update Mechanism
+    description: When earlier steps are modified, propagate changes to all downstream artifacts
+    rationale: Maintain consistency when requirements evolve after planning is complete
+    acceptance_criteria:
+      - Detect when foundational steps (business/technical requirements) are modified
+      - Identify all downstream artifacts affected by the change
+      - Walk through affected steps to update artifacts with new information
+      - Present updated artifacts for user review
+      - Option to accept/reject cascaded updates
+    priority: must-have
+    user_stories:
+      - As a PM, I want to add new requirements late in the process and have all plans updated accordingly
+
+  - id: FR-010
+    title: Streaming AI Responses
+    description: Display AI responses in real-time as they are generated
+    rationale: Provide immediate feedback and reduce perceived wait time
+    acceptance_criteria:
+      - Text appears progressively as generated (not all at once)
+      - Smooth streaming without jitter
+      - Loading indicator before streaming starts
+      - User can read partial responses
+    priority: should-have
+    user_stories:
+      - As a PM, I want to see AI responses as they're generated so I'm not staring at a blank screen
+
+  - id: FR-011
+    title: Keyboard Navigation
+    description: All UI features accessible via keyboard shortcuts
+    rationale: Improve efficiency and accessibility for power users
+    acceptance_criteria:
+      - Arrow keys navigate workflow steps
+      - Tab switches between Chat and Files tabs
+      - Enter/Escape for common actions
+      - Keyboard shortcuts documented and discoverable
+    priority: should-have
+    user_stories:
+      - As a PM, I want keyboard shortcuts so I can navigate efficiently without using the mouse
+
+  - id: FR-012
+    title: Programmatic File Visualization
+    description: Render file contents based on document specifications in docs/specifications folder
+    rationale: Database-first approach with files generated on demand
+    acceptance_criteria:
+      - File preview reads from database, not file system
+      - Rendering logic uses specs from docs/specifications/
+      - Support for YAML and Markdown formats
+      - Consistent formatting and styling
+    priority: should-have
+    user_stories:
+      - As a PM, I want to see file contents without actually creating files on disk
+
+non_functional_requirements:
+  performance:
+    - metric: UI responsiveness
+      target: "<100ms for all interactions"
+      rationale: Instant feedback critical for perceived performance
+
+    - metric: Tab switching
+      target: "<50ms transition time"
+      rationale: Smooth navigation enhances user experience
+
+    - metric: Skill invocation
+      target: "Progress indicators within 200ms"
+      rationale: User needs immediate feedback that action was registered
+
+    - metric: Streaming latency
+      target: "First token within 500ms"
+      rationale: Minimize perceived wait time for AI responses
+
+  usability:
+    - requirement: Intuitive navigation
+      description: Users understand interface without training or documentation
+      validation: User testing with no prior instructions
+
+    - requirement: Clear visual feedback
+      description: Always clear what step you're on and what's next
+      validation: Users can correctly identify current step and next action 100% of the time
+
+    - requirement: Minimal cognitive load
+      description: Reduce decision fatigue through guided workflow
+      validation: Users complete workflow without asking "what do I do next"
+
+  accessibility:
+    - standard: WCAG 2.1 AA compliance
+      requirements:
+        - Proper heading hierarchy
+        - Sufficient color contrast ratios
+        - Focus indicators on interactive elements
+        - ARIA labels for screen readers
+
+    - requirement: Full keyboard navigation
+      description: All features accessible without mouse
+      validation: Complete workflow navigable via keyboard only
+
+    - requirement: Shadcn components
+      description: Use shadcn UI library for accessible components
+      rationale: Built-in accessibility support reduces implementation effort
+
+  reliability:
+    - requirement: State persistence
+      description: Workflow state never lost, always recoverable
+      validation: Database transactions ensure atomic updates
+
+    - requirement: Graceful error handling
+      description: Skill invocation failures don't break workflow
+      validation: User sees clear error message and can retry or skip
+
+  maintainability:
+    - requirement: Component modularity
+      description: UI components are independent and reusable
+      validation: Components can be modified without affecting others
+
+    - requirement: Clear separation of concerns
+      description: UI, state management, and skill integration are distinct layers
+      validation: Changes to one layer don't require changes to others
+
+success_criteria:
+  - metric: User satisfaction
+    target: Qualitative positive feedback on ease of use
+    measurement: User interviews and feedback collection
+    timeline: Post-launch
+
+  - metric: Self-service completion
+    target: Users complete workflow without help, no documentation or support needed
+    measurement: Track support requests related to workflow navigation
+    timeline: Post-launch
+
+  - metric: Workflow clarity
+    target: Zero confusion about next steps - always clear what to do next
+    measurement: User testing observation, exit surveys
+    timeline: During QA and post-launch
+
+  - metric: Efficiency
+    target: Faster project planning - reduced time from start to completed artifacts
+    measurement: Time tracking from project creation to completed planning
+    timeline: Post-launch comparison with baseline
+
+constraints:
+  technical:
+    - Must use existing tech stack (no new frameworks or major dependencies)
+    - Must work with existing backend/API (no changes to server-side code)
+    - Must integrate with sherpy-flow skills (core requirement)
+    - Desktop/web only, no mobile optimization
+
+  business:
+    - No major budget, timeline, or resource constraints
+    - ASAP delivery timeline (highest priority and urgency)
+
+  scope:
+    - Only refactoring existing capabilities, no new features
+    - Only sherpy workflow, not other product areas
+
+dependencies:
+  internal:
+    - Existing sherpy-flow skills must be functional and available
+    - Skills must support programmatic invocation from UI
+    - Skills must generate artifacts in expected YAML/MD formats
+
+  external:
+    - Backend API for storing workflow state and artifact data
+    - Database schema for projects, workflow steps, and documents
+    - Document specifications in docs/specifications/ folder for file rendering
+
+assumptions:
+  - Database schema exists and can store workflow state
+  - Sherpy-flow skills are stable and won't require major changes during development
+  - Backend API endpoints for CRUD operations on projects/artifacts are available
+  - Single-user focus, no collaboration features needed
+  - Users prefer guided workflow over complete flexibility
+
+risks:
+  - id: RISK-001
+    description: Technical complexity of cascade updates
+    impact: high
+    probability: medium
+    mitigation: |
+      Start with simple implementation (re-run affected skills), iterate based on feedback.
+      Consider phased approach where MVP has manual cascade and later version automates.
+
+  - id: RISK-002
+    description: Unclear how to auto-invoke skills from UI
+    impact: high
+    probability: medium
+    mitigation: |
+      Early spike to validate skill invocation mechanism. Identify integration points and API
+      requirements. May need backend support for skill execution.
+
+  - id: RISK-003
+    description: UX design needs validation
+    impact: medium
+    probability: high
+    mitigation: |
+      Early prototype with key UI components (sidebar, tabs, auto-invocation). User testing
+      before full implementation. Iterate on design based on feedback.
+
+  - id: RISK-004
+    description: ASAP timeline with full feature set challenging
+    impact: high
+    probability: high
+    mitigation: |
+      Prioritize ruthlessly. Identify true MVP (core workflow + auto-invocation + state tracking)
+      vs nice-to-haves (cascade updates, keyboard nav). Consider phased rollout.

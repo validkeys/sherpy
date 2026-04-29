@@ -1,0 +1,500 @@
+project:
+  name: Sherpy Flow UI Refactor
+  version: 1.0.0
+  generated: 2026-04-28
+
+business_requirements_ref: docs/planning/requirements/business-requirements.yaml
+
+architecture:
+  pattern: Feature-based architecture
+  description: |
+    Organize code by features (sidebar, chat, files, cascade-updates) with shared libraries
+    for UI (shadcn/tailwind), data fetching (react-query), and state management (jotai/bunshi).
+
+  rationale: |
+    Feature-based architecture provides clear separation of concerns while allowing code reuse
+    through shared libraries. Each feature (sidebar, chat, files) is self-contained, making it
+    easier to understand and modify independently.
+
+  key_principles:
+    - Feature isolation with shared infrastructure
+    - Leverage existing @assistant-ui/react for chat
+    - Atomic state management with jotai/bunshi
+    - Server state caching with react-query
+    - Database-first approach (files generated on demand)
+
+  components:
+    - name: Sidebar Feature
+      responsibility: Workflow step display and navigation
+      dependencies: [Workflow state atoms, Projects API]
+
+    - name: Chat Feature
+      responsibility: Guided interview and AI conversation
+      dependencies: [assistant-ui, WebSocket, Chat API]
+
+    - name: Files Feature
+      responsibility: Tree view and document preview
+      dependencies: [Documents API, File tree state]
+
+    - name: Cascade Updates Feature
+      responsibility: Propagate requirement changes to downstream artifacts
+      dependencies: [Documents API, Workflow state, Skill invocation]
+
+technology_stack:
+  existing_framework:
+    name: Vite + React 19
+    location: packages/web
+    rationale: Existing application - this is a refactor, not greenfield
+
+  ui_libraries:
+    - name: shadcn
+      purpose: Accessible React components built on Radix UI
+      status: Partially integrated (Radix components present)
+
+    - name: Tailwind CSS
+      purpose: Utility-first styling
+      status: Already configured
+
+    - name: lucide-react
+      purpose: Icon library
+      status: Already installed
+
+  state_management:
+    - name: "@assistant-ui/react"
+      purpose: Chat state and streaming UI
+      status: Already installed
+      scope: Chat feature only
+
+    - name: jotai
+      purpose: Atomic state management for workflow and UI state
+      status: Needs installation
+      scope: Workflow steps, sidebar state, file tree state
+
+    - name: bunshi
+      purpose: Dependency injection for jotai atoms
+      status: Needs installation
+      scope: Scoped state management
+
+  data_fetching:
+    - name: "@tanstack/react-query"
+      purpose: Server state caching and synchronization
+      status: Needs installation
+      scope: All API calls (projects, documents, chat messages)
+
+  routing:
+    - name: react-router-dom
+      version: "7.14.2"
+      status: Already installed
+
+  testing:
+    - name: vitest
+      purpose: Test framework
+      status: Already configured
+
+    - name: "@testing-library/react"
+      purpose: Component testing utilities
+      status: Already installed
+
+    - name: "@testing-library/user-event"
+      purpose: User interaction simulation
+      status: Already installed
+
+  build_tools:
+    - name: vite
+      version: "6.0.7"
+      purpose: Build tool and dev server
+
+    - name: typescript
+      version: "5.7.2"
+      purpose: Type safety
+
+project_structure:
+  base: packages/web/src
+
+  organization:
+    features:
+      path: src/features
+      structure: |
+        features/
+        ├── sidebar/
+        │   ├── components/
+        │   ├── state/
+        │   └── index.ts
+        ├── chat/
+        │   ├── components/
+        │   ├── hooks/
+        │   └── index.ts
+        ├── files/
+        │   ├── components/
+        │   ├── state/
+        │   └── index.ts
+        └── cascade-updates/
+            ├── logic/
+            └── index.ts
+
+    shared:
+      path: src/shared
+      structure: |
+        shared/
+        ├── components/    # Reusable UI components
+        ├── hooks/         # Shared React hooks
+        ├── api/           # API client and react-query hooks
+        ├── state/         # Global jotai atoms
+        └── utils/         # Utility functions
+
+    lib:
+      path: src/lib
+      description: Third-party library setup and configuration
+      contents:
+        - api-client.ts (fetch wrapper with auth)
+        - websocket.ts (WebSocket connection manager)
+        - query-client.ts (react-query configuration)
+
+data_model:
+  database: Existing schema (SQLite/PostgreSQL compatible)
+
+  key_tables:
+    - name: projects
+      purpose: Store project metadata and workflow state
+      key_fields:
+        - id (TEXT PRIMARY KEY)
+        - slug (TEXT UNIQUE)
+        - name (TEXT)
+        - pipelineStatus (TEXT) # tracks workflow progression
+        - assignedPeople (JSON array)
+        - tags (JSON array)
+        - priority (TEXT)
+        - createdAt (TEXT)
+        - updatedAt (TEXT)
+
+      pipeline_status_values:
+        - intake
+        - gap-analysis
+        - business-requirements
+        - technical-requirements
+        - style-anchors
+        - implementation-planning
+        - plan-review
+        - architecture-decisions
+        - delivery-timeline
+        - qa-test-plan
+        - summaries
+        - active-development
+        - completed
+        - archived
+
+    - name: documents
+      purpose: Store generated planning artifacts with versioning
+      key_fields:
+        - id (TEXT PRIMARY KEY)
+        - projectId (TEXT FK)
+        - documentType (TEXT)
+        - format (TEXT) # yaml, markdown, json
+        - content (TEXT) # raw document content
+        - version (INTEGER)
+        - createdAt (TEXT)
+        - updatedAt (TEXT)
+
+      unique_constraint: (projectId, documentType, version)
+
+      document_types:
+        - business-requirements
+        - technical-requirements
+        - implementation-plan
+        - qa-test-plan
+        - delivery-timeline
+        - executive-summary
+        - developer-summary
+        - architecture-decision-record
+
+    - name: chat_messages
+      purpose: Store chat conversation history per project
+      key_fields:
+        - id (TEXT PRIMARY KEY)
+        - projectId (TEXT FK)
+        - role (TEXT) # user, assistant
+        - content (TEXT)
+        - createdAt (TEXT)
+
+  typescript_schemas:
+    location: packages/shared/src/schemas
+    framework: "@effect/sql Model.Class + effect Schema"
+    validation: Runtime schema validation on API boundaries
+
+api:
+  style: REST + WebSocket hybrid
+  base_url: /api
+  framework: "@effect/platform HttpApiEndpoint"
+
+  authentication:
+    method: Okta JWT
+    dev_mode: DEV_MODE environment variable bypasses auth
+    token_location: Authorization header (Bearer token)
+    websocket_auth: JWT token in connection query string
+
+  rest_endpoints:
+    projects:
+      - POST /api/projects (create project)
+      - GET /api/projects (list projects with filters)
+      - GET /api/projects/:projectId (get project)
+      - PATCH /api/projects/:projectId (update project, including pipelineStatus)
+
+    documents:
+      - POST /api/projects/:projectId/documents/generate (generate document)
+      - GET /api/projects/:projectId/documents (list documents)
+      - GET /api/projects/:projectId/documents/:documentType (get latest version)
+      - GET /api/projects/:projectId/documents/:documentType/versions/:version
+
+    chat:
+      - POST /api/projects/:projectId/chat/messages (send message)
+      - GET /api/projects/:projectId/chat/messages (get history with pagination)
+
+  websocket:
+    endpoint: /ws
+    purpose: Real-time streaming for AI responses and workflow events
+    authentication: JWT token validation on connection
+    event_types:
+      - chat.message.delta (streaming AI response chunks)
+      - chat.message.complete (message finished)
+      - workflow.step.changed (step navigation)
+      - skill.execution.started (skill invoked)
+      - skill.execution.progress (skill progress updates)
+      - skill.execution.complete (skill finished)
+      - document.created (new document generated)
+      - document.updated (document modified)
+
+  error_handling:
+    format: Effect-based error types
+    common_errors:
+      - NotFoundError (404)
+      - ValidationError (400)
+      - ConflictError (409)
+      - UnauthorizedError (401)
+
+security:
+  authentication:
+    provider: Okta JWT
+    implementation: Existing backend validates JWT with JWKS caching
+    frontend_integration: Store token in memory, attach to all requests
+    dev_mode: DEV_MODE=true bypasses authentication for local development
+
+  authorization:
+    model: Simple authenticated vs unauthenticated
+    note: All API endpoints require authentication (no RBAC needed for MVP)
+
+  secrets_management:
+    frontend: No secrets in frontend code
+    backend: Environment variables for Okta config, database URL, etc.
+
+  data_validation:
+    backend: Effect Schema validation on all endpoints
+    frontend: TypeScript types + optional client-side validation for UX
+
+testing:
+  strategy: Integration tests only, unit tests as needed for debugging
+
+  framework: Vitest + @testing-library/react
+
+  test_types:
+    integration:
+      focus: Feature behavior and interactions
+      examples:
+        - Sidebar step navigation updates workflow state
+        - Auto-skill invocation triggered on step change
+        - Files tree view renders documents from API
+        - Cascade updates propagate changes correctly
+
+      mocking:
+        - Mock WebSocket for streaming tests
+        - Mock API responses with MSW or fetch mocks
+        - Mock skill execution results
+
+    unit:
+      approach: Create only when debugging specific issues
+      scope: Complex utility functions, tricky state logic
+
+  test_commands:
+    run_tests: npm run test
+    watch_mode: npm run test -- --watch
+    coverage: npm run test:coverage
+    ui: npm run test:ui
+
+development:
+  workflow:
+    dev_server: npm run dev (Vite dev server with HMR)
+    type_checking: npm run typecheck (run separately, not blocking)
+    building: npm run build
+    testing: npm run test
+
+  code_quality:
+    linting:
+      tool: ESLint
+      status: Needs configuration
+      config: Standard React + TypeScript rules
+
+    formatting:
+      tool: Prettier
+      status: Needs configuration
+      integration: ESLint + Prettier integration
+
+    pre_commit_hooks: Not required for MVP
+
+  environment_variables:
+    - VITE_API_URL (backend API base URL)
+    - VITE_WS_URL (WebSocket endpoint URL)
+    - VITE_DEV_MODE (enable DEV_MODE bypass auth)
+
+  hot_module_reload:
+    enabled: true
+    framework: Vite HMR
+    note: Fast refresh for React components
+
+ci_cd:
+  approach: No CI/CD - manual builds and deployment
+
+  build_process:
+    - Developer runs npm run build locally
+    - Build output: packages/web/dist/
+    - Manual deployment to Docker container
+
+  future_consideration: Add GitHub Actions when automation needed
+
+deployment:
+  target: Docker container
+
+  strategy: |
+    Single Docker container packages both API backend and built web assets.
+    API serves static files from web/dist/ directory.
+
+  build_steps:
+    - Build packages/web (npm run build)
+    - Build packages/api (tsc)
+    - Copy web/dist/ into Docker image
+    - Run API server (serves both API and static files)
+
+  hosting:
+    environment: Self-hosted or cloud provider (AWS/GCP/Azure)
+    container_orchestration: Docker Compose or Kubernetes (deployment-specific)
+
+  configuration:
+    - Environment variables for Okta, database, etc.
+    - Volume mount for database persistence (if using SQLite)
+    - Expose port for HTTP/WebSocket traffic
+
+monitoring:
+  approach: No monitoring - debug as issues arise
+
+  rationale: |
+    Skip instrumentation and monitoring tools for MVP. Fix bugs reactively based
+    on user reports and developer testing. Fits with ASAP timeline.
+
+  future_consideration: Add Sentry for error tracking if needed
+
+performance:
+  targets: Best effort without specific benchmarks
+
+  approach: |
+    Focus on shipping functionality rather than hitting specific performance targets.
+    Use React best practices (lazy loading, memoization where obvious) but don't
+    obsess over milliseconds. Optimize reactively if users report slowness.
+
+  best_practices:
+    - Code splitting with React.lazy for features
+    - Memoize expensive computations with useMemo
+    - Virtualize long lists (file tree, chat history) if needed
+    - Debounce search/filter inputs
+    - Optimize re-renders with React.memo for pure components
+
+  business_requirements_reference:
+    - UI responsiveness: <100ms for interactions
+    - Tab switching: <50ms transitions
+    - Skill invocation: Progress indicators within 200ms
+    - Streaming latency: First token within 500ms
+
+  note: Above targets are aspirational, not hard requirements for MVP
+
+scalability:
+  model: Single-user, no special scaling considerations
+
+  rationale: |
+    Aligns with business requirements assumption: "Single-user focus, no collaboration
+    features needed". No concurrent editing, no conflict resolution, no special caching
+    strategies. Keep it simple.
+
+  database:
+    approach: Projects.pipelineStatus tracks current step per project
+    concurrency: No optimistic locking or conflict resolution needed
+
+  websocket:
+    connections: One WebSocket per active user session
+    reconnection: Client handles reconnection on disconnect
+
+constraints:
+  technical:
+    - Must use existing tech stack (Vite, React, Tailwind already in place)
+    - Must work with existing backend/API (no server-side architectural changes)
+    - Must integrate with sherpy-flow skills (core requirement)
+    - Desktop/web only, no mobile optimization
+    - Feature-based organization preferred over component-based
+
+  business:
+    - ASAP delivery timeline (highest priority and urgency)
+    - No major budget or resource constraints
+    - Only refactoring existing capabilities, no new features
+    - Only sherpy workflow, not other product areas
+
+  dependencies:
+    - Existing sherpy-flow skills must be functional
+    - Skills must support programmatic invocation from UI
+    - Skills must generate artifacts in expected YAML/MD formats
+    - Backend API for workflow state and artifact CRUD
+    - Database schema supports projects and documents tables
+
+trade_offs:
+  approach: Decisions are self-explanatory, no detailed trade-off documentation
+
+  rationale: |
+    Technical decisions are straightforward and pragmatic. Skip detailed trade-off
+    analysis and move forward with implementation.
+
+open_questions:
+  status: No blocking questions
+
+  approach: |
+    All necessary architectural and technical decisions have been made. Implementation
+    details (skill invocation mechanism, cascade updates, WebSocket reconnection, etc.)
+    will be figured out during development. No blockers identified.
+
+implementation_priorities:
+  phase_1_core:
+    - Fixed sidebar with 10 workflow steps
+    - Step navigation updates pipelineStatus
+    - Tabbed main area (Chat + Files)
+    - Basic chat integration with assistant-ui
+    - API integration for projects and documents
+
+  phase_2_automation:
+    - Automatic skill invocation on step navigation
+    - WebSocket streaming for AI responses
+    - Skill execution progress feedback
+    - Database-driven state persistence
+
+  phase_3_files:
+    - Files tab with tree view
+    - Document preview (YAML/Markdown rendering)
+    - Fetch documents from API
+
+  phase_4_advanced:
+    - Cascade update mechanism
+    - Keyboard navigation
+    - Resume capability
+    - Polish and accessibility improvements
+
+notes:
+  - This is a refactor of packages/web, not a new application
+  - Leverage existing @assistant-ui/react for chat functionality
+  - Add jotai/bunshi and react-query as new dependencies
+  - Use existing Radix UI components (basis for shadcn)
+  - Existing backend API and database schema support all required features
+  - Docker deployment bundles web + api in single container
+  - DEV_MODE allows development without Okta configuration
