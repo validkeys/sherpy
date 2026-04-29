@@ -1,11 +1,54 @@
-# React + TypeScript + Vite
+# Sherpy PM Web Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + TypeScript + Vite frontend for Sherpy PM.
 
-Currently, two official plugins are available:
+## Quick Start
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+```bash
+# Install dependencies
+pnpm install
+
+# Copy environment variables
+cp .env.example .env.local
+
+# Start dev server
+pnpm dev
+```
+
+## Environment Configuration
+
+This project uses environment variables for configuration. All frontend environment variables must be prefixed with `VITE_`.
+
+### Required Variables
+
+Create a `.env.local` file (or copy from `.env.example`):
+
+```bash
+# API Configuration
+VITE_API_URL=http://localhost:3000    # Backend API base URL
+VITE_WS_URL=ws://localhost:3000       # WebSocket URL for real-time features
+VITE_DEV_MODE=true                    # Enable development features
+```
+
+### Environment Files
+
+- `.env.example` - Template with all available variables (committed to git)
+- `.env.local` - Your local configuration (NOT committed to git)
+
+The environment configuration is type-safe and validated at runtime. See `src/config/env.ts` for implementation details.
+
+### Usage in Code
+
+```typescript
+import { env } from '@/config/env';
+
+// Type-safe access to environment variables
+fetch(`${env.apiUrl}/users`);
+const socket = new WebSocket(env.wsUrl);
+if (env.devMode) {
+  console.log('Development mode enabled');
+}
+```
 
 ## React Compiler
 

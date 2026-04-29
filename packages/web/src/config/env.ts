@@ -1,8 +1,8 @@
 /**
  * Environment Configuration
  *
- * Typed and validated environment variables.
- * All frontend env vars must be prefixed with VITE_.
+ * Type-safe environment variable access with runtime validation.
+ * All frontend environment variables must use the VITE_ prefix.
  */
 
 interface Env {
@@ -11,18 +11,70 @@ interface Env {
   devMode: boolean;
 }
 
-function getEnv(): Env {
-  const apiUrl = import.meta.env.VITE_API_URL;
-  const wsUrl = import.meta.env.VITE_WS_URL;
-  const devMode = import.meta.env.VITE_DEV_MODE === 'true' || import.meta.env.DEV;
+/**
+ * Validates that a required environment variable is defined.
+ * Throws an error if the variable is missing.
+ */
+function getRequiredEnv(key: string): string {
+  const value = import.meta.env[key];
+  if (value === undefined || value === '') {
+    throw new Error(
+      `Missing required environment variable: ${key}. ` +
+        `Please check your .env.local file and ensure it matches .env.example.`
+    );
+  }
+  return value;
+}
 
-  // Validate required environment variables
-  if (!apiUrl) {
-    throw new Error('VITE_API_URL is required');
+/**
+ * Gets an optional environment variable with a default value.
+ * Logs a warning if using the default value in development.
+ */
+function getOptionalEnv(key: string, defaultValue: string): string {
+  const value = import.meta.env[key];
+  if (value === undefined || value === '') {
+    if (import.meta.env.DEV) {
+      console.warn(
+        `Environment variable ${key} not set, using default: ${defaultValue}`
+      );
+    }
+    return defaultValue;
+  }
+  return value;
+}
+
+/**
+ * Parses a string boolean value.
+ */
+function parseBoolean(value: string): boolean {
+  return value.toLowerCase() === 'true';
+}
+
+/**
+ * Validates and exports typed environment configuration.
+ * This runs at module initialization, ensuring env vars are validated at app startup.
+ */
+function createEnv(): Env {
+  const apiUrl = getRequiredEnv('VITE_API_URL');
+  const wsUrl = getRequiredEnv('VITE_WS_URL');
+  const devMode = parseBoolean(
+    getOptionalEnv('VITE_DEV_MODE', String(import.meta.env.DEV))
+  );
+
+  // Validate URL formats
+  try {
+    new URL(apiUrl);
+  } catch {
+    throw new Error(
+      `Invalid VITE_API_URL: "${apiUrl}". Must be a valid URL (e.g., http://localhost:3000)`
+    );
   }
 
-  if (!wsUrl) {
-    throw new Error('VITE_WS_URL is required');
+  // Validate WebSocket URL format
+  if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
+    throw new Error(
+      `Invalid VITE_WS_URL: "${wsUrl}". Must start with ws:// or wss://`
+    );
   }
 
   return {
@@ -32,4 +84,11 @@ function getEnv(): Env {
   };
 }
 
-export const env = getEnv();
+/**
+ * Type-safe environment configuration.
+ *
+ * Usage:
+ *   import { env } from '@/config/env';
+ *   fetch(`${env.apiUrl}/users`);
+ */
+export const env = createEnv();
