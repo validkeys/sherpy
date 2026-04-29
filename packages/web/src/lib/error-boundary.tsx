@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Component } from 'react';
+import { classifyError, logError, type ClassifiedError } from '@/lib/error-utils';
 
 /**
  * Error Boundary Props
@@ -35,6 +36,7 @@ export interface ErrorBoundaryProps {
 interface ErrorBoundaryState {
   hasError: boolean;
   error: Error | null;
+  classifiedError: ClassifiedError | null;
 }
 
 /**
@@ -75,28 +77,27 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.state = {
       hasError: false,
       error: null,
+      classifiedError: null,
     };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    // Update state so the next render will show the fallback UI
+    const classifiedError = classifyError(error);
     return {
       hasError: true,
       error,
+      classifiedError,
     };
   }
 
   componentDidCatch(error: Error, errorInfo: { componentStack: string }): void {
-    // Log the error to console in development
-    if (import.meta.env.DEV) {
-      console.error('ErrorBoundary caught an error:', error, errorInfo);
-    }
+    const classifiedError = classifyError(error);
 
-    // Call the optional error callback
+    logError(classifiedError, {
+      componentStack: errorInfo.componentStack,
+    });
+
     this.props.onError?.(error, errorInfo);
-
-    // In production, you could send this to an error tracking service like Sentry
-    // Example: Sentry.captureException(error, { contexts: { react: errorInfo } });
   }
 
   componentDidUpdate(prevProps: ErrorBoundaryProps): void {
@@ -123,6 +124,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     this.setState({
       hasError: false,
       error: null,
+      classifiedError: null,
     });
   };
 
@@ -155,19 +157,25 @@ interface DefaultErrorFallbackProps {
 }
 
 function DefaultErrorFallback({ error, reset }: DefaultErrorFallbackProps): ReactNode {
+  const classifiedError = classifyError(error);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
         <div className="mb-4">
           <h1 className="text-2xl font-bold text-gray-900">Something went wrong</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            We encountered an unexpected error. Please try again.
-          </p>
+          <p className="mt-2 text-sm text-gray-600">{classifiedError.userMessage}</p>
         </div>
 
         {import.meta.env.DEV && (
           <div className="mb-4 rounded border border-red-200 bg-red-50 p-4">
             <h2 className="mb-2 text-sm font-semibold text-red-800">Error Details:</h2>
+            <div className="mb-2 text-xs">
+              <strong>Type:</strong> {classifiedError.type}
+            </div>
+            <div className="mb-2 text-xs">
+              <strong>Error ID:</strong> {classifiedError.errorId}
+            </div>
             <pre className="overflow-x-auto text-xs text-red-700">{error.message}</pre>
             {error.stack && (
               <details className="mt-2">
@@ -177,6 +185,15 @@ function DefaultErrorFallback({ error, reset }: DefaultErrorFallbackProps): Reac
                 <pre className="mt-2 overflow-x-auto text-xs text-red-600">{error.stack}</pre>
               </details>
             )}
+          </div>
+        )}
+
+        {!import.meta.env.DEV && (
+          <div className="mb-4 rounded border border-gray-200 bg-gray-50 p-3 text-center">
+            <p className="text-xs text-gray-500">Error ID: {classifiedError.errorId}</p>
+            <p className="mt-1 text-xs text-gray-500">
+              Please share this ID if you need support.
+            </p>
           </div>
         )}
 

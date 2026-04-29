@@ -42,7 +42,7 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('Something went wrong')).toBeInTheDocument();
     expect(
-      screen.getByText('We encountered an unexpected error. Please try again.')
+      screen.getByText('An unexpected error occurred. Please try again.')
     ).toBeInTheDocument();
   });
 
