@@ -935,6 +935,8 @@ tasks:
       URLs, WebSocket URLs, and feature flags. Create .env.example template.
     estimate_minutes: 30
     type: config
+    status: completed
+    completed_at: "2026-04-29"
     dependencies: [m0-002]
     files:
       create:
@@ -991,6 +993,7 @@ tasks:
 
   - id: m0-015
     name: "Create API Client Foundation"
+    status: complete
     description: |
       Build the foundation for API communication including fetch wrapper with
       authentication, error handling, and TypeScript types. This prepares for
