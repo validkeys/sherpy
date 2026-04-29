@@ -1,0 +1,1285 @@
+milestone: m4
+name: "Database Integration and State Persistence"
+generated: "2026-04-28T16:00:00Z"
+
+style_anchor_refs:
+  - react-query-api-layer
+  - react-query-mutations
+  - feature-module-structure
+
+global_constraints:
+  allowed_patterns:
+    - "Use react-query three-part pattern (fetcher + queryOptions + hook) for all GET endpoints"
+    - "Use react-query mutation pattern with Zod validation for all POST/PATCH/DELETE operations"
+    - "Follow feature-module-structure for shared/api/ organization"
+    - "Use queryClient.invalidateQueries() for cache management after mutations"
+    - "Store server state in react-query cache, client state in jotai atoms"
+    - "API client should use existing lib/api-client.ts with authentication"
+  forbidden_patterns:
+    - "Direct fetch/axios calls without react-query wrapper"
+    - "Manual cache updates (use invalidateQueries instead)"
+    - "Storing server data in jotai atoms (belongs in react-query)"
+    - "Skipping Zod validation on mutation inputs"
+    - "Cross-feature imports for API calls"
+    - "Hardcoded API URLs (use environment variables)"
+  tdd_required: true
+  max_task_duration_minutes: 150
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All dependency tasks marked complete (M0-M3 completed)
+      - Development environment running
+      - Backend API accessible at VITE_API_URL
+      - Test database or mock server configured
+      - Style anchors reviewed (react-query-api-layer, react-query-mutations, feature-module-structure)
+  - stage: pre-commit
+    commands:
+      - npm run lint
+      - npm run type-check
+      - npm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint errors
+      - No type errors
+      - Code formatted with Prettier
+      - Documentation updated (JSDoc for public functions)
+      - Test coverage >80% for new code
+  - stage: milestone-completion
+    criteria:
+      - All M4 tasks complete
+      - All API integrations working with backend
+      - Workflow state persists to database via pipelineStatus
+      - Projects can be created, listed, loaded, and updated
+      - Documents can be generated, listed, and retrieved
+      - Chat messages can be sent and fetched
+      - Resume capability working (load existing project)
+      - Integration tests passing with mocked API
+      - Manual smoke test passed (create project, add chat message, reload page)
+  - stage: pre-push
+    commands:
+      - npm run test:integration
+      - npm run build
+      - git fetch origin main
+
+tasks:
+  - id: m4-001
+    name: "Setup API client and React Query configuration"
+    description: |
+      Configure React Query client with proper defaults, create or verify API client
+      wrapper with authentication, and set up query/mutation configuration types for
+      consistent usage across all API calls.
+    estimate_minutes: 60
+    type: config
+    dependencies: []
+    files:
+      create:
+        - packages/web/src/lib/react-query.ts
+      modify:
+        - packages/web/src/lib/api-client.ts
+        - packages/web/src/app/provider.tsx
+      touch_only:
+        - packages/web/src/lib/query-client.ts
+    instructions: |
+      **Objective:**
+      Set up React Query infrastructure with proper configuration and API client wrapper.
+
+      **Implementation Steps:**
+      1. Verify or create `lib/api-client.ts` with:
+         - Base fetch wrapper using VITE_API_URL environment variable
+         - Automatic authentication header injection (JWT from token store)
+         - Error response handling with typed errors
+         - Request/response interceptors for logging in dev mode
+      2. Create `lib/react-query.ts` with:
+         - QueryConfig type helper: `type QueryConfig<T> = Omit<ReturnType<T>, 'queryKey' | 'queryFn'>`
+         - MutationConfig type helper: `type MutationConfig<T> = Omit<UseMutationOptions<...>, 'mutationFn'>`
+         - Export both types for use in API files
+      3. Verify `lib/query-client.ts` has proper defaults:
+         - queries.refetchOnWindowFocus: false
+         - queries.retry: 1
+         - queries.staleTime: 5 minutes
+      4. Update `app/provider.tsx` to wrap app with QueryClientProvider if not already present
+
+      **Constraints:**
+      - ONLY use: fetch API, React Query QueryClientProvider
+      - Use VITE_API_URL from environment variables (not hardcoded)
+      - Follow fetch wrapper pattern from bulletproof-react
+      - NEVER use: axios or other HTTP libraries (keep it simple with fetch)
+
+      **Testing Requirements:**
+      - Unit tests for api-client error handling
+      - Test authentication header injection
+      - Test error response parsing
+
+      **Success Criteria:**
+      - API client properly injects auth headers
+      - React Query provider wraps application
+      - QueryConfig and MutationConfig types exported
+      - Environment variable VITE_API_URL used for base URL
+      - No type errors in lib/ files
+
+  - id: m4-002
+    name: "Create Projects API types and schemas"
+    description: |
+      Define TypeScript types and Zod schemas for Projects API including Project model,
+      CreateProjectInput, UpdateProjectInput, and pipelineStatus enum. These types will
+      be used across all projects API endpoints.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m4-001]
+    files:
+      create:
+        - packages/web/src/shared/api/projects/types.ts
+        - packages/web/src/shared/api/projects/schemas.ts
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Define all types and Zod schemas for projects API with comprehensive validation.
+
+      **Implementation Steps:**
+      1. Create `shared/api/projects/types.ts` with:
+         - Project interface matching backend schema (id, slug, name, pipelineStatus, assignedPeople, tags, priority, createdAt, updatedAt)
+         - PipelineStatus enum with all workflow step values (intake, gap-analysis, business-requirements, etc.)
+         - ProjectListResponse type (array of projects + metadata)
+      2. Create `shared/api/projects/schemas.ts` with Zod schemas:
+         - pipelineStatusSchema: z.enum with all status values
+         - createProjectInputSchema: z.object with required fields (name, priority, tags, assignedPeople)
+         - updateProjectInputSchema: z.object with optional fields (name, pipelineStatus, priority, tags, assignedPeople)
+         - Export inferred types: CreateProjectInput, UpdateProjectInput
+      3. Ensure schemas match API contract from technical-requirements.yaml
+
+      **Constraints:**
+      - ONLY use: TypeScript interfaces, Zod schemas
+      - Follow **feature-module-structure** for shared/api/ organization
+      - NEVER use: Type assertions, any types, or loose validation
+      - PipelineStatus must match values from technical-requirements.yaml line 170-184
+
+      **Testing Requirements:**
+      - Unit tests for Zod schema validation
+      - Test valid inputs pass validation
+      - Test invalid inputs fail with proper errors
+
+      **Success Criteria:**
+      - All types exported and properly typed
+      - Zod schemas validate correct inputs
+      - Zod schemas reject invalid inputs with clear error messages
+      - No type errors
+      - Documentation comments on all exported types
+
+  - id: m4-003
+    name: "Implement Projects API - Create Project"
+    description: |
+      Create POST /api/projects endpoint integration with fetcher, Zod validation, and
+      mutation hook. Implements react-query-mutations pattern with cache invalidation.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m4-002]
+    files:
+      create:
+        - packages/web/src/shared/api/projects/create-project.ts
+    style_anchor_refs:
+      - react-query-mutations
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Implement create project mutation following react-query-mutations pattern.
+
+      **Implementation Steps:**
+      1. Create `shared/api/projects/create-project.ts` following **react-query-mutations** pattern:
+         - Import createProjectInputSchema from schemas.ts
+         - Export schema and CreateProjectInput type
+         - Define createProject fetcher: `({ data }: { data: CreateProjectInput }): Promise<Project>`
+         - Use api-client to POST /api/projects with data
+         - Create useCreateProject hook with mutationConfig parameter
+         - Invalidate ['projects'] query key in onSuccess handler
+         - Spread restConfig to allow consumer overrides
+      2. Handle API errors with proper error types
+      3. Follow three-part mutation pattern from style anchor
+
+      **Constraints:**
+      - ONLY use: React Query useMutation, Zod validation, api-client
+      - Follow **react-query-mutations** pattern exactly
+      - NEVER use: Direct fetch calls, skip validation, or hardcode onSuccess
+      - Must invalidate ['projects'] query to refresh list after creation
+
+      **Testing Requirements:**
+      - Integration test: mutation creates project and invalidates cache
+      - Integration test: onSuccess callback is called
+      - Unit test: schema validation works correctly
+
+      **Success Criteria:**
+      - Mutation hook exported and properly typed
+      - createProjectInputSchema validates input
+      - Query cache invalidated on success
+      - Consumer can override onSuccess via mutationConfig
+      - Tests passing with >80% coverage
+
+  - id: m4-004
+    name: "Implement Projects API - List Projects"
+    description: |
+      Create GET /api/projects endpoint integration with fetcher, queryOptions factory,
+      and query hook. Implements react-query-api-layer pattern with pagination support.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m4-002]
+    files:
+      create:
+        - packages/web/src/shared/api/projects/get-projects.ts
+    style_anchor_refs:
+      - react-query-api-layer
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Implement list projects query following react-query-api-layer three-part pattern.
+
+      **Implementation Steps:**
+      1. Create `shared/api/projects/get-projects.ts` following **react-query-api-layer** pattern:
+         - Part 1: getProjects fetcher accepting filters ({ page?, limit?, status? }): Promise<ProjectListResponse>
+         - Use api-client to GET /api/projects with query params
+         - Part 2: getProjectsQueryOptions factory accepting same parameters
+         - Query key: ['projects', { page, limit, status }]
+         - Part 3: useProjects hook with page, limit, status, and queryConfig parameters
+         - Combine queryOptions with queryConfig override
+      2. Type the response properly with Project[] and pagination metadata
+      3. Follow three-part pattern from style anchor exactly
+
+      **Constraints:**
+      - ONLY use: React Query useQuery, queryOptions helper, api-client
+      - Follow **react-query-api-layer** three-part pattern exactly
+      - NEVER use: Skip queryOptions factory, hardcode query config, or omit parameters from query key
+      - Include all filter parameters in query key for proper cache management
+
+      **Testing Requirements:**
+      - Unit test: fetcher calls API with correct parameters
+      - Integration test: hook returns data successfully
+      - Integration test: different filters use different cache entries
+
+      **Success Criteria:**
+      - Three-part pattern implemented (fetcher + queryOptions + hook)
+      - Query key includes all parameters for cache busting
+      - Hook allows queryConfig override
+      - Types properly inferred
+      - Tests passing with >80% coverage
+
+  - id: m4-005
+    name: "Implement Projects API - Get Project by ID"
+    description: |
+      Create GET /api/projects/:projectId endpoint integration with fetcher, queryOptions,
+      and hook following react-query-api-layer pattern. Used for loading existing projects.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m4-002]
+    files:
+      create:
+        - packages/web/src/shared/api/projects/get-project.ts
+    style_anchor_refs:
+      - react-query-api-layer
+    instructions: |
+      **Objective:**
+      Implement get project by ID query following react-query-api-layer pattern.
+
+      **Implementation Steps:**
+      1. Create `shared/api/projects/get-project.ts` following **react-query-api-layer**:
+         - Part 1: getProject fetcher: ({ projectId }: { projectId: string }): Promise<Project>
+         - Use api-client to GET /api/projects/{projectId}
+         - Part 2: getProjectQueryOptions factory: (projectId: string)
+         - Query key: ['projects', projectId]
+         - Part 3: useProject hook: ({ projectId, queryConfig })
+      2. Handle 404 errors gracefully (return null or throw NotFoundError)
+      3. Enable this query for resume capability
+
+      **Constraints:**
+      - ONLY use: React Query useQuery, api-client
+      - Follow **react-query-api-layer** three-part pattern
+      - NEVER use: Skip queryOptions, hardcode config
+      - Query should be enabled only when projectId is provided
+
+      **Testing Requirements:**
+      - Unit test: fetcher calls correct endpoint
+      - Integration test: hook returns project data
+      - Integration test: handles 404 error gracefully
+
+      **Success Criteria:**
+      - Three-part pattern implemented correctly
+      - Query key uses projectId for cache entry
+      - Hook handles loading and error states
+      - Tests passing with >80% coverage
+
+  - id: m4-006
+    name: "Implement Projects API - Update Project"
+    description: |
+      Create PATCH /api/projects/:projectId endpoint integration for updating project
+      including pipelineStatus. Follows react-query-mutations pattern with cache updates.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m4-002, m4-005]
+    files:
+      create:
+        - packages/web/src/shared/api/projects/update-project.ts
+      touch_only:
+        - packages/web/src/shared/api/projects/get-project.ts
+        - packages/web/src/shared/api/projects/get-projects.ts
+    style_anchor_refs:
+      - react-query-mutations
+    instructions: |
+      **Objective:**
+      Implement update project mutation with pipelineStatus tracking for workflow state.
+
+      **Implementation Steps:**
+      1. Create `shared/api/projects/update-project.ts` following **react-query-mutations**:
+         - Import updateProjectInputSchema from schemas.ts
+         - Define updateProject fetcher: ({ projectId, data }: { projectId: string; data: UpdateProjectInput }): Promise<Project>
+         - Use api-client to PATCH /api/projects/{projectId}
+         - Create useUpdateProject hook with mutationConfig
+         - In onSuccess: invalidate both ['projects'] and ['projects', projectId]
+         - This ensures both list and detail views update
+      2. Special attention to pipelineStatus field for workflow state persistence
+      3. Spread restConfig for consumer overrides
+
+      **Constraints:**
+      - ONLY use: React Query useMutation, Zod validation
+      - Follow **react-query-mutations** pattern
+      - NEVER use: Skip cache invalidation, manual cache updates
+      - Must invalidate both list and detail queries
+
+      **Testing Requirements:**
+      - Integration test: mutation updates project
+      - Integration test: both list and detail caches invalidated
+      - Integration test: pipelineStatus updates correctly
+      - Unit test: schema validation works
+
+      **Success Criteria:**
+      - Mutation hook properly typed
+      - updateProjectInputSchema validates input
+      - Both query caches invalidated on success
+      - pipelineStatus field updates workflow state
+      - Tests passing with >80% coverage
+
+  - id: m4-007
+    name: "Create Documents API types and schemas"
+    description: |
+      Define types and Zod schemas for Documents API including Document model, document
+      types enum, GenerateDocumentInput, and list/get response types.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m4-001]
+    files:
+      create:
+        - packages/web/src/shared/api/documents/types.ts
+        - packages/web/src/shared/api/documents/schemas.ts
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Define all types and Zod schemas for documents API with validation.
+
+      **Implementation Steps:**
+      1. Create `shared/api/documents/types.ts` with:
+         - Document interface (id, projectId, documentType, format, content, version, createdAt, updatedAt)
+         - DocumentType enum (business-requirements, technical-requirements, implementation-plan, etc.)
+         - DocumentFormat enum (yaml, markdown, json)
+         - DocumentListResponse type
+      2. Create `shared/api/documents/schemas.ts` with:
+         - documentTypeSchema: z.enum with all document types from technical-requirements.yaml line 200-208
+         - documentFormatSchema: z.enum(['yaml', 'markdown', 'json'])
+         - generateDocumentInputSchema for POST /documents/generate
+         - Export inferred types
+      3. Match document types from technical-requirements.yaml data model
+
+      **Constraints:**
+      - ONLY use: TypeScript interfaces, Zod schemas
+      - Follow **feature-module-structure** for shared/api/ organization
+      - NEVER use: Type assertions, loose validation
+      - DocumentType must match backend schema exactly
+
+      **Testing Requirements:**
+      - Unit tests for schema validation
+      - Test all document types validate correctly
+
+      **Success Criteria:**
+      - All types exported and documented
+      - Schemas validate correct inputs
+      - Schemas reject invalid inputs
+      - No type errors
+
+  - id: m4-008
+    name: "Implement Documents API - Generate Document"
+    description: |
+      Create POST /api/projects/:projectId/documents/generate endpoint integration with
+      mutation hook for triggering document generation from skills.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m4-007]
+    files:
+      create:
+        - packages/web/src/shared/api/documents/generate-document.ts
+    style_anchor_refs:
+      - react-query-mutations
+    instructions: |
+      **Objective:**
+      Implement generate document mutation for creating new planning artifacts.
+
+      **Implementation Steps:**
+      1. Create `shared/api/documents/generate-document.ts` following **react-query-mutations**:
+         - Import generateDocumentInputSchema from schemas.ts
+         - Define generateDocument fetcher: ({ projectId, data }: { projectId: string; data: GenerateDocumentInput }): Promise<Document>
+         - Use api-client to POST /api/projects/{projectId}/documents/generate
+         - Create useGenerateDocument hook with mutationConfig
+         - Invalidate ['documents', projectId] in onSuccess
+         - Spread restConfig for overrides
+      2. This mutation is triggered when skills complete and generate artifacts
+      3. Handle long-running generation (may need polling or WebSocket in future)
+
+      **Constraints:**
+      - ONLY use: React Query useMutation, Zod validation
+      - Follow **react-query-mutations** pattern
+      - NEVER use: Skip validation, forget cache invalidation
+      - Must invalidate documents list for the project
+
+      **Testing Requirements:**
+      - Integration test: mutation generates document
+      - Integration test: cache invalidated on success
+      - Unit test: schema validation
+
+      **Success Criteria:**
+      - Mutation hook properly typed
+      - generateDocumentInputSchema validates input
+      - Documents cache invalidated on success
+      - Tests passing with >80% coverage
+
+  - id: m4-009
+    name: "Implement Documents API - List Documents"
+    description: |
+      Create GET /api/projects/:projectId/documents endpoint integration for fetching
+      all documents belonging to a project. Used in Files tab tree view.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m4-007]
+    files:
+      create:
+        - packages/web/src/shared/api/documents/get-documents.ts
+    style_anchor_refs:
+      - react-query-api-layer
+    instructions: |
+      **Objective:**
+      Implement list documents query for populating Files tab tree view.
+
+      **Implementation Steps:**
+      1. Create `shared/api/documents/get-documents.ts` following **react-query-api-layer**:
+         - Part 1: getDocuments fetcher: ({ projectId }: { projectId: string }): Promise<Document[]>
+         - Use api-client to GET /api/projects/{projectId}/documents
+         - Part 2: getDocumentsQueryOptions factory: (projectId: string)
+         - Query key: ['documents', projectId]
+         - Part 3: useDocuments hook: ({ projectId, queryConfig })
+      2. Enable this query only when projectId is provided
+      3. Response should include all document versions or just latest (check API spec)
+
+      **Constraints:**
+      - ONLY use: React Query useQuery, api-client
+      - Follow **react-query-api-layer** three-part pattern
+      - NEVER use: Skip queryOptions, hardcode config
+      - Query enabled only when projectId exists
+
+      **Testing Requirements:**
+      - Unit test: fetcher calls correct endpoint
+      - Integration test: hook returns document list
+      - Integration test: empty project returns empty array
+
+      **Success Criteria:**
+      - Three-part pattern implemented
+      - Query key uses projectId
+      - Hook handles loading/error states
+      - Tests passing with >80% coverage
+
+  - id: m4-010
+    name: "Implement Documents API - Get Document by Type"
+    description: |
+      Create GET /api/projects/:projectId/documents/:documentType endpoint integration
+      for fetching specific document for preview in Files tab.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m4-007]
+    files:
+      create:
+        - packages/web/src/shared/api/documents/get-document.ts
+    style_anchor_refs:
+      - react-query-api-layer
+    instructions: |
+      **Objective:**
+      Implement get document by type query for file preview functionality.
+
+      **Implementation Steps:**
+      1. Create `shared/api/documents/get-document.ts` following **react-query-api-layer**:
+         - Part 1: getDocument fetcher: ({ projectId, documentType }: { projectId: string; documentType: DocumentType }): Promise<Document>
+         - Use api-client to GET /api/projects/{projectId}/documents/{documentType}
+         - This returns latest version of the document
+         - Part 2: getDocumentQueryOptions factory: (projectId, documentType)
+         - Query key: ['documents', projectId, documentType]
+         - Part 3: useDocument hook: ({ projectId, documentType, queryConfig })
+      2. Handle 404 gracefully (document may not exist yet)
+      3. Enable query only when both parameters provided
+
+      **Constraints:**
+      - ONLY use: React Query useQuery, api-client
+      - Follow **react-query-api-layer** pattern
+      - NEVER use: Skip queryOptions
+      - Query enabled only when projectId and documentType exist
+
+      **Testing Requirements:**
+      - Unit test: fetcher calls correct endpoint
+      - Integration test: hook returns document content
+      - Integration test: handles 404 gracefully
+
+      **Success Criteria:**
+      - Three-part pattern implemented
+      - Query key includes both projectId and documentType
+      - Hook handles loading/error/not-found states
+      - Tests passing with >80% coverage
+
+  - id: m4-011
+    name: "Create Chat Messages API types and schemas"
+    description: |
+      Define types and Zod schemas for Chat Messages API including ChatMessage model,
+      SendMessageInput, and message list response types.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m4-001]
+    files:
+      create:
+        - packages/web/src/shared/api/chat/types.ts
+        - packages/web/src/shared/api/chat/schemas.ts
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Define all types and Zod schemas for chat messages API.
+
+      **Implementation Steps:**
+      1. Create `shared/api/chat/types.ts` with:
+         - ChatMessage interface (id, projectId, role, content, createdAt)
+         - MessageRole enum ('user' | 'assistant')
+         - ChatMessageListResponse type with pagination
+      2. Create `shared/api/chat/schemas.ts` with:
+         - messageRoleSchema: z.enum(['user', 'assistant'])
+         - sendMessageInputSchema: z.object({ content: z.string().min(1) })
+         - Export SendMessageInput type
+      3. Match schema from technical-requirements.yaml line 210-217
+
+      **Constraints:**
+      - ONLY use: TypeScript interfaces, Zod schemas
+      - Follow **feature-module-structure**
+      - NEVER use: Loose validation, any types
+      - Role must be 'user' or 'assistant' only
+
+      **Testing Requirements:**
+      - Unit tests for schema validation
+      - Test empty content rejected
+
+      **Success Criteria:**
+      - All types exported
+      - Schemas validate correctly
+      - No type errors
+
+  - id: m4-012
+    name: "Implement Chat Messages API - Send Message"
+    description: |
+      Create POST /api/projects/:projectId/chat/messages endpoint integration with
+      mutation hook for sending user messages to chat.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m4-011]
+    files:
+      create:
+        - packages/web/src/shared/api/chat/send-message.ts
+    style_anchor_refs:
+      - react-query-mutations
+    instructions: |
+      **Objective:**
+      Implement send message mutation for posting user messages to chat conversation.
+
+      **Implementation Steps:**
+      1. Create `shared/api/chat/send-message.ts` following **react-query-mutations**:
+         - Import sendMessageInputSchema from schemas.ts
+         - Define sendMessage fetcher: ({ projectId, data }: { projectId: string; data: SendMessageInput }): Promise<ChatMessage>
+         - Use api-client to POST /api/projects/{projectId}/chat/messages
+         - Create useSendMessage hook with mutationConfig
+         - Invalidate ['chat', projectId, 'messages'] in onSuccess
+         - Consider optimistic updates for better UX (optional for M4, can defer)
+      2. This integrates with @assistant-ui chat component from M2
+      3. Spread restConfig for consumer overrides
+
+      **Constraints:**
+      - ONLY use: React Query useMutation, Zod validation
+      - Follow **react-query-mutations** pattern
+      - NEVER use: Skip validation, forget cache invalidation
+      - Must invalidate chat messages for the project
+
+      **Testing Requirements:**
+      - Integration test: mutation sends message
+      - Integration test: cache invalidated on success
+      - Unit test: schema validation rejects empty content
+
+      **Success Criteria:**
+      - Mutation hook properly typed
+      - sendMessageInputSchema validates input
+      - Chat messages cache invalidated on success
+      - Tests passing with >80% coverage
+
+  - id: m4-013
+    name: "Implement Chat Messages API - Get Messages"
+    description: |
+      Create GET /api/projects/:projectId/chat/messages endpoint integration with
+      pagination support for loading chat history. Used in Chat tab.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m4-011]
+    files:
+      create:
+        - packages/web/src/shared/api/chat/get-messages.ts
+    style_anchor_refs:
+      - react-query-api-layer
+    instructions: |
+      **Objective:**
+      Implement get chat messages query with pagination for loading conversation history.
+
+      **Implementation Steps:**
+      1. Create `shared/api/chat/get-messages.ts` following **react-query-api-layer**:
+         - Part 1: getMessages fetcher: ({ projectId, page?, limit? }: { projectId: string; page?: number; limit?: number }): Promise<ChatMessageListResponse>
+         - Use api-client to GET /api/projects/{projectId}/chat/messages with query params
+         - Part 2: getMessagesQueryOptions factory: (projectId, page?, limit?)
+         - Query key: ['chat', projectId, 'messages', { page, limit }]
+         - Part 3: useMessages hook: ({ projectId, page, limit, queryConfig })
+      2. Support pagination parameters (page, limit)
+      3. Enable query only when projectId provided
+      4. Consider if infinite query needed (can enhance later if needed)
+
+      **Constraints:**
+      - ONLY use: React Query useQuery, api-client
+      - Follow **react-query-api-layer** pattern
+      - NEVER use: Skip queryOptions, omit params from query key
+      - Query enabled only when projectId exists
+
+      **Testing Requirements:**
+      - Unit test: fetcher calls API with pagination params
+      - Integration test: hook returns paginated messages
+      - Integration test: different pages use different cache entries
+
+      **Success Criteria:**
+      - Three-part pattern implemented
+      - Query key includes pagination parameters
+      - Hook handles loading/error states
+      - Pagination working correctly
+      - Tests passing with >80% coverage
+
+  - id: m4-014
+    name: "Integrate Projects API with Sidebar workflow state"
+    description: |
+      Connect sidebar step navigation to Projects API by updating pipelineStatus when
+      user navigates between workflow steps. Enables state persistence across sessions.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m4-006, m4-005]
+    files:
+      modify:
+        - packages/web/src/features/sidebar/components/sidebar.tsx
+        - packages/web/src/features/sidebar/state/sidebar-atoms.ts
+      touch_only:
+        - packages/web/src/shared/api/projects/update-project.ts
+        - packages/web/src/shared/api/projects/get-project.ts
+    style_anchor_refs:
+      - react-query-mutations
+    instructions: |
+      **Objective:**
+      Persist workflow step navigation to database via pipelineStatus field updates.
+
+      **Implementation Steps:**
+      1. Update sidebar components to use Projects API:
+         - Import useUpdateProject from shared/api/projects/update-project
+         - Import currentProjectIdAtom from app-level state
+         - When user clicks workflow step, call updateProject.mutate with new pipelineStatus
+         - Update local jotai atom immediately (optimistic UI)
+         - On mutation success, no additional action needed (cache updated automatically)
+         - On mutation error, revert local atom and show error notification
+      2. Load initial workflow state from project on mount:
+         - Import useProject from shared/api/projects/get-project
+         - On project load, sync pipelineStatus to currentStepAtom
+      3. Add loading states during step transitions
+      4. Handle errors gracefully with user notifications
+
+      **Constraints:**
+      - ONLY use: useUpdateProject mutation, useProject query, jotai atoms
+      - Follow **react-query-mutations** pattern for state updates
+      - NEVER use: Direct API calls, skip error handling
+      - Use optimistic updates for immediate UI feedback
+      - Must handle case where project doesn't exist yet
+
+      **Testing Requirements:**
+      - Integration test: clicking step updates pipelineStatus
+      - Integration test: loading project syncs workflow state
+      - Integration test: error handling reverts optimistic update
+      - Unit test: step click triggers mutation with correct data
+
+      **Success Criteria:**
+      - Step navigation persists to database
+      - Workflow state loads from database on mount
+      - Optimistic updates provide immediate feedback
+      - Errors handled gracefully with notifications
+      - Tests passing with >80% coverage
+
+  - id: m4-015
+    name: "Integrate Documents API with Files tab tree view"
+    description: |
+      Connect Files tab to Documents API to fetch and display generated planning artifacts.
+      Replace mock data with real document fetching from database.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m4-009, m4-010]
+    files:
+      modify:
+        - packages/web/src/features/files/components/file-tree.tsx
+        - packages/web/src/features/files/components/file-preview.tsx
+      touch_only:
+        - packages/web/src/shared/api/documents/get-documents.ts
+        - packages/web/src/shared/api/documents/get-document.ts
+    style_anchor_refs:
+      - react-query-api-layer
+    instructions: |
+      **Objective:**
+      Replace Files tab mock data with real Documents API integration.
+
+      **Implementation Steps:**
+      1. Update file-tree.tsx to use Documents API:
+         - Import useDocuments from shared/api/documents/get-documents
+         - Import currentProjectIdAtom for project context
+         - Fetch documents list with useDocuments({ projectId })
+         - Map Document[] to tree structure grouped by folder (requirements/, implementation/, etc.)
+         - Show loading skeleton while fetching
+         - Show empty state if no documents
+         - Handle errors with error boundary or inline error message
+      2. Update file-preview.tsx to use Documents API:
+         - Import useDocument from shared/api/documents/get-document
+         - Fetch selected document with useDocument({ projectId, documentType })
+         - Display document content with proper YAML/Markdown rendering
+         - Show loading skeleton while fetching
+         - Handle 404 gracefully (document not generated yet)
+      3. Ensure file selection updates URL or state to trigger document fetch
+      4. Add refetch capability when new documents generated
+
+      **Constraints:**
+      - ONLY use: useDocuments, useDocument queries
+      - Follow **react-query-api-layer** pattern
+      - NEVER use: Direct API calls, skip loading states
+      - Must handle empty states and errors gracefully
+
+      **Testing Requirements:**
+      - Integration test: tree view renders documents from API
+      - Integration test: clicking file loads document content
+      - Integration test: loading states display correctly
+      - Integration test: error states handled properly
+
+      **Success Criteria:**
+      - Files tab fetches real documents from API
+      - Tree view updates when documents generated
+      - File preview displays document content
+      - Loading and error states working
+      - Tests passing with >80% coverage
+
+  - id: m4-016
+    name: "Integrate Chat Messages API with Chat feature"
+    description: |
+      Connect Chat feature to Chat Messages API for sending messages and loading history.
+      Integrate with @assistant-ui components from M2.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m4-012, m4-013]
+    files:
+      modify:
+        - packages/web/src/features/chat/components/chat-view.tsx
+        - packages/web/src/features/chat/hooks/use-chat-integration.ts
+      touch_only:
+        - packages/web/src/shared/api/chat/send-message.ts
+        - packages/web/src/shared/api/chat/get-messages.ts
+    style_anchor_refs:
+      - react-query-mutations
+      - react-query-api-layer
+    instructions: |
+      **Objective:**
+      Integrate Chat Messages API with @assistant-ui chat components for persistence.
+
+      **Implementation Steps:**
+      1. Update chat-view.tsx to use Chat Messages API:
+         - Import useSendMessage and useMessages from shared/api/chat/
+         - Import currentProjectIdAtom for project context
+         - Fetch message history with useMessages({ projectId })
+         - Pass messages to @assistant-ui Thread component
+         - On user message submit, call sendMessage.mutate
+         - Show loading state while sending message
+         - Handle errors with notifications
+      2. Create or update use-chat-integration.ts hook to bridge APIs:
+         - Wrap useSendMessage and useMessages for convenience
+         - Handle message list updates after send
+         - Manage loading and error states
+         - Integrate with @assistant-ui runtime from M2
+      3. Ensure WebSocket streaming still works (WebSocket for streaming, API for persistence)
+      4. Consider pagination if message history is long
+
+      **Constraints:**
+      - ONLY use: useSendMessage, useMessages hooks
+      - Follow **react-query-mutations** and **react-query-api-layer** patterns
+      - NEVER use: Direct API calls, skip error handling
+      - Must integrate with existing @assistant-ui components
+      - WebSocket handles streaming, API handles persistence
+
+      **Testing Requirements:**
+      - Integration test: sending message calls API and updates cache
+      - Integration test: message history loads from API
+      - Integration test: messages display in @assistant-ui Thread
+      - Integration test: error handling works
+
+      **Success Criteria:**
+      - Chat messages persist to database
+      - Message history loads from database
+      - @assistant-ui integration working
+      - Loading and error states working
+      - Tests passing with >80% coverage
+
+  - id: m4-017
+    name: "Implement Resume Capability - Project Selector UI"
+    description: |
+      Create project selector component for displaying list of existing projects
+      and allowing users to choose which project to resume or create new.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m4-004]
+    files:
+      create:
+        - packages/web/src/features/project-loader/components/project-selector.tsx
+        - packages/web/src/features/project-loader/components/project-card.tsx
+      modify:
+        - packages/web/src/app/routes/intake-page.tsx
+      touch_only:
+        - packages/web/src/shared/api/projects/get-projects.ts
+    style_anchor_refs:
+      - react-query-api-layer
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Create UI for displaying and selecting existing projects.
+
+      **Implementation Steps:**
+      1. Create project-card.tsx component:
+         - Display project name, status, last updated time
+         - Show project metadata (tags, priority, assigned people)
+         - Visual status indicator (in-progress, completed)
+         - Click handler for selection
+         - Hover state for better UX
+      2. Create project-selector.tsx component:
+         - Import useProjects from shared/api/projects/get-projects
+         - Display grid of project cards
+         - Show "Create New Project" card
+         - Handle loading skeleton while fetching
+         - Handle empty state (no projects)
+         - Handle error state with retry button
+         - Search/filter capability (optional for M4)
+      3. Update intake-page.tsx route:
+         - Show project-selector on initial load
+         - Pass onProjectSelect callback
+         - Pass onCreateNew callback
+      4. Style with shadcn components and Tailwind
+
+      **Constraints:**
+      - ONLY use: useProjects query, shadcn components
+      - Follow **react-query-api-layer** pattern
+      - Follow **feature-module-structure** for new feature
+      - NEVER use: Direct API calls, skip loading states
+
+      **Testing Requirements:**
+      - Integration test: project list renders correctly
+      - Integration test: clicking project triggers callback
+      - Integration test: loading and error states work
+      - Unit test: project-card renders metadata
+
+      **Success Criteria:**
+      - Project selector displays list of projects
+      - Project cards show relevant metadata
+      - Loading and error states working
+      - Click handling works
+      - Tests passing with >80% coverage
+
+  - id: m4-018
+    name: "Implement Resume Capability - Project Loader Hook"
+    description: |
+      Create hook for loading a project and orchestrating state restoration
+      across sidebar, files tab, and chat features.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m4-005, m4-014, m4-015, m4-016, m4-017]
+    files:
+      create:
+        - packages/web/src/features/project-loader/hooks/use-project-loader.ts
+        - packages/web/src/features/project-loader/hooks/use-project-loader.test.ts
+      touch_only:
+        - packages/web/src/shared/api/projects/get-project.ts
+    style_anchor_refs:
+      - react-query-api-layer
+    instructions: |
+      **Objective:**
+      Create centralized hook for project loading and state restoration.
+
+      **Implementation Steps:**
+      1. Create use-project-loader.ts hook:
+         - Import useProject from shared/api/projects/get-project
+         - Import currentProjectIdAtom (jotai atom for current project)
+         - Define loadProject(projectId: string) function:
+           - Set currentProjectIdAtom to projectId (triggers dependent queries)
+           - Return project data from useProject({ projectId })
+         - Handle loading states (isLoading flag)
+         - Handle errors (error state + retry function)
+         - Return: { loadProject, isLoading, error, retry, currentProject }
+      2. How state restoration works:
+         - Setting currentProjectIdAtom triggers:
+           - Sidebar reads project.pipelineStatus and syncs (m4-014)
+           - Files tab reads currentProjectIdAtom and fetches documents (m4-015)
+           - Chat reads currentProjectIdAtom and loads messages (m4-016)
+         - React Query cache ensures no duplicate requests
+      3. Add URL parameter support:
+         - Parse ?projectId=xxx from URL
+         - Auto-load project on mount if URL param present
+      4. Test thoroughly to ensure state restoration
+
+      **Constraints:**
+      - ONLY use: useProject query, jotai atoms
+      - Follow **react-query-api-layer** pattern
+      - NEVER use: Manual state synchronization, imperative updates
+      - Trust React Query cache and jotai reactivity
+
+      **Testing Requirements:**
+      - Unit test: loadProject sets currentProjectIdAtom
+      - Integration test: setting atom triggers dependent queries
+      - Integration test: URL parameter loads project automatically
+      - Integration test: error handling and retry work
+
+      **Success Criteria:**
+      - Hook loads project successfully
+      - currentProjectIdAtom triggers state restoration
+      - URL parameter support working
+      - Loading and error states correct
+      - Tests passing with >80% coverage
+
+  - id: m4-019
+    name: "Implement Resume Capability - State Hydration"
+    description: |
+      Ensure complete state hydration when project is loaded including workflow
+      position, chat history, file tree, and any UI state needed for seamless resume.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m4-018]
+    files:
+      modify:
+        - packages/web/src/features/sidebar/components/sidebar.tsx
+        - packages/web/src/features/files/components/file-tree.tsx
+        - packages/web/src/features/chat/components/chat-view.tsx
+      touch_only:
+        - packages/web/src/features/project-loader/hooks/use-project-loader.ts
+    instructions: |
+      **Objective:**
+      Ensure all features properly hydrate state when currentProjectIdAtom changes.
+
+      **Implementation Steps:**
+      1. Update sidebar.tsx:
+         - Watch currentProjectIdAtom for changes
+         - When project loads, read project.pipelineStatus
+         - Update currentStepAtom to match loaded pipelineStatus
+         - Scroll to current step in sidebar
+         - Show "Resuming..." indicator briefly
+      2. Update file-tree.tsx:
+         - Watch currentProjectIdAtom for changes
+         - When project loads, trigger useDocuments query
+         - Build tree from fetched documents
+         - Expand tree to show current artifacts
+         - Handle case where no documents exist yet
+      3. Update chat-view.tsx:
+         - Watch currentProjectIdAtom for changes
+         - When project loads, trigger useMessages query
+         - Display message history in @assistant-ui Thread
+         - Scroll to bottom of chat
+         - Show "Loading history..." indicator
+      4. Add visual feedback during hydration:
+         - Loading skeletons for each feature
+         - Smooth transitions when data arrives
+         - Error states if hydration fails
+      5. Test complete resume flow end-to-end
+
+      **Constraints:**
+      - ONLY use: React Query hooks, jotai atoms, React effects
+      - NEVER use: Imperative API calls, manual DOM manipulation
+      - All hydration reactive (no manual trigger functions)
+      - Handle partial state gracefully (project exists but no documents)
+
+      **Testing Requirements:**
+      - Integration test: sidebar syncs on project load
+      - Integration test: files tab fetches documents on project load
+      - Integration test: chat loads history on project load
+      - Integration test: UI shows loading states during hydration
+      - Integration test: errors handled gracefully
+
+      **Success Criteria:**
+      - Complete state hydration when project loaded
+      - All features sync automatically
+      - Loading indicators during hydration
+      - Error handling for failed hydration
+      - Smooth UX with no flashing or jumps
+      - Tests passing with >80% coverage
+
+  - id: m4-020
+    name: "Document WebSocket Testing Strategy"
+    description: |
+      Document strategy for testing WebSocket connections and streaming chat in
+      integration tests. Provides mocking approach for @assistant-ui runtime.
+    estimate_minutes: 45
+    type: docs
+    dependencies: [m4-001]
+    files:
+      create:
+        - docs/planning/artifacts/websocket-testing-strategy.md
+        - packages/web/src/test/mocks/websocket-mock.ts
+    instructions: |
+      **Objective:**
+      Document and implement WebSocket mocking strategy for tests.
+
+      **Implementation Steps:**
+      1. Create websocket-testing-strategy.md:
+         - Overview of WebSocket testing challenges
+         - Mock strategy for @assistant-ui runtime
+         - How to test streaming responses
+         - How to test connection lifecycle
+         - How to test error scenarios
+         - Example test patterns
+      2. Create test/mocks/websocket-mock.ts:
+         - Mock WebSocket class
+         - Mock @assistant-ui runtime provider
+         - Helper functions for simulating messages
+         - Helper functions for simulating errors
+         - Export for use in tests
+      3. Document testing patterns:
+         - Pattern 1: Test message sending
+         - Pattern 2: Test streaming responses
+         - Pattern 3: Test connection failures
+         - Pattern 4: Test reconnection logic
+      4. Add example test file demonstrating usage
+
+      **Constraints:**
+      - Must work with Vitest
+      - Must integrate with @testing-library/react
+      - Must not require real WebSocket server
+      - Mocks should be realistic
+
+      **Validation Commands:**
+      - npm test -- websocket-mock.test.ts
+
+      **Success Criteria:**
+      - Testing strategy documented
+      - WebSocket mock created and tested
+      - Example tests provided
+      - Team can write WebSocket tests confidently
+
+  - id: m4-021
+
+  - id: m4-021
+    name: "Add React Query DevTools and API monitoring"
+    description: |
+      Set up React Query DevTools for development debugging and add basic API request
+      logging for troubleshooting. Helps developers understand cache behavior and API calls.
+    estimate_minutes: 30
+    type: config
+    dependencies: [m4-001]
+    files:
+      modify:
+        - packages/web/src/app/provider.tsx
+        - packages/web/src/lib/api-client.ts
+    instructions: |
+      **Objective:**
+      Add development tools for debugging React Query cache and API calls.
+
+      **Implementation Steps:**
+      1. Install @tanstack/react-query-devtools package
+      2. Update app/provider.tsx to add React Query DevTools:
+         - Import ReactQueryDevtools from @tanstack/react-query-devtools
+         - Add <ReactQueryDevtools initialIsOpen={false} /> inside QueryClientProvider
+         - Only render in development mode (check import.meta.env.DEV)
+      3. Update lib/api-client.ts to add request/response logging:
+         - Log all API requests with method, URL, and params in dev mode
+         - Log all API responses with status code and timing
+         - Log errors with full error details
+         - Only log in development mode (check import.meta.env.DEV)
+      4. Document how to use DevTools in README or developer docs
+
+      **Constraints:**
+      - ONLY use: React Query DevTools, console.log for logging
+      - NEVER use: Enable logging in production, send logs to external services (not needed for M4)
+      - DevTools and logs only active in development mode
+
+      **Testing Requirements:**
+      - Manual verification: DevTools appear in dev mode
+      - Manual verification: API requests logged to console
+      - Unit test: logging functions work correctly
+
+      **Success Criteria:**
+      - React Query DevTools accessible in development
+      - API requests and responses logged in console (dev mode only)
+      - No performance impact in production
+      - Documentation updated with usage instructions
+
+  - id: m4-022
+    name: "Create comprehensive API integration tests"
+    description: |
+      Write integration tests covering all API endpoints with mocked responses to ensure
+      proper react-query integration, cache management, and error handling.
+    estimate_minutes: 120
+    type: test
+    dependencies: [m4-003, m4-004, m4-005, m4-006, m4-008, m4-009, m4-010, m4-012, m4-013]
+    files:
+      create:
+        - packages/web/src/shared/api/projects/__tests__/projects-api.test.ts
+        - packages/web/src/shared/api/documents/__tests__/documents-api.test.ts
+        - packages/web/src/shared/api/chat/__tests__/chat-api.test.ts
+      touch_only:
+        - packages/web/src/shared/api/projects/create-project.ts
+        - packages/web/src/shared/api/projects/get-projects.ts
+        - packages/web/src/shared/api/projects/get-project.ts
+        - packages/web/src/shared/api/projects/update-project.ts
+        - packages/web/src/shared/api/documents/generate-document.ts
+        - packages/web/src/shared/api/documents/get-documents.ts
+        - packages/web/src/shared/api/documents/get-document.ts
+        - packages/web/src/shared/api/chat/send-message.ts
+        - packages/web/src/shared/api/chat/get-messages.ts
+    instructions: |
+      **Objective:**
+      Comprehensive test coverage for all API integrations with mocked backend responses.
+
+      **Implementation Steps:**
+      1. Create projects-api.test.ts with tests for:
+         - useCreateProject: creates project and invalidates cache
+         - useProjects: fetches project list with filters
+         - useProject: fetches single project by ID
+         - useUpdateProject: updates project and invalidates both list and detail caches
+         - Test error handling for each endpoint
+      2. Create documents-api.test.ts with tests for:
+         - useGenerateDocument: generates document and invalidates cache
+         - useDocuments: fetches document list for project
+         - useDocument: fetches single document by type
+         - Test 404 handling for documents that don't exist
+      3. Create chat-api.test.ts with tests for:
+         - useSendMessage: sends message and invalidates cache
+         - useMessages: fetches message history with pagination
+         - Test pagination behavior
+      4. Use MSW (Mock Service Worker) or vitest fetch mocks for API mocking
+      5. Test cache invalidation by verifying refetch behavior
+      6. Test loading and error states for all hooks
+      7. Test Zod schema validation on all mutations
+
+      **Constraints:**
+      - ONLY use: Vitest, @testing-library/react, MSW or fetch mocks
+      - NEVER use: Real API calls, production database
+      - Must test both success and error paths
+      - Must verify cache invalidation behavior
+
+      **Testing Requirements:**
+      - All API hooks tested with success cases
+      - All error cases covered (404, 400, 500, etc.)
+      - Cache invalidation verified for mutations
+      - Zod validation tested for all mutations
+      - Loading states verified
+
+      **Success Criteria:**
+      - All API integration tests passing
+      - Test coverage >85% for shared/api/ directory
+      - All success and error paths covered
+      - Cache invalidation working correctly
+      - Tests run in isolation with no cross-test pollution
+
+  - id: m4-023
+    name: "Final M4 Comprehensive Code Review and Documentation"
+    description: |
+      Comprehensive review of all M4 database integration and API code. Verify adherence
+      to react-query patterns, proper error handling, cache management, and documentation.
+      Final quality gate before milestone completion.
+    estimate_minutes: 90
+    type: docs
+    dependencies: [m4-003, m4-004, m4-005, m4-006, m4-008, m4-009, m4-010, m4-012, m4-013, m4-014, m4-015, m4-016, m4-017, m4-018, m4-019, m4-020, m4-021, m4-022]
+    files:
+      modify:
+        - packages/web/README.md
+        - packages/web/src/shared/api/README.md
+      touch_only:
+        - packages/web/src/shared/api/projects/
+        - packages/web/src/shared/api/documents/
+        - packages/web/src/shared/api/chat/
+    instructions: |
+      **Objective:**
+      Final quality review of all M4 code ensuring patterns, error handling, and documentation meet standards.
+
+      **Review Checklist:**
+
+      **Pattern Adherence:**
+      - [ ] All GET endpoints follow three-part pattern (fetcher + queryOptions + hook)
+      - [ ] All mutations follow pattern (schema + fetcher + hook with cache invalidation)
+      - [ ] All API files organized under shared/api/ with proper structure
+      - [ ] No cross-feature imports for API calls
+      - [ ] Query keys properly structured with parameters
+      - [ ] All mutations invalidate appropriate caches
+
+      **Type Safety:**
+      - [ ] All API functions properly typed (no any, unknown used appropriately)
+      - [ ] Zod schemas for all mutation inputs
+      - [ ] Response types match backend contract
+      - [ ] No type assertions except where absolutely necessary
+
+      **Error Handling:**
+      - [ ] All API calls handle errors gracefully
+      - [ ] User-facing error notifications implemented
+      - [ ] Loading states on all async operations
+      - [ ] 404 errors handled appropriately
+      - [ ] Network errors handled with retry logic
+
+      **Cache Management:**
+      - [ ] All mutations invalidate related queries
+      - [ ] Query keys include all filter parameters
+      - [ ] Stale time configured appropriately
+      - [ ] No manual cache manipulation (use invalidateQueries)
+
+      **Testing:**
+      - [ ] All API hooks have integration tests
+      - [ ] Error paths covered in tests
+      - [ ] Cache invalidation verified in tests
+      - [ ] Test coverage >80% for shared/api/
+
+      **Documentation:**
+      - [ ] JSDoc comments on all exported functions
+      - [ ] README.md updated with API integration overview
+      - [ ] shared/api/README.md created with structure explanation
+      - [ ] Example usage documented for complex patterns
+
+      **Implementation Steps:**
+      1. Review all files in shared/api/ against checklist
+      2. Fix any issues found (create follow-up tasks if needed)
+      3. Update packages/web/README.md with M4 API integration section
+      4. Create packages/web/src/shared/api/README.md documenting:
+         - API organization structure
+         - Pattern usage guidelines
+         - How to add new endpoints
+         - Cache management strategy
+      5. Add JSDoc comments to any missing public functions
+      6. Run all tests and verify >80% coverage
+      7. Perform manual smoke test of complete flow
+
+      **Success Criteria:**
+      - All checklist items verified
+      - No outstanding pattern violations
+      - Documentation complete and accurate
+      - All tests passing
+      - Manual smoke test passed
+      - Ready for M5 (Polish and Advanced Features)

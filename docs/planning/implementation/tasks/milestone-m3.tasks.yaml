@@ -1,0 +1,791 @@
+milestone: m3
+name: "Files Tab with Tree View and Preview"
+generated: "2026-04-28T00:00:00Z"
+
+style_anchor_refs:
+  - feature-module-structure
+  - react-query-api-layer
+  - shadcn-component-pattern
+  - jotai-feature-state
+
+global_constraints:
+  allowed_patterns:
+    - "Use feature-module-structure for features/files/ organization"
+    - "Use react-query three-part pattern (fetcher + queryOptions + hook) for document API"
+    - "Use jotai atoms for file tree UI state (expanded folders, selected file)"
+    - "Use shadcn components (Accordion, ScrollArea) for tree view UI"
+    - "YAML/Markdown rendering with syntax highlighting libraries"
+  forbidden_patterns:
+    - "Direct API calls in components (must use react-query hooks)"
+    - "Props drilling for tree state (use jotai atoms)"
+    - "Custom tree view implementation (use shadcn Accordion or similar)"
+    - "Inline styles or CSS modules (use Tailwind CSS classes)"
+    - "File system access from frontend (all data from API)"
+  tdd_required: true
+  max_task_duration_minutes: 150
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - All M2 tasks completed (tabbed main area exists)
+      - Development environment running (npm run dev)
+      - Files tab placeholder visible
+      - Style anchors reviewed (feature-module-structure, react-query-api-layer)
+  - stage: pre-commit
+    commands:
+      - npm run lint
+      - npm run type-check
+      - npm test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint errors
+      - No type errors
+      - Code formatted with Prettier
+      - Component renders without errors in dev server
+  - stage: milestone-completion
+    criteria:
+      - Files tab shows tree view with all folders
+      - Click file displays preview inline
+      - YAML and Markdown rendering working
+      - Preview pane is read-only
+      - Visual feedback for selected file
+      - React Query integration complete
+      - Integration tests passing
+      - Manual testing checklist complete
+  - stage: pre-push
+    commands:
+      - npm run test
+      - npm run build
+      - git fetch origin main
+
+tasks:
+  - id: m3-001
+    name: "Create files feature folder structure"
+    description: |
+      Set up feature-based folder structure for files feature following bulletproof-react
+      pattern. Create api/, components/, state/, and types/ folders with index.ts for
+      public API exports.
+    estimate_minutes: 30
+    type: config
+    dependencies: []
+    files:
+      create:
+        - packages/web/src/features/files/index.ts
+        - packages/web/src/features/files/api/.gitkeep
+        - packages/web/src/features/files/components/.gitkeep
+        - packages/web/src/features/files/state/.gitkeep
+        - packages/web/src/features/files/types/index.ts
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Create complete folder structure for files feature following feature-module-structure pattern.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/features/files/` directory
+      2. Create subdirectories: `api/`, `components/`, `state/`, `types/`
+      3. Add `.gitkeep` files to api/, components/, state/ folders
+      4. Create `types/index.ts` with initial type definitions:
+         - DocumentType enum (business-requirements, technical-requirements, etc.)
+         - Document interface (id, projectId, documentType, format, content, version, createdAt, updatedAt)
+         - FileTreeNode interface (id, name, type: 'folder' | 'file', children?: FileTreeNode[], document?: Document)
+      5. Create `index.ts` that exports public API (will export components and hooks later)
+      6. Add feature to path aliases in tsconfig.json if needed
+
+      **Constraints:**
+      - ONLY use: Feature-based organization per **feature-module-structure**
+      - Follow pattern in bulletproof-react for folder naming
+      - NEVER use: Nested feature folders or cross-feature imports
+      - Keep types colocated in feature until they need to be shared
+
+      **Testing Requirements:**
+      - No tests needed (configuration task)
+
+      **Success Criteria:**
+      - All folders created under packages/web/src/features/files/
+      - TypeScript compiles without errors
+      - index.ts exports empty object for now
+      - Types defined for Document and FileTreeNode
+
+  - id: m3-002
+    name: "Implement Documents API layer with react-query"
+    description: |
+      Create three-part API pattern (fetcher + queryOptions + hook) for fetching
+      documents from backend API. Supports getting all documents for a project and
+      getting specific document by type.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-001]
+    files:
+      create:
+        - packages/web/src/features/files/api/get-documents.ts
+        - packages/web/src/features/files/api/get-document.ts
+      touch_only:
+        - packages/web/src/features/files/types/index.ts
+        - packages/web/src/lib/api-client.ts
+    style_anchor_refs:
+      - react-query-api-layer
+    instructions: |
+      **Objective:**
+      Implement react-query API layer for fetching documents following three-part pattern.
+
+      **Implementation Steps:**
+      1. Create `get-documents.ts`:
+         - Fetcher: `getDocuments({ projectId }): Promise<Document[]>`
+         - QueryOptions: `getDocumentsQueryOptions(projectId: string)`
+         - Hook: `useDocuments({ projectId, queryConfig? })`
+         - Query key: `['projects', projectId, 'documents']`
+      2. Create `get-document.ts`:
+         - Fetcher: `getDocument({ projectId, documentType }): Promise<Document>`
+         - QueryOptions: `getDocumentQueryOptions(projectId, documentType)`
+         - Hook: `useDocument({ projectId, documentType, queryConfig? })`
+         - Query key: `['projects', projectId, 'documents', documentType]`
+      3. Use api-client from `@/lib/api-client` for fetch calls
+      4. API endpoints:
+         - GET `/api/projects/:projectId/documents`
+         - GET `/api/projects/:projectId/documents/:documentType`
+      5. Export all functions from feature's index.ts
+
+      **Constraints:**
+      - ONLY use: Three-part pattern from **react-query-api-layer**
+      - Follow exact naming convention (get prefix, queryOptions suffix)
+      - NEVER use: Direct fetch in components, inconsistent query keys
+      - Include full TypeScript types for all parameters and return values
+
+      **Testing Requirements:**
+      - Unit tests for fetcher functions (mock api-client)
+      - Tests in task m3-003
+
+      **Success Criteria:**
+      - Both API files created with three-part pattern
+      - Fetchers, queryOptions, and hooks exported
+      - TypeScript inference working (no any types)
+      - Query keys follow consistent pattern
+      - Can import and use hooks from feature index
+
+  - id: m3-003
+    name: "Add unit tests for documents API layer"
+    description: |
+      Comprehensive test coverage for documents API fetchers and hooks. Mock api-client
+      to test data flow and error handling without real backend calls.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m3-002]
+    files:
+      create:
+        - packages/web/src/features/files/api/get-documents.test.ts
+        - packages/web/src/features/files/api/get-document.test.ts
+      touch_only:
+        - packages/web/src/features/files/api/get-documents.ts
+        - packages/web/src/features/files/api/get-document.ts
+    style_anchor_refs:
+      - react-query-api-layer
+    instructions: |
+      **Objective:**
+      Test documents API layer with mocked api-client for both success and error cases.
+
+      **Implementation Steps:**
+      1. Create `get-documents.test.ts`:
+         - Mock api-client with vi.mock
+         - Test getDocuments fetcher calls correct endpoint
+         - Test useDocuments hook with renderHook and createWrapper
+         - Test loading, success, and error states
+      2. Create `get-document.test.ts`:
+         - Mock api-client
+         - Test getDocument fetcher with projectId and documentType
+         - Test useDocument hook behavior
+         - Test 404 error handling (document not found)
+      3. Use @testing-library/react renderHook for hook tests
+      4. Create test wrapper with QueryClientProvider
+      5. Verify query keys are correct
+
+      **Constraints:**
+      - ONLY use: Vitest, @testing-library/react, vi.mock for mocking
+      - Follow test patterns from **react-query-api-layer** anchor
+      - NEVER use: Real API calls, sleep/wait without waitFor
+      - Use createWrapper for QueryClientProvider in hook tests
+
+      **Testing Requirements:**
+      - Test both fetcher and hook for each API file
+      - Test success path with mock data
+      - Test error handling (network error, 404)
+      - Verify correct API endpoints called
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >85% for API layer files
+      - No console errors during test run
+      - Tests complete in <3 seconds
+
+  - id: m3-004
+    name: "Create file tree state atoms with jotai"
+    description: |
+      Define jotai atoms for file tree UI state including expanded folders, selected file,
+      and tree structure. Atoms will be consumed by tree view components.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m3-001]
+    files:
+      create:
+        - packages/web/src/features/files/state/file-tree-atoms.ts
+      touch_only:
+        - packages/web/src/features/files/types/index.ts
+    style_anchor_refs:
+      - jotai-feature-state
+    instructions: |
+      **Objective:**
+      Create jotai atoms for managing file tree UI state (expanded folders, selected file).
+
+      **Implementation Steps:**
+      1. Create `file-tree-atoms.ts` with atoms:
+         - `expandedFoldersAtom`: Set<string> of folder IDs that are expanded
+         - `selectedFileAtom`: string | null for selected file ID
+         - `fileTreeAtom`: derived atom that transforms Document[] into FileTreeNode[]
+      2. Create helper functions:
+         - `buildFileTree(documents: Document[]): FileTreeNode[]` - transforms flat list to tree
+         - Organize documents into folders: requirements/, implementation/, delivery/, architecture/, artifacts/, summaries/
+      3. Use primitive atoms for expanded/selected state
+      4. Use derived atom for fileTreeAtom that depends on documents data
+      5. Export atoms and helpers from feature index.ts
+
+      **Constraints:**
+      - ONLY use: jotai atoms (atom, atomWithDefault), no external state
+      - Follow pattern in **jotai-feature-state** for atom organization
+      - NEVER use: React Context, Redux, or component state for tree state
+      - Keep atoms pure (no side effects in atom definitions)
+
+      **Testing Requirements:**
+      - Unit tests in task m3-005
+
+      **Success Criteria:**
+      - Three atoms defined (expandedFolders, selectedFile, fileTree)
+      - buildFileTree helper function implemented
+      - Tree structure groups documents into correct folders
+      - Atoms can be imported and used with useAtom hook
+      - TypeScript types correct for all atoms
+
+  - id: m3-005
+    name: "Add unit tests for file tree state atoms"
+    description: |
+      Test jotai atoms for file tree state including buildFileTree transformation logic,
+      expanded folders tracking, and selected file state management.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m3-004]
+    files:
+      create:
+        - packages/web/src/features/files/state/file-tree-atoms.test.ts
+      touch_only:
+        - packages/web/src/features/files/state/file-tree-atoms.ts
+    style_anchor_refs:
+      - jotai-feature-state
+    instructions: |
+      **Objective:**
+      Test file tree atoms and buildFileTree function with various document configurations.
+
+      **Implementation Steps:**
+      1. Create test file with jotai testing utilities
+      2. Test buildFileTree function:
+         - Empty documents array returns empty tree
+         - Documents grouped into correct folders
+         - Files ordered alphabetically within folders
+         - Folder structure matches expected hierarchy
+      3. Test expandedFoldersAtom:
+         - Initial state is empty Set
+         - Can add folder ID to expanded set
+         - Can remove folder ID from expanded set
+      4. Test selectedFileAtom:
+         - Initial state is null
+         - Can set selected file ID
+         - Can clear selected file (set to null)
+      5. Test fileTreeAtom (derived atom):
+         - Recomputes when documents change
+         - Tree structure updates correctly
+
+      **Constraints:**
+      - ONLY use: Vitest, jotai test utilities
+      - Test atoms in isolation (no React rendering)
+      - NEVER use: Real API calls or async operations
+      - Keep tests focused on state logic
+
+      **Testing Requirements:**
+      - Test buildFileTree with multiple document types
+      - Test all folder categories (requirements/, implementation/, etc.)
+      - Test atom state transitions
+      - Verify derived atom recalculation
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >90% for state files
+      - buildFileTree logic verified for all document types
+      - Clear test descriptions
+
+  - id: m3-006
+    name: "Create FileTreeFolder component with shadcn Accordion"
+    description: |
+      Implement expandable folder component using shadcn Accordion. Shows folder name,
+      expand/collapse icon, and renders children (files or nested folders). Reads
+      expanded state from jotai atoms.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-004]
+    files:
+      create:
+        - packages/web/src/features/files/components/file-tree-folder.tsx
+      touch_only:
+        - packages/web/src/features/files/state/file-tree-atoms.ts
+        - packages/web/src/features/files/types/index.ts
+    style_anchor_refs:
+      - shadcn-component-pattern
+      - jotai-feature-state
+    instructions: |
+      **Objective:**
+      Create expandable folder component with shadcn Accordion and jotai state integration.
+
+      **Implementation Steps:**
+      1. Create `file-tree-folder.tsx` component
+      2. Accept props: folder (FileTreeNode with type='folder'), depth (for indentation)
+      3. Use shadcn Accordion component for expand/collapse behavior
+      4. Use useAtom hook to read/write expandedFoldersAtom
+      5. Render folder icon (lucide-react Folder/FolderOpen based on expanded state)
+      6. Render folder name with proper styling
+      7. Recursively render children when expanded (folders and files)
+      8. Add indentation based on depth prop (use Tailwind pl-{depth*4})
+      9. Add hover state styling
+
+      **Constraints:**
+      - ONLY use: shadcn Accordion, lucide-react icons, jotai useAtom
+      - Follow **shadcn-component-pattern** for component structure
+      - Use **jotai-feature-state** for state management
+      - NEVER use: Component state for expanded tracking, custom accordion logic
+      - Use Tailwind CSS for all styling (no inline styles)
+
+      **Testing Requirements:**
+      - Integration tests in task m3-010
+
+      **Success Criteria:**
+      - Folder expands/collapses on click
+      - Expanded state synced with jotai atom
+      - Icon changes based on expanded state
+      - Children render when expanded
+      - Proper indentation for nested folders
+      - Hover state visible
+
+  - id: m3-007
+    name: "Create FileTreeItem component for individual files"
+    description: |
+      Implement file item component that displays file name and icon. Clicking file
+      updates selectedFileAtom and triggers preview. Shows visual feedback for selected
+      state.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m3-004]
+    files:
+      create:
+        - packages/web/src/features/files/components/file-tree-item.tsx
+      touch_only:
+        - packages/web/src/features/files/state/file-tree-atoms.ts
+        - packages/web/src/features/files/types/index.ts
+    style_anchor_refs:
+      - shadcn-component-pattern
+      - jotai-feature-state
+    instructions: |
+      **Objective:**
+      Create clickable file item component with selection state and visual feedback.
+
+      **Implementation Steps:**
+      1. Create `file-tree-item.tsx` component
+      2. Accept props: file (FileTreeNode with type='file'), depth (for indentation)
+      3. Use useAtom hook to read/write selectedFileAtom
+      4. Render file icon based on format (lucide-react FileText for YAML, FileCode for Markdown)
+      5. Render file name
+      6. Add onClick handler that sets selectedFileAtom to file ID
+      7. Add visual feedback for selected state (background color, border)
+      8. Add indentation based on depth prop
+      9. Add hover state styling
+      10. Make component keyboard accessible (role="button", onKeyDown)
+
+      **Constraints:**
+      - ONLY use: lucide-react icons, jotai useAtom, Tailwind CSS
+      - Follow **shadcn-component-pattern** for styling approach
+      - Use **jotai-feature-state** for selection management
+      - NEVER use: Component state for selection, custom selection logic
+      - Ensure keyboard accessibility (Enter/Space to select)
+
+      **Testing Requirements:**
+      - Integration tests in task m3-010
+
+      **Success Criteria:**
+      - File selectable on click
+      - Visual feedback shows selected state
+      - Icon matches file format
+      - Proper indentation
+      - Hover state visible
+      - Keyboard accessible (Enter/Space work)
+
+  - id: m3-008
+    name: "Create FileTree component orchestrating folder and item rendering"
+    description: |
+      Main tree view component that fetches documents, builds tree structure from atoms,
+      and recursively renders folders and files. Entry point for files tab content.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-002, m3-006, m3-007]
+    files:
+      create:
+        - packages/web/src/features/files/components/file-tree.tsx
+      touch_only:
+        - packages/web/src/features/files/api/get-documents.ts
+        - packages/web/src/features/files/state/file-tree-atoms.ts
+        - packages/web/src/features/files/components/file-tree-folder.tsx
+        - packages/web/src/features/files/components/file-tree-item.tsx
+    style_anchor_refs:
+      - react-query-api-layer
+      - jotai-feature-state
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Create main FileTree component that orchestrates document fetching and tree rendering.
+
+      **Implementation Steps:**
+      1. Create `file-tree.tsx` component
+      2. Accept props: projectId (string)
+      3. Use useDocuments hook to fetch documents for project
+      4. Use useAtom to read fileTreeAtom (pass documents to buildFileTree)
+      5. Show loading state (shadcn Skeleton) while fetching
+      6. Show error state if fetch fails
+      7. Recursively render tree nodes:
+         - For folders: render FileTreeFolder component
+         - For files: render FileTreeItem component
+         - Pass depth prop for indentation
+      8. Wrap tree in shadcn ScrollArea for scrolling
+      9. Export from feature index.ts
+
+      **Constraints:**
+      - ONLY use: react-query hooks, jotai atoms, shadcn components
+      - Follow **react-query-api-layer** for data fetching
+      - Use **jotai-feature-state** for tree structure
+      - NEVER use: Direct API calls, component state for documents
+      - Handle loading and error states gracefully
+
+      **Testing Requirements:**
+      - Integration tests in task m3-010
+
+      **Success Criteria:**
+      - Tree renders all folders and files
+      - Loading state shows during fetch
+      - Error state shows on fetch failure
+      - Recursive rendering works for nested structure
+      - Scrolling works for long file lists
+      - Can be imported from feature index
+
+  - id: m3-009
+    name: "Create FilePreview component with YAML/Markdown rendering"
+    description: |
+      Preview pane component that displays selected file content. Implements syntax
+      highlighting for YAML and formatted rendering for Markdown. Read-only view with
+      proper styling.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m3-002, m3-004]
+    files:
+      create:
+        - packages/web/src/features/files/components/file-preview.tsx
+      touch_only:
+        - packages/web/src/features/files/api/get-document.ts
+        - packages/web/src/features/files/state/file-tree-atoms.ts
+    style_anchor_refs:
+      - react-query-api-layer
+      - jotai-feature-state
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Create file preview component with YAML syntax highlighting and Markdown rendering.
+
+      **Implementation Steps:**
+      1. Create `file-preview.tsx` component
+      2. Accept props: projectId (string)
+      3. Use useAtom to read selectedFileAtom
+      4. Use useDocument hook to fetch selected document content
+      5. Conditionally render based on file format:
+         - YAML: Use react-syntax-highlighter with yaml language
+         - Markdown: Use react-markdown with remark-gfm plugin
+      6. Show empty state when no file selected
+      7. Show loading state while fetching document
+      8. Show error state if document fetch fails
+      9. Wrap content in shadcn ScrollArea for scrolling
+      10. Add proper padding and styling for readability
+      11. Make preview read-only (no edit capability)
+      12. Export from feature index.ts
+
+      **Constraints:**
+      - ONLY use: react-syntax-highlighter, react-markdown, remark-gfm
+      - Follow **react-query-api-layer** for document fetching
+      - Use **jotai-feature-state** for selected file tracking
+      - NEVER use: Custom syntax highlighting, textarea for preview
+      - Install dependencies: npm install react-syntax-highlighter react-markdown remark-gfm
+      - Include types: npm install -D @types/react-syntax-highlighter
+
+      **Testing Requirements:**
+      - Integration tests in task m3-010
+
+      **Success Criteria:**
+      - YAML displays with syntax highlighting
+      - Markdown renders with formatting
+      - Empty state shows when no file selected
+      - Loading state shows during fetch
+      - Error state shows on failure
+      - Preview is read-only (no editing)
+      - Scrolling works for long content
+
+  - id: m3-010
+    name: "Add integration tests for files feature"
+    description: |
+      End-to-end integration tests for files feature covering tree rendering, file
+      selection, document fetching, and preview display. Mock API responses for
+      consistent test behavior.
+    estimate_minutes: 90
+    type: test
+    dependencies: [m3-008, m3-009]
+    files:
+      create:
+        - packages/web/src/features/files/components/file-tree.test.tsx
+        - packages/web/src/features/files/components/file-preview.test.tsx
+      touch_only:
+        - packages/web/src/features/files/components/file-tree.tsx
+        - packages/web/src/features/files/components/file-preview.tsx
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Test files feature integration including tree rendering, selection, and preview.
+
+      **Implementation Steps:**
+      1. Create `file-tree.test.tsx`:
+         - Mock getDocuments API with sample documents
+         - Render FileTree with test projectId
+         - Assert folders render (requirements/, implementation/, etc.)
+         - Assert files render within folders
+         - Test folder expand/collapse behavior
+         - Test file selection updates atom
+      2. Create `file-preview.test.tsx`:
+         - Mock getDocument API for YAML and Markdown documents
+         - Render FilePreview with selected file
+         - Assert YAML renders with syntax highlighting
+         - Assert Markdown renders with formatting
+         - Assert empty state when no file selected
+         - Assert loading state during fetch
+      3. Use MSW (Mock Service Worker) or vi.mock for API mocking
+      4. Use @testing-library/react render and userEvent
+      5. Create test wrapper with QueryClientProvider and Provider (jotai)
+
+      **Constraints:**
+      - ONLY use: @testing-library/react, @testing-library/user-event, MSW or vi.mock
+      - Follow test patterns from **feature-module-structure**
+      - NEVER use: Real API calls, sleep without waitFor
+      - Test user interactions (clicks, keyboard navigation)
+
+      **Testing Requirements:**
+      - Test tree rendering with mock documents
+      - Test folder expand/collapse interactions
+      - Test file selection flow
+      - Test preview rendering for both YAML and Markdown
+      - Test loading and error states
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >80% for components
+      - User interactions tested (clicks on folders and files)
+      - Both YAML and Markdown preview tested
+      - Tests complete in <5 seconds
+
+  - id: m3-011
+    name: "Integrate files feature into Files tab"
+    description: |
+      Connect FileTree and FilePreview components to Files tab in main layout. Create
+      split-pane layout with tree on left (30% width) and preview on right (70% width).
+      Wire up with project context.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-008, m3-009]
+    files:
+      create:
+        - packages/web/src/features/files/components/files-tab-content.tsx
+      modify:
+        - packages/web/src/app/routes/project.tsx
+      touch_only:
+        - packages/web/src/features/files/index.ts
+    style_anchor_refs:
+      - shadcn-component-pattern
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Integrate files feature into Files tab with split-pane layout.
+
+      **Implementation Steps:**
+      1. Create `files-tab-content.tsx` component:
+         - Accept projectId prop
+         - Create split-pane layout with shadcn ResizablePanelGroup
+         - Left panel (30% default): FileTree component
+         - Right panel (70% default): FilePreview component
+         - Add resize handle between panels
+         - Add padding and borders for visual separation
+      2. Export FilesTabContent from feature index.ts
+      3. Update `project.tsx` route:
+         - Import FilesTabContent from features/files
+         - Render FilesTabContent in Files tab content area
+         - Pass current projectId from route params
+      4. Ensure Files tab is visible in tabbed interface
+      5. Test navigation between Chat and Files tabs
+
+      **Constraints:**
+      - ONLY use: shadcn ResizablePanelGroup for split-pane layout
+      - Follow **shadcn-component-pattern** for layout components
+      - Use **feature-module-structure** for proper exports
+      - NEVER use: Custom resize logic, third-party split-pane libraries
+      - Ensure projectId flows from route to feature
+
+      **Testing Requirements:**
+      - Manual testing in browser (automated tests in previous tasks)
+
+      **Success Criteria:**
+      - Files tab shows split-pane layout
+      - FileTree renders in left panel
+      - FilePreview renders in right panel
+      - Panels resizable with handle
+      - Switching between Chat and Files tabs works
+      - projectId correctly passed to components
+
+  - id: m3-012
+    name: "Add error boundaries and loading states polish"
+    description: |
+      Add error boundaries around files feature components and polish loading states
+      with skeletons. Ensure graceful degradation when API fails or documents missing.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m3-011]
+    files:
+      modify:
+        - packages/web/src/features/files/components/file-tree.tsx
+        - packages/web/src/features/files/components/file-preview.tsx
+        - packages/web/src/features/files/components/files-tab-content.tsx
+      create:
+        - packages/web/src/features/files/components/files-error-boundary.tsx
+    style_anchor_refs:
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Add error boundaries and polish loading states for production-ready UX.
+
+      **Implementation Steps:**
+      1. Create `files-error-boundary.tsx`:
+         - React Error Boundary component
+         - Catch errors from file tree and preview
+         - Show user-friendly error message
+         - Include retry button to reset error state
+      2. Update `file-tree.tsx`:
+         - Improve loading state with shadcn Skeleton components
+         - Show skeleton tree structure while loading
+         - Improve error message formatting
+      3. Update `file-preview.tsx`:
+         - Add skeleton loader for preview area
+         - Show helpful message when no documents available
+         - Format error messages clearly
+      4. Update `files-tab-content.tsx`:
+         - Wrap entire content in FilesErrorBoundary
+         - Handle case where projectId is invalid
+      5. Add user feedback for empty states (no documents yet)
+
+      **Constraints:**
+      - ONLY use: React Error Boundary, shadcn Skeleton components
+      - Follow **shadcn-component-pattern** for loading states
+      - NEVER use: Generic error messages, swallowing errors silently
+      - Make error messages actionable (suggest what user should do)
+
+      **Testing Requirements:**
+      - Manual testing of error scenarios
+
+      **Success Criteria:**
+      - Error boundary catches component errors
+      - Loading skeletons show during data fetch
+      - Empty states have helpful messages
+      - Error messages are user-friendly
+      - Retry functionality works
+
+  - id: m3-013
+    name: "Comprehensive code review and cleanup for M3"
+    description: |
+      Final code review of all M3 files feature implementation. Verify adherence to
+      style anchors, check for code quality issues, remove dead code, ensure consistent
+      naming, validate TypeScript types, and confirm all acceptance criteria met.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m3-001, m3-002, m3-003, m3-004, m3-005, m3-006, m3-007, m3-008, m3-009, m3-010, m3-011, m3-012]
+    files:
+      touch_only:
+        - packages/web/src/features/files/**/*
+    style_anchor_refs:
+      - feature-module-structure
+      - react-query-api-layer
+      - jotai-feature-state
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Conduct comprehensive code review of files feature for quality and consistency.
+
+      **Review Checklist:**
+      1. **Architecture Adherence:**
+         - Verify feature-module-structure followed for all files
+         - Confirm no cross-feature imports
+         - Check proper use of feature index.ts exports
+      2. **API Layer:**
+         - Verify three-part pattern (fetcher + queryOptions + hook) in all API files
+         - Check query keys are consistent and descriptive
+         - Confirm proper TypeScript typing (no any types)
+      3. **State Management:**
+         - Review jotai atoms for correct usage patterns
+         - Verify no props drilling for tree state
+         - Check atoms are pure (no side effects)
+      4. **Component Quality:**
+         - Verify shadcn components used correctly
+         - Check Tailwind CSS usage (no inline styles)
+         - Confirm keyboard accessibility
+         - Review loading and error states
+      5. **Testing:**
+         - Verify test coverage >80% for components and API
+         - Check tests are meaningful (not just coverage)
+         - Confirm integration tests cover user flows
+      6. **Code Quality:**
+         - Remove commented-out code
+         - Remove unused imports
+         - Ensure consistent naming conventions
+         - Verify proper JSDoc comments on exported functions
+      7. **Milestone Success Criteria:**
+         - Files tab shows tree view with all folders ✓
+         - Click file displays preview inline ✓
+         - YAML and Markdown rendering working ✓
+         - Preview pane is read-only ✓
+         - Visual feedback for selected file ✓
+         - React Query integration complete ✓
+
+      **Constraints:**
+      - Review ALL style anchor adherence: **feature-module-structure**, **react-query-api-layer**, **jotai-feature-state**, **shadcn-component-pattern**
+      - NEVER skip: Type checking, linting, test runs
+      - Verify no console.log or debugging code left behind
+
+      **Testing Requirements:**
+      - Run full test suite: npm test
+      - Run type check: npm run type-check
+      - Run linter: npm run lint
+      - Manual browser testing of full user flow
+
+      **Success Criteria:**
+      - All tests passing
+      - No type errors
+      - No lint warnings
+      - All style anchors followed correctly
+      - No dead code or unused imports
+      - All M3 success criteria from milestones.yaml met
+      - Feature ready for M4 integration

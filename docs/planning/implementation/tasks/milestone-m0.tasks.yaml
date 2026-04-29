@@ -1,0 +1,1455 @@
+milestone: m0
+name: Clean Slate Setup & Migration Preparation
+generated: 2026-04-28T00:00:00Z
+
+style_anchor_refs:
+  - feature-module-structure
+  - shadcn-component-pattern
+  - react-query-api-layer
+
+global_constraints:
+  allowed_patterns:
+    - "TypeScript strict mode enabled with no implicit any"
+    - "React 19 patterns with hooks and function components only"
+    - "Bulletproof-react feature-based folder structure (features/, shared/, lib/)"
+    - "Jotai atoms for client state, React Query for server state"
+    - "Shadcn components with CVA variants and Radix UI primitives"
+    - "Import aliases (@/ for src, feature-relative imports within features)"
+    - "ESLint + Prettier for code quality and formatting"
+    - "Vite for build tooling and dev server with HMR"
+
+  forbidden_patterns:
+    - "Class components or legacy React patterns"
+    - "Prop drilling more than 2 levels (use context or atoms)"
+    - "Direct API calls without React Query (no raw fetch in components)"
+    - "Cross-feature imports (features must be independent)"
+    - "Inline styles or CSS modules (use Tailwind only)"
+    - "Any dependencies (useEffect, useState, etc)"
+    - "Mutable state patterns (always immutable updates)"
+    - "console.log in production code (use proper logging)"
+
+  tdd_required: true
+  max_task_duration_minutes: 150
+  commit_strategy: "Commit after each task completion"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - "Development environment is functional (Node.js, npm available)"
+      - "Git repository is clean (no uncommitted changes)"
+      - "Previous task dependencies are completed"
+      - "All required tools installed (TypeScript, Vite, etc.)"
+
+  - stage: pre-commit
+    commands:
+      - npm run lint
+      - npm run type-check
+      - npm run test
+
+  - stage: task-completion
+    criteria:
+      - "All tests passing with no failures or errors"
+      - "No TypeScript errors or warnings"
+      - "No ESLint errors (warnings acceptable if documented)"
+      - "Code formatted with Prettier"
+      - "Task-specific success criteria met"
+      - "Documentation updated where necessary"
+
+  - stage: milestone-completion
+    criteria:
+      - "All M0 tasks completed and committed"
+      - "Dev server runs without errors (npm run dev)"
+      - "Build completes successfully (npm run build)"
+      - "project-structure.yaml created and referenced in CLAUDE.md"
+      - "All dependencies installed and configured"
+      - "Feature folder structure established"
+      - "Basic routing and app shell functional"
+      - "Comprehensive code review task completed"
+
+  - stage: pre-push
+    commands:
+      - npm run test
+      - npm run build
+      - git fetch && git status
+
+tasks:
+  - id: m0-001
+    name: "Preserve Existing Web Package as web-legacy"
+    description: |
+      Move the existing packages/web directory to packages/web-legacy to preserve
+      all current code as reference material. This ensures no code is lost and
+      provides a fallback during migration.
+    estimate_minutes: 30
+    type: config
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: []
+    files:
+      create:
+        - packages/web-legacy/.gitkeep
+      modify:
+        - .gitignore
+    instructions: |
+      **Objective:**
+      Safely preserve existing web package by moving it to web-legacy.
+
+      **Implementation Steps:**
+      1. Verify packages/web exists and contains current application code
+      2. Move packages/web to packages/web-legacy using: `git mv packages/web packages/web-legacy`
+      3. Create packages/web-legacy/.gitkeep to ensure directory is tracked
+      4. Update .gitignore if needed to ensure web-legacy is committed
+      5. Verify move completed successfully
+
+      **Constraints:**
+      - Use git mv to preserve history
+      - DO NOT delete any files
+      - Verify all files moved successfully before proceeding
+
+      **Validation Commands:**
+      - ls -la packages/web-legacy/ (should show original files)
+      - ls -la packages/web (should not exist yet)
+      - git status (should show rename, not delete/add)
+
+      **Success Criteria:**
+      - packages/web-legacy exists with all original code
+      - packages/web directory removed
+      - Git history preserved for moved files
+      - No files deleted or lost
+
+  - id: m0-002
+    name: "Create Fresh React 19 + Vite Project"
+    description: |
+      Initialize a new React 19 application using Vite as the build tool.
+      This provides a clean foundation with modern tooling and no legacy
+      configuration baggage.
+    estimate_minutes: 45
+    type: config
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-001]
+    files:
+      create:
+        - packages/web/package.json
+        - packages/web/vite.config.ts
+        - packages/web/tsconfig.json
+        - packages/web/tsconfig.node.json
+        - packages/web/index.html
+        - packages/web/src/main.tsx
+        - packages/web/src/App.tsx
+        - packages/web/.gitignore
+    instructions: |
+      **Objective:**
+      Create a fresh React 19 + Vite project with TypeScript strict mode.
+
+      **Implementation Steps:**
+      1. Navigate to packages/ directory
+      2. Run: `npm create vite@latest web -- --template react-ts`
+      3. Verify project created successfully
+      4. Update tsconfig.json to enable strict mode:
+         - "strict": true
+         - "noImplicitAny": true
+         - "strictNullChecks": true
+         - "noUnusedLocals": true
+         - "noUnusedParameters": true
+      5. Update vite.config.ts to add path aliases:
+         - Add resolve.alias for '@/' pointing to './src'
+      6. Test dev server starts: `cd packages/web && npm install && npm run dev`
+      7. Verify build works: `npm run build`
+
+      **Constraints:**
+      - Use React 19 (verify in package.json)
+      - Use TypeScript strict mode (no exceptions)
+      - Vite dev server must run on a configurable port
+      - NEVER use JavaScript files (TypeScript only)
+
+      **Testing Requirements:**
+      - Dev server starts without errors
+      - Build completes without errors
+      - Type checking passes
+      - Basic App.tsx renders in browser
+
+      **Validation Commands:**
+      - npm run dev (should start dev server)
+      - npm run build (should complete successfully)
+      - npm run preview (should serve built app)
+      - tsc --noEmit (should have no errors)
+
+      **Success Criteria:**
+      - Fresh Vite + React 19 + TypeScript project created
+      - Strict mode TypeScript configured
+      - Path aliases configured for @/
+      - Dev server and build working
+      - No errors or warnings
+
+  - id: m0-003
+    name: "Install Core Dependencies"
+    description: |
+      Install all required dependencies for state management (jotai, bunshi),
+      data fetching (react-query), chat (assistant-ui), and UI components (shadcn).
+      This establishes the technology stack for the refactor.
+    estimate_minutes: 60
+    type: config
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-002]
+    files:
+      modify:
+        - packages/web/package.json
+    instructions: |
+      **Objective:**
+      Install and verify all core dependencies required for the UI refactor.
+
+      **Implementation Steps:**
+      1. Install state management:
+         - `npm install jotai bunshi`
+      2. Install data fetching:
+         - `npm install @tanstack/react-query`
+      3. Install chat integration:
+         - `npm install @assistant-ui/react`
+         - `npm install @assistant-ui/react-markdown` (for markdown rendering)
+      4. Install UI utilities:
+         - `npm install class-variance-authority clsx tailwind-merge`
+         - `npm install @radix-ui/react-slot @radix-ui/react-tabs`
+         - `npm install lucide-react` (icon library)
+      5. Install dev dependencies:
+         - `npm install -D @types/node`
+      6. Verify all installations successful
+      7. Run `npm install` to ensure lock file updated
+      8. Test imports work by creating temporary test file
+
+      **Constraints:**
+      - Use exact versions compatible with React 19
+      - Verify all peer dependencies satisfied
+      - ONLY install dependencies listed above (no extras)
+      - Use npm (not yarn or pnpm) for consistency
+
+      **Testing Requirements:**
+      - Create test file importing each library
+      - Verify no peer dependency warnings
+      - Type checking passes with new dependencies
+      - No conflicting dependency versions
+
+      **Validation Commands:**
+      - npm list jotai bunshi @tanstack/react-query @assistant-ui/react
+      - tsc --noEmit (verify types work)
+      - npm run dev (verify dev server still works)
+
+      **Success Criteria:**
+      - All dependencies installed successfully
+      - No peer dependency warnings or errors
+      - package.json updated with all dependencies
+      - package-lock.json committed
+      - Type checking passes
+      - Dev server starts with new dependencies
+
+  - id: m0-004
+    name: "Configure Tailwind CSS and PostCSS"
+    description: |
+      Set up Tailwind CSS for styling with PostCSS integration. Configure
+      Tailwind with design tokens and ensure proper Vite integration.
+    estimate_minutes: 45
+    type: config
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-003]
+    files:
+      create:
+        - packages/web/tailwind.config.js
+        - packages/web/postcss.config.js
+        - packages/web/src/index.css
+      modify:
+        - packages/web/package.json
+        - packages/web/src/main.tsx
+    instructions: |
+      **Objective:**
+      Configure Tailwind CSS with proper design tokens and PostCSS integration.
+
+      **Implementation Steps:**
+      1. Install Tailwind: `npm install -D tailwindcss postcss autoprefixer`
+      2. Initialize Tailwind: `npx tailwindcss init -p`
+      3. Update tailwind.config.js:
+         - Set content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"]
+         - Add theme.extend with design tokens (colors, spacing, etc.)
+         - Add darkMode: "class" for dark mode support
+      4. Create src/index.css with Tailwind directives:
+         - @tailwind base;
+         - @tailwind components;
+         - @tailwind utilities;
+      5. Import index.css in src/main.tsx
+      6. Add CSS variables for shadcn theming in index.css
+      7. Verify Tailwind classes work in App.tsx
+
+      **Constraints:**
+      - Use Tailwind 3.x (latest stable)
+      - Configure for JIT mode (default in v3)
+      - Include all content paths to avoid purging used classes
+      - Add CSS variables for shadcn compatibility
+
+      **Testing Requirements:**
+      - Apply Tailwind classes in App.tsx
+      - Verify classes render correctly in browser
+      - Check build output includes Tailwind CSS
+      - No console warnings about missing PostCSS plugins
+
+      **Validation Commands:**
+      - npm run dev (styles should apply)
+      - Inspect element in browser (verify Tailwind classes)
+      - npm run build (verify CSS bundled)
+
+      **Success Criteria:**
+      - Tailwind CSS configured and working
+      - PostCSS integration complete
+      - Design tokens defined in config
+      - CSS variables for theming added
+      - Styles apply correctly in browser
+      - Build includes processed CSS
+
+  - id: m0-005
+    name: "Configure ESLint and Prettier"
+    description: |
+      Set up code quality tools (ESLint) and formatting (Prettier) with
+      React 19 and TypeScript best practices. Configure pre-commit hooks
+      are optional but linting must work.
+    estimate_minutes: 45
+    type: config
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-003]
+    files:
+      create:
+        - packages/web/.eslintrc.cjs
+        - packages/web/.prettierrc
+        - packages/web/.prettierignore
+      modify:
+        - packages/web/package.json
+    instructions: |
+      **Objective:**
+      Configure ESLint and Prettier for consistent code quality and formatting.
+
+      **Implementation Steps:**
+      1. Install ESLint dependencies:
+         - `npm install -D eslint @typescript-eslint/parser @typescript-eslint/eslint-plugin`
+         - `npm install -D eslint-plugin-react eslint-plugin-react-hooks`
+         - `npm install -D eslint-config-prettier eslint-plugin-prettier`
+      2. Create .eslintrc.cjs with:
+         - TypeScript parser
+         - React plugin with recommended rules
+         - React hooks plugin
+         - Prettier integration
+         - React 19 specific rules (new hooks, etc.)
+      3. Create .prettierrc with:
+         - singleQuote: true
+         - trailingComma: 'es5'
+         - tabWidth: 2
+         - semi: true
+      4. Add .prettierignore for build outputs
+      5. Add npm scripts:
+         - "lint": "eslint src --ext ts,tsx"
+         - "lint:fix": "eslint src --ext ts,tsx --fix"
+         - "format": "prettier --write 'src/**/*.{ts,tsx,css}'"
+         - "type-check": "tsc --noEmit"
+      6. Run lint and fix any issues
+
+      **Constraints:**
+      - Use TypeScript ESLint parser (not Babel)
+      - Enable React hooks rules (exhaustive deps, rules of hooks)
+      - Integrate Prettier with ESLint (no conflicts)
+      - Enforce consistent import order
+      - Warn on console.log (error in production)
+
+      **Testing Requirements:**
+      - Run eslint on codebase (should pass or have fixable issues)
+      - Run prettier on codebase (should format consistently)
+      - Verify no rule conflicts between ESLint and Prettier
+      - Type checking passes
+
+      **Validation Commands:**
+      - npm run lint (should complete without errors)
+      - npm run format (should format files)
+      - npm run type-check (should pass)
+
+      **Success Criteria:**
+      - ESLint configured with TypeScript and React rules
+      - Prettier configured and integrated
+      - npm scripts added for linting, formatting, type checking
+      - All quality gates pass
+      - No linting errors or TypeScript errors
+
+  - id: m0-006
+    name: "Configure Testing Framework (Vitest)"
+    description: |
+      Set up Vitest as the test framework with React Testing Library for
+      component testing. Configure test environment and utilities.
+    estimate_minutes: 60
+    type: config
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-004, m0-005]
+    files:
+      create:
+        - packages/web/vitest.config.ts
+        - packages/web/src/test/setup.ts
+        - packages/web/src/test/utils.tsx
+      modify:
+        - packages/web/package.json
+    instructions: |
+      **Objective:**
+      Configure Vitest with React Testing Library for component and integration testing.
+
+      **Implementation Steps:**
+      1. Install testing dependencies:
+         - `npm install -D vitest @vitest/ui`
+         - `npm install -D @testing-library/react @testing-library/jest-dom`
+         - `npm install -D @testing-library/user-event`
+         - `npm install -D jsdom`
+      2. Create vitest.config.ts:
+         - Extend vite.config.ts
+         - Configure jsdom environment
+         - Set up test globals
+         - Configure coverage thresholds (>80%)
+      3. Create src/test/setup.ts:
+         - Import @testing-library/jest-dom
+         - Set up global test utilities
+         - Configure cleanup between tests
+      4. Create src/test/utils.tsx:
+         - Custom render function with providers (QueryClient, etc.)
+         - Export all from @testing-library/react
+         - Add helper utilities
+      5. Add npm scripts:
+         - "test": "vitest"
+         - "test:ui": "vitest --ui"
+         - "test:coverage": "vitest --coverage"
+      6. Create example test file to verify setup
+
+      **Constraints:**
+      - Use Vitest (not Jest) for consistency with Vite
+      - Use jsdom for browser environment simulation
+      - Set coverage thresholds (80% minimum)
+      - TDD approach required (tests before implementation)
+
+      **Testing Requirements:**
+      - Create a sample component test
+      - Verify test runs and passes
+      - Verify coverage reporting works
+      - Test utilities import correctly
+
+      **Validation Commands:**
+      - npm test (should run tests)
+      - npm run test:ui (should open Vitest UI)
+      - npm run test:coverage (should generate coverage report)
+
+      **Success Criteria:**
+      - Vitest configured and working
+      - React Testing Library integrated
+      - Test utilities created
+      - Sample test passes
+      - Coverage reporting functional
+      - npm scripts added
+
+  - id: m0-007
+    name: "Create Bulletproof-React Folder Structure"
+    description: |
+      Establish the feature-based folder structure following bulletproof-react
+      patterns. Create features/, shared/, and lib/ directories with proper
+      organization.
+    estimate_minutes: 45
+    type: config
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-002]
+    files:
+      create:
+        - packages/web/src/features/.gitkeep
+        - packages/web/src/shared/components/.gitkeep
+        - packages/web/src/shared/hooks/.gitkeep
+        - packages/web/src/shared/api/.gitkeep
+        - packages/web/src/shared/state/.gitkeep
+        - packages/web/src/shared/utils/.gitkeep
+        - packages/web/src/lib/.gitkeep
+        - packages/web/src/lib/api-client.ts
+        - packages/web/src/lib/query-client.ts
+        - packages/web/src/utils/cn.ts
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Create the complete folder structure following **feature-module-structure** anchor.
+
+      **Implementation Steps:**
+      1. Create features/ directory (will house all features):
+         - `mkdir -p packages/web/src/features`
+         - Add .gitkeep to track empty directory
+      2. Create shared/ directory structure:
+         - `mkdir -p packages/web/src/shared/{components,hooks,api,state,utils}`
+         - Add .gitkeep files to track empty directories
+      3. Create lib/ directory for third-party setup:
+         - `mkdir -p packages/web/src/lib`
+      4. Create lib/api-client.ts (fetch wrapper stub)
+      5. Create lib/query-client.ts (React Query client setup)
+      6. Create utils/cn.ts (className utility for Tailwind merge)
+      7. Update tsconfig.json paths:
+         - Add "@/*": ["./src/*"] mapping
+         - Add "@/features/*": ["./src/features/*"]
+         - Add "@/shared/*": ["./src/shared/*"]
+         - Add "@/lib/*": ["./src/lib/*"]
+      8. Create README.md in src/ documenting structure
+
+      **Constraints:**
+      - Follow **feature-module-structure** exactly
+      - Features are independent (no cross-feature imports)
+      - Shared code goes in shared/ or lib/
+      - Use @ alias for imports
+      - NEVER create feature folders yet (those come in feature tasks)
+
+      **Validation Commands:**
+      - tree src/ (verify structure)
+      - Test import with @ alias in App.tsx
+
+      **Success Criteria:**
+      - Folder structure matches bulletproof-react pattern
+      - Path aliases configured and working
+      - .gitkeep files ensure empty dirs tracked
+      - lib/ utilities created
+      - Structure documented in README.md
+
+  - id: m0-008
+    name: "Create project-structure.yaml Documentation"
+    description: |
+      Create packages/web/project-structure.yaml documenting the bulletproof-react
+      folder structure, conventions, and patterns. This is a CRITICAL task per
+      IMPLEMENTATION_NOTES.md.
+    estimate_minutes: 60
+    type: docs
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-007]
+    files:
+      create:
+        - packages/web/project-structure.yaml
+      touch_only:
+        - docs/planning/artifacts/style-anchors/feature-module-structure.md
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Create comprehensive project-structure.yaml documenting folder structure
+      and development conventions per **feature-module-structure** anchor.
+
+      **Implementation Steps:**
+      1. Create packages/web/project-structure.yaml
+      2. Document structure sections:
+         - version: 1.0.0
+         - project: name and description
+         - architecture: feature-based pattern explanation
+         - folder_structure: Complete tree with descriptions
+         - conventions: Import rules, naming, organization
+         - patterns: Feature structure, shared code, lib setup
+         - style_anchor_refs: Reference to feature-module-structure
+      3. Include detailed explanations for:
+         - features/: Feature-based vertical slices
+         - shared/: Reusable cross-feature code
+         - lib/: Third-party library configuration
+         - utils/: Utility functions
+      4. Document conventions:
+         - Import aliases (@ for src root)
+         - Feature independence (no cross-imports)
+         - Shared component patterns
+         - API layer patterns
+         - State management patterns
+      5. Add examples for:
+         - Feature folder structure
+         - API layer organization
+         - Component organization
+         - State management
+
+      **Constraints:**
+      - Follow bulletproof-react patterns exactly
+      - Reference **feature-module-structure** anchor
+      - Be comprehensive (this is the source of truth)
+      - Include examples and anti-patterns
+      - Must be valid YAML
+
+      **Testing Requirements:**
+      - Validate YAML syntax
+      - Verify all patterns match bulletproof-react
+      - Check completeness (all folders documented)
+
+      **Validation Commands:**
+      - yamllint packages/web/project-structure.yaml
+      - cat packages/web/project-structure.yaml (manual review)
+
+      **Success Criteria:**
+      - project-structure.yaml created
+      - All folders documented with purpose
+      - Conventions clearly specified
+      - Examples included
+      - Style anchor referenced
+      - Valid YAML syntax
+
+  - id: m0-009
+    name: "Update CLAUDE.md with project-structure.yaml Reference"
+    description: |
+      Create or update packages/web/CLAUDE.md to reference project-structure.yaml
+      as the primary source of truth for folder structure and conventions.
+    estimate_minutes: 30
+    type: docs
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-008]
+    files:
+      create:
+        - packages/web/CLAUDE.md
+      touch_only:
+        - packages/web/project-structure.yaml
+    instructions: |
+      **Objective:**
+      Create CLAUDE.md that references project-structure.yaml per IMPLEMENTATION_NOTES.md.
+
+      **Implementation Steps:**
+      1. Create packages/web/CLAUDE.md
+      2. Add header section:
+         - Project name: Sherpy Flow UI Refactor
+         - Description: React 19 UI for guided workflow
+         - Architecture: Feature-based (bulletproof-react)
+      3. Add project structure section:
+         - "See project-structure.yaml for complete folder structure"
+         - Brief overview of features/, shared/, lib/
+         - Link to style anchors documentation
+      4. Add development guidelines:
+         - Import conventions
+         - Feature independence rule
+         - State management approach
+         - Testing requirements
+      5. Add quick start section:
+         - npm install
+         - npm run dev
+         - npm run test
+         - npm run lint
+      6. Add links section:
+         - project-structure.yaml (primary reference)
+         - docs/planning/ (requirements and milestones)
+         - style-anchors/ (pattern documentation)
+
+      **Constraints:**
+      - Keep CLAUDE.md concise (detailed info in project-structure.yaml)
+      - Reference project-structure.yaml as source of truth
+      - Include essential development commands
+      - Link to style anchors
+
+      **Validation Commands:**
+      - cat packages/web/CLAUDE.md (manual review)
+      - Verify link to project-structure.yaml is correct
+
+      **Success Criteria:**
+      - CLAUDE.md created
+      - References project-structure.yaml
+      - Includes development guidelines
+      - Quick start commands documented
+      - Links to documentation provided
+
+  - id: m0-010
+    name: "Set Up Basic Routing with React Router"
+    description: |
+      Configure React Router for basic routing structure. Set up root layout
+      and prepare route structure for features (sidebar, chat, files).
+    estimate_minutes: 60
+    type: code
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-007]
+    files:
+      create:
+        - packages/web/src/routes/index.tsx
+        - packages/web/src/routes/root.tsx
+        - packages/web/src/routes/project/$projectId.tsx
+      modify:
+        - packages/web/src/main.tsx
+        - packages/web/src/App.tsx
+        - packages/web/package.json
+    instructions: |
+      **Objective:**
+      Set up React Router with basic route structure for the application.
+
+      **Implementation Steps:**
+      1. Verify react-router-dom is installed (should be from web-legacy)
+      2. If not installed: `npm install react-router-dom`
+      3. Create routes/index.tsx:
+         - Export router configuration using createBrowserRouter
+         - Define routes: / (home), /project/:projectId (main app)
+      4. Create routes/root.tsx:
+         - Root layout component
+         - Outlet for nested routes
+         - Error boundary
+      5. Create routes/project/$projectId.tsx:
+         - Project view layout
+         - Will contain sidebar + main area
+         - Use useParams to get projectId
+      6. Update main.tsx:
+         - Import RouterProvider
+         - Wrap app with RouterProvider
+         - Remove old App.tsx usage
+      7. Add route type safety:
+         - Create route params types
+         - Use typed useParams and useNavigate
+
+      **Constraints:**
+      - Use createBrowserRouter (not BrowserRouter)
+      - Use route-based code splitting
+      - Include error boundaries
+      - Type all route parameters
+      - Use nested routes for layout
+
+      **Testing Requirements:**
+      - Create basic test for route rendering
+      - Test navigation between routes
+      - Test error boundary
+      - Verify route params extraction
+
+      **Validation Commands:**
+      - npm run dev (navigate to routes manually)
+      - npm test (route tests should pass)
+
+      **Success Criteria:**
+      - React Router configured
+      - Basic routes created (/, /project/:projectId)
+      - Root layout with Outlet
+      - Error boundary working
+      - Route params typed
+      - Navigation functional
+
+  - id: m0-011
+    name: "Create App Shell with Query and Atom Providers"
+    description: |
+      Set up the application shell with React Query provider for data fetching
+      and Jotai provider for state management. Configure query client with
+      proper defaults.
+    estimate_minutes: 60
+    type: code
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-010]
+    files:
+      create:
+        - packages/web/src/providers/app-provider.tsx
+      modify:
+        - packages/web/src/lib/query-client.ts
+        - packages/web/src/main.tsx
+    instructions: |
+      **Objective:**
+      Create application shell with React Query and Jotai providers.
+
+      **Implementation Steps:**
+      1. Update lib/query-client.ts:
+         - Create QueryClient instance with defaults
+         - Set staleTime: 5 minutes
+         - Set cacheTime: 10 minutes
+         - Set retry: 1
+         - Configure error handling
+         - Export queryClient singleton
+      2. Create providers/app-provider.tsx:
+         - Import QueryClientProvider from @tanstack/react-query
+         - Import Provider from jotai
+         - Create AppProvider component wrapping both providers
+         - Add React Query Devtools (development only)
+         - Accept children prop
+      3. Update main.tsx:
+         - Wrap RouterProvider with AppProvider
+         - Ensure proper nesting: AppProvider > RouterProvider
+      4. Add error boundary at app level:
+         - Catch and display errors gracefully
+         - Log errors in development
+      5. Test providers work:
+         - Create test component using useQuery
+         - Create test component using atom
+
+      **Constraints:**
+      - QueryClient must be singleton (same instance everywhere)
+      - Jotai Provider wraps entire app for atom scope
+      - React Query Devtools only in development
+      - Error boundary catches all errors
+
+      **Testing Requirements:**
+      - Test QueryClientProvider provides queryClient
+      - Test Jotai Provider provides atom scope
+      - Test error boundary catches errors
+      - Integration test with both providers
+
+      **Validation Commands:**
+      - npm run dev (verify no provider errors)
+      - Open React Query Devtools in browser
+
+      **Success Criteria:**
+      - QueryClient configured with proper defaults
+      - AppProvider wraps both QueryClient and Jotai providers
+      - React Query Devtools available in development
+      - Error boundary functional
+      - Providers tested and working
+
+  - id: m0-012
+    name: "Create Shared UI Utilities"
+    description: |
+      Create shared utilities for UI development including className merging (cn),
+      type guards, formatting helpers, and common constants.
+    estimate_minutes: 45
+    type: code
+    status: completed
+    completed_at: "2026-04-29"
+    dependencies: [m0-007]
+    files:
+      create:
+        - packages/web/src/shared/utils/cn.ts
+        - packages/web/src/shared/utils/format.ts
+        - packages/web/src/shared/utils/types.ts
+        - packages/web/src/shared/constants/workflow-steps.ts
+      modify:
+        - packages/web/src/shared/utils/index.ts
+        - packages/web/src/shared/constants/index.ts
+    style_anchor_refs:
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Create shared utilities for UI development following best practices.
+
+      **Implementation Steps:**
+      1. Create shared/utils/cn.ts:
+         - Import clsx and tailwind-merge
+         - Export cn function: combines class names and resolves conflicts
+         - Used by all shadcn components per **shadcn-component-pattern**
+         - Type signature: (...inputs: ClassValue[]) => string
+      2. Create shared/utils/format.ts:
+         - Date formatting utilities (formatDate, formatRelative)
+         - Number formatting (formatNumber, formatPercent)
+         - String utilities (truncate, capitalize)
+      3. Create shared/utils/types.ts:
+         - Type guards (isString, isNumber, isDefined)
+         - Utility types (Nullable, Optional, etc.)
+      4. Create shared/constants/workflow-steps.ts:
+         - Define all 10 workflow steps as const array
+         - Include step metadata (name, description, icon)
+         - Export WORKFLOW_STEPS constant
+         - Export WorkflowStep type
+      5. Create barrel exports:
+         - shared/utils/index.ts exports all utils
+         - shared/constants/index.ts exports all constants
+      6. Add unit tests for all utilities
+
+      **Constraints:**
+      - cn() must use clsx + tailwind-merge (per shadcn pattern)
+      - All utilities must be pure functions
+      - Include JSDoc comments for all exports
+      - Type everything strictly
+
+      **Testing Requirements:**
+      - Unit test cn() with various class combinations
+      - Test format utilities with edge cases
+      - Test type guards with various inputs
+      - Verify WORKFLOW_STEPS constant structure
+
+      **Validation Commands:**
+      - npm test -- utils (run utility tests)
+      - npm run type-check (verify types)
+
+      **Success Criteria:**
+      - cn() utility created and tested
+      - Format utilities created and tested
+      - Type utilities created and tested
+      - WORKFLOW_STEPS constant defined
+      - All utilities exported via barrel files
+      - Unit tests passing
+
+  - id: m0-013
+    name: "Add Shadcn Button Component"
+    description: |
+      Install and customize the shadcn Button component as the first UI component.
+      This validates the shadcn setup and provides a pattern for other components.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m0-012]
+    files:
+      create:
+        - packages/web/src/shared/components/ui/button.tsx
+        - packages/web/src/shared/components/ui/button.test.tsx
+      touch_only:
+        - packages/web/src/shared/utils/cn.ts
+    style_anchor_refs:
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Create Button component following **shadcn-component-pattern** anchor exactly.
+
+      **Implementation Steps:**
+      1. Create shared/components/ui/button.tsx
+      2. Follow **shadcn-component-pattern** structure:
+         - Import React, Slot, cva, VariantProps
+         - Define buttonVariants with cva (base + variants)
+         - Include variants: default, destructive, outline, secondary, ghost, link
+         - Include sizes: default, sm, lg, icon
+         - Export ButtonProps type extending button HTML attributes
+         - Create Button component with React.forwardRef
+         - Support asChild prop for composition
+         - Add isLoading state with spinner
+         - Set displayName
+      3. Use cn() utility from shared/utils/cn.ts
+      4. Add proper TypeScript types
+      5. Create button.test.tsx:
+         - Test all variants render
+         - Test size props
+         - Test disabled state
+         - Test loading state
+         - Test ref forwarding
+         - Test onClick handler
+      6. Test in App.tsx to verify working
+
+      **Constraints:**
+      - MUST follow **shadcn-component-pattern** exactly
+      - Use React.forwardRef
+      - Support asChild with Slot
+      - Include all standard variants
+      - Full TypeScript support
+
+      **Testing Requirements:**
+      - Test all variant combinations
+      - Test ref forwarding
+      - Test composition (asChild)
+      - Test loading state
+      - Test accessibility (role, aria attributes)
+
+      **Validation Commands:**
+      - npm test -- button.test.tsx
+      - npm run dev (verify button renders)
+
+      **Success Criteria:**
+      - Button component created per shadcn pattern
+      - All variants working
+      - Loading state functional
+      - Tests passing
+      - RefForwarding works
+      - TypeScript types correct
+
+  - id: m0-014
+    name: "Configure Development Environment Variables"
+    description: |
+      Set up environment variable configuration for development including API
+      URLs, WebSocket URLs, and feature flags. Create .env.example template.
+    estimate_minutes: 30
+    type: config
+    dependencies: [m0-002]
+    files:
+      create:
+        - packages/web/.env.example
+        - packages/web/.env.local
+        - packages/web/src/config/env.ts
+      modify:
+        - packages/web/.gitignore
+    instructions: |
+      **Objective:**
+      Configure environment variables for development with proper type safety.
+
+      **Implementation Steps:**
+      1. Create .env.example with template:
+         - VITE_API_URL=http://localhost:3000/api
+         - VITE_WS_URL=ws://localhost:3000/ws
+         - VITE_DEV_MODE=true
+      2. Create .env.local with actual development values
+      3. Update .gitignore:
+         - Add .env.local (should not be committed)
+         - Ensure .env.example IS committed
+      4. Create src/config/env.ts:
+         - Import import.meta.env
+         - Export typed env object
+         - Validate required env vars
+         - Provide defaults for optional vars
+         - Type: { apiUrl: string; wsUrl: string; devMode: boolean }
+      5. Add runtime validation:
+         - Throw error if required vars missing
+         - Warn if using default values
+      6. Document env vars in README
+
+      **Constraints:**
+      - Use VITE_ prefix for all frontend env vars
+      - Validate env vars at app startup
+      - Type all environment variables
+      - Never commit .env.local
+
+      **Testing Requirements:**
+      - Test env.ts with valid env vars
+      - Test env.ts with missing required vars
+      - Verify types are correct
+
+      **Validation Commands:**
+      - npm run dev (should use env vars)
+      - cat .env.example (verify template)
+
+      **Success Criteria:**
+      - .env.example created with template
+      - .env.local created for local development
+      - src/config/env.ts validates and exports typed env
+      - .gitignore updated
+      - Documentation added
+
+  - id: m0-015
+    name: "Create API Client Foundation"
+    description: |
+      Build the foundation for API communication including fetch wrapper with
+      authentication, error handling, and TypeScript types. This prepares for
+      React Query integration in later milestones.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m0-014]
+    files:
+      create:
+        - packages/web/src/lib/api-client.ts
+        - packages/web/src/lib/api-client.test.ts
+        - packages/web/src/shared/types/api.ts
+      modify:
+        - packages/web/src/config/env.ts
+    instructions: |
+      **Objective:**
+      Create robust API client with authentication, error handling, and type safety.
+
+      **Implementation Steps:**
+      1. Create shared/types/api.ts:
+         - Define ApiError type
+         - Define ApiResponse<T> type
+         - Define request/response types
+      2. Create lib/api-client.ts:
+         - Create fetch wrapper function
+         - Add authentication header (Bearer token)
+         - Handle JSON serialization
+         - Parse response and errors
+         - Type return values with ApiResponse<T>
+         - Export typed methods: get, post, patch, delete
+      3. Add error handling:
+         - Network errors (offline, timeout)
+         - HTTP errors (4xx, 5xx)
+         - Parse error response body
+         - Create typed error classes
+      4. Add authentication:
+         - Read token from localStorage or memory
+         - Add Authorization header
+         - Handle 401 (refresh or redirect)
+      5. Create utility methods:
+         - buildUrl (handle query params)
+         - parseResponse (handle different content types)
+      6. Add comprehensive tests:
+         - Test successful requests
+         - Test error handling
+         - Test authentication
+         - Mock fetch for testing
+
+      **Constraints:**
+      - Use native fetch API (no axios)
+      - Type all requests and responses
+      - Handle all error cases gracefully
+      - Support request/response interceptors
+      - Include retry logic for transient failures
+
+      **Testing Requirements:**
+      - Mock fetch with vitest
+      - Test all HTTP methods
+      - Test error scenarios
+      - Test authentication flow
+      - Test timeout handling
+
+      **Validation Commands:**
+      - npm test -- api-client.test.ts
+      - npm run type-check
+
+      **Success Criteria:**
+      - API client created with fetch wrapper
+      - Authentication support included
+      - Error handling comprehensive
+      - All HTTP methods supported
+      - TypeScript types defined
+      - Tests passing with >80% coverage
+
+  - id: m0-016
+    name: "Create Error Boundary Architecture"
+    description: |
+      Implement comprehensive error boundary strategy for handling React errors,
+      API failures, and WebSocket disconnections. Sets up recovery patterns and
+      user notification system.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m0-011]
+    files:
+      create:
+        - packages/web/src/shared/components/error-boundary.tsx
+        - packages/web/src/shared/components/error-fallback.tsx
+        - packages/web/src/shared/hooks/use-error-handler.ts
+        - packages/web/src/lib/error-utils.ts
+      modify:
+        - packages/web/src/providers/app-provider.tsx
+    instructions: |
+      **Objective:**
+      Create robust error boundary system for graceful error handling and recovery.
+
+      **Implementation Steps:**
+      1. Create lib/error-utils.ts:
+         - Define error types (NetworkError, ApiError, ValidationError, UnknownError)
+         - Create error classification function
+         - Create error recovery strategies
+         - Add logging utilities (dev vs prod)
+      2. Create shared/components/error-boundary.tsx:
+         - React error boundary component
+         - Catch React render errors
+         - Log errors with context
+         - Provide reset functionality
+         - Support error recovery callbacks
+      3. Create shared/components/error-fallback.tsx:
+         - User-friendly error display
+         - Show appropriate message based on error type
+         - "Try Again" and "Go Home" actions
+         - Dev mode: show error details
+         - Prod mode: generic message + error ID
+      4. Create shared/hooks/use-error-handler.ts:
+         - Hook for components to report errors
+         - Integrate with toast notifications
+         - Handle async errors
+         - Provide retry functionality
+      5. Update app-provider.tsx:
+         - Wrap app with error boundary
+         - Configure error recovery strategies
+         - Set up global error handlers (unhandled promise rejections)
+
+      **Constraints:**
+      - Error boundaries at app root and feature boundaries
+      - Never expose sensitive error details in prod
+      - Always provide user actionable recovery path
+      - Log all errors for debugging
+
+      **Testing Requirements:**
+      - Test error boundary catches React errors
+      - Test fallback UI renders correctly
+      - Test reset functionality
+      - Test error classification
+      - Test recovery strategies
+
+      **Validation Commands:**
+      - npm test -- error-boundary.test.tsx
+      - Throw test error in dev to verify boundary
+
+      **Success Criteria:**
+      - Error boundary system implemented
+      - Error types classified correctly
+      - Fallback UI user-friendly
+      - Recovery strategies working
+      - Tests passing with >80% coverage
+
+  - id: m0-017
+    name: "Backend Validation Spike - Comprehensive"
+    description: |
+      CRITICAL: Comprehensive validation of backend capabilities before proceeding
+      with feature development. Validates API endpoints, WebSocket connection,
+      skill invocation mechanism, and database schema assumptions.
+    estimate_minutes: 120
+    type: spike
+    dependencies: [m0-015]
+    files:
+      create:
+        - packages/web/src/spike/backend-validation.ts
+        - docs/planning/artifacts/backend-validation-report.md
+    instructions: |
+      **Objective:**
+      Validate ALL critical backend assumptions before M1 feature development begins.
+
+      **Validation Checklist:**
+
+      **1. API Endpoints Availability (30min):**
+      - [ ] GET /api/projects - list projects
+      - [ ] POST /api/projects - create project
+      - [ ] GET /api/projects/:id - get project
+      - [ ] PATCH /api/projects/:id - update project
+      - [ ] GET /api/projects/:id/documents - list documents
+      - [ ] GET /api/projects/:id/documents/:type - get document
+      - [ ] POST /api/projects/:id/documents/generate - generate document
+      - [ ] GET /api/projects/:id/chat/messages - get messages
+      - [ ] POST /api/projects/:id/chat/messages - send message
+      - Test each endpoint with curl or Postman
+      - Document actual request/response formats
+      - Verify authentication mechanism (JWT? API key?)
+
+      **2. Database Schema Validation (20min):**
+      - [ ] Verify projects table has pipelineStatus field
+      - [ ] Verify pipelineStatus accepts all workflow step values
+      - [ ] Verify documents table structure matches expectations
+      - [ ] Verify chat_messages table exists
+      - [ ] Check for any schema migrations needed
+      - Document actual schema vs. assumptions
+
+      **3. WebSocket Connection (30min):**
+      - [ ] Test WebSocket endpoint (VITE_WS_URL)
+      - [ ] Verify JWT authentication works with WebSocket
+      - [ ] Test connection lifecycle (connect, disconnect, reconnect)
+      - [ ] Verify message format for streaming
+      - [ ] Test error handling (connection drops, auth failures)
+      - Document WebSocket protocol details
+
+      **4. Programmatic Skill Invocation (40min):**
+      - [ ] Verify skills can be invoked via API (not just CLI)
+      - [ ] Test skill invocation endpoint or mechanism
+      - [ ] Verify skill completion webhooks/callbacks exist
+      - [ ] Test document generation after skill completion
+      - [ ] Verify streaming skill responses work
+      - Document actual skill invocation flow
+      - If skill invocation NOT supported programmatically: FLAG AS BLOCKER
+
+      **Implementation Steps:**
+      1. Create spike/backend-validation.ts with test scripts
+      2. Run validation tests against actual backend
+      3. Document findings in backend-validation-report.md:
+         - Section per validation area
+         - Green/Yellow/Red status for each check
+         - Actual vs. expected results
+         - Blockers identified
+         - Required changes or workarounds
+      4. If blockers found: create follow-up tasks
+      5. If all green: proceed to M1 with confidence
+
+      **Success Criteria:**
+      - All validation checks completed
+      - Report documents findings clearly
+      - Any blockers identified and escalated
+      - Confidence level for M1 start: High/Medium/Low
+      - If LOW: do not proceed to M1 until resolved
+
+      **Blocker Examples:**
+      - WebSocket auth not working → M2 at risk
+      - Skill invocation not programmatic → Core feature impossible
+      - pipelineStatus field missing → M4 at risk
+      - Documents API not functional → M3 at risk
+
+  - id: m0-018
+    name: "Document Migration Strategy for web-legacy"
+    description: |
+      Document the migration path from web-legacy to new web package including
+      shared dependencies, routing migration, and any data migration needs.
+    estimate_minutes: 45
+    type: docs
+    dependencies: [m0-001]
+    files:
+      create:
+        - docs/planning/artifacts/migration-strategy.md
+      touch_only:
+        - packages/web-legacy/
+    instructions: |
+      **Objective:**
+      Document complete migration strategy to prevent issues during transition.
+
+      **Implementation Steps:**
+      1. Create migration-strategy.md with sections:
+         - **Shared Dependencies:** List dependencies used by both packages
+         - **Routing Migration:** Document old routes vs. new routes
+         - **URL Redirection:** Strategy for redirecting old URLs to new app
+         - **Data Migration:** Any local storage or session state to migrate
+         - **Feature Parity:** Checklist of features to preserve
+         - **Rollback Plan:** How to revert if new app has critical issues
+         - **Deprecation Timeline:** When to remove web-legacy
+      2. Analyze web-legacy package:
+         - List all routes in old app
+         - Identify shared dependencies (if monorepo)
+         - Check for local storage keys
+         - Document any critical features not in scope
+      3. Define transition plan:
+         - Phase 1: New app available at /beta (parallel run)
+         - Phase 2: Redirect to new app with opt-out
+         - Phase 3: Full migration, remove old app
+      4. Document known gaps:
+         - Features intentionally excluded
+         - Breaking changes for users
+         - Training or documentation needs
+
+      **Constraints:**
+      - Must address all breaking changes
+      - Must provide rollback plan
+      - Must document user impact
+      - Must identify shared dependencies
+
+      **Validation Commands:**
+      - Review document with stakeholders
+      - Verify all routes documented
+
+      **Success Criteria:**
+      - Migration strategy documented
+      - Shared dependencies identified
+      - Routing migration planned
+      - Rollback plan defined
+      - Reviewed and approved
+
+  - id: m0-019
+    name: "Define Performance Budgets and Monitoring"
+    description: |
+      Establish performance budgets and monitoring strategy for React Query cache,
+      WebSocket messages, file tree rendering, and bundle size. Prevents performance
+      degradation as features are added.
+    estimate_minutes: 60
+    type: docs
+    dependencies: [m0-011]
+    files:
+      create:
+        - docs/planning/artifacts/performance-budgets.md
+        - packages/web/src/lib/performance-monitor.ts
+      modify:
+        - packages/web/vite.config.ts
+    instructions: |
+      **Objective:**
+      Define performance budgets and set up monitoring to prevent regressions.
+
+      **Implementation Steps:**
+      1. Create performance-budgets.md with sections:
+         - **Bundle Size:** Main bundle < 250KB gzipped, chunks < 100KB
+         - **React Query Cache:** Max 1000 cache entries, auto-eviction strategy
+         - **WebSocket Messages:** Batch size limits, message throttling
+         - **File Tree Rendering:** Max 500 nodes before virtualization required
+         - **Initial Load Time:** < 2 seconds on 3G
+         - **Time to Interactive:** < 3 seconds on 3G
+         - **First Contentful Paint:** < 1 second
+      2. Create lib/performance-monitor.ts:
+         - Cache size monitoring function
+         - Bundle size tracking (dev mode)
+         - Performance mark utilities
+         - Export monitoring hooks for components
+      3. Update vite.config.ts:
+         - Add bundle analyzer plugin (dev only)
+         - Configure chunk splitting strategy
+         - Set rollup options for optimal bundles
+      4. Define monitoring strategy:
+         - Which metrics to track in prod
+         - Alert thresholds
+         - Performance testing in CI (optional for M0)
+
+      **Constraints:**
+      - Budgets must be realistic but ambitious
+      - Must be measurable
+      - Must have alert strategy
+      - Dev-only monitoring (no prod overhead for M0)
+
+      **Validation Commands:**
+      - npm run build (check bundle sizes)
+      - Review budgets with team
+
+      **Success Criteria:**
+      - Performance budgets documented
+      - Bundle size limits set in vite config
+      - Monitoring utilities created
+      - Strategy approved by team
+
+  - id: m0-020
+    name: "Final Code Review and Cleanup"
+    description: |
+      Comprehensive review of all M0 work including code quality, test coverage,
+      documentation completeness, and alignment with bulletproof-react patterns.
+      Includes backend validation verification. Final quality gate before M1.
+    estimate_minutes: 120
+    type: docs
+    dependencies: [m0-001, m0-002, m0-003, m0-004, m0-005, m0-006, m0-007, m0-008, m0-009, m0-010, m0-011, m0-012, m0-013, m0-014, m0-015, m0-016, m0-017, m0-018, m0-019]
+    files:
+      modify:
+        - packages/web/README.md
+      touch_only:
+        - packages/web/project-structure.yaml
+        - packages/web/CLAUDE.md
+    instructions: |
+      **Objective:**
+      Conduct comprehensive code review of all M0 work and prepare for M1.
+
+      **Review Checklist:**
+
+      **1. Code Quality:**
+      - [ ] All TypeScript strict mode enabled, no implicit any
+      - [ ] All ESLint rules passing (npm run lint)
+      - [ ] Code formatted consistently (npm run format)
+      - [ ] No console.log in production code
+      - [ ] All imports using @ alias correctly
+      - [ ] No cross-feature imports
+
+      **2. Testing:**
+      - [ ] All tests passing (npm test)
+      - [ ] Coverage >80% for utilities and components
+      - [ ] Integration tests for critical paths
+      - [ ] Test utilities properly configured
+
+      **3. Documentation:**
+      - [ ] project-structure.yaml complete and accurate
+      - [ ] CLAUDE.md references project-structure.yaml
+      - [ ] README.md has quick start guide
+      - [ ] All utilities have JSDoc comments
+      - [ ] Style anchors referenced correctly
+
+      **4. Structure:**
+      - [ ] Folder structure matches bulletproof-react
+      - [ ] features/ ready for feature implementation
+      - [ ] shared/ has utilities and types
+      - [ ] lib/ has client setup
+      - [ ] No placeholder or unused files
+
+      **5. Configuration:**
+      - [ ] All dependencies installed correctly
+      - [ ] Vite config complete
+      - [ ] TypeScript config strict
+      - [ ] ESLint + Prettier integrated
+      - [ ] Env vars configured
+
+      **6. Functionality:**
+      - [ ] Dev server runs (npm run dev)
+      - [ ] Build succeeds (npm run build)
+      - [ ] Routes working
+      - [ ] Providers functional
+      - [ ] Button component renders
+      - [ ] Error boundary catches test errors
+
+      **7. Backend Validation:**
+      - [ ] Backend validation spike completed (m0-017)
+      - [ ] All critical API endpoints verified
+      - [ ] WebSocket connection tested
+      - [ ] Skill invocation mechanism confirmed
+      - [ ] Database schema validated
+      - [ ] No critical blockers identified
+
+      **8. Documentation:**
+      - [ ] Migration strategy documented (m0-018)
+      - [ ] Performance budgets defined (m0-019)
+      - [ ] Backend validation report completed
+      - [ ] All artifacts in docs/planning/
+
+      **Implementation Steps:**
+      1. Run all quality gates:
+         - npm run lint
+         - npm run type-check
+         - npm test
+         - npm run build
+      2. Review each completed task:
+         - Verify success criteria met
+         - Check file quality
+         - Validate patterns used
+      3. Update README.md:
+         - Add comprehensive quick start
+         - Document npm scripts
+         - Link to documentation
+      4. Test complete workflow:
+         - Fresh install (npm ci)
+         - Run all commands
+         - Verify no errors
+      5. Document any technical debt
+      6. Create M0 completion report
+
+      **Validation Commands:**
+      - npm run lint (must pass)
+      - npm run type-check (must pass)
+      - npm test (must pass)
+      - npm run build (must succeed)
+      - npm run dev (must start)
+
+      **Success Criteria:**
+      - All quality gates passing
+      - All M0 tasks verified complete
+      - Documentation comprehensive
+      - No critical issues or blockers
+      - Ready to proceed to M1
+      - M0 completion report created
+
+      **Drift Prevention:**
+      - Confirm all patterns follow style anchors
+      - Verify no deviations from bulletproof-react
+      - Check no anti-patterns introduced
+      - Validate consistent code style

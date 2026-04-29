@@ -1,0 +1,917 @@
+milestone: m1
+name: "Sidebar with Workflow Navigation"
+generated: "2026-04-28T00:00:00Z"
+
+style_anchor_refs:
+  - feature-module-structure  # Feature-based organization
+  - jotai-feature-state  # Workflow state management
+  - shadcn-component-pattern  # UI components with CVA
+  - react-query-api-layer  # API integration pattern
+
+global_constraints:
+  allowed_patterns:
+    - "Use feature-based structure: features/sidebar/ with components/, state/, api/"
+    - "Use jotai atoms for workflow step state (NOT react-query for client state)"
+    - "Use shadcn patterns with CVA variants for UI components"
+    - "Use React.forwardRef for all shared UI components"
+    - "Export only public API through feature index.ts"
+    - "Use Tailwind utility classes for all styling"
+  forbidden_patterns:
+    - "Cross-feature imports (import from '@/features/other-feature')"
+    - "Putting server data in jotai atoms (use react-query for API data)"
+    - "Inline styles or CSS modules (use Tailwind only)"
+    - "Global state for feature-specific concerns (scope to feature)"
+    - "Deep component nesting (keep flat structure)"
+    - "Any use of class components (function components only)"
+  tdd_required: true
+  max_task_duration_minutes: 150
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - M0 (Clean Slate Setup) is complete
+      - Development environment running (npm run dev)
+      - Feature folder structure exists (features/, shared/, lib/)
+      - Style anchors reviewed and understood
+      - Branch up to date with main
+  - stage: pre-commit
+    commands:
+      - npm run lint
+      - npm run type-check
+      - npm run test
+  - stage: task-completion
+    criteria:
+      - All tests passing (unit and integration)
+      - No lint errors or warnings
+      - No TypeScript errors
+      - Code formatted with Prettier
+      - Test coverage >80% for new code
+      - All task-specific success criteria met
+  - stage: milestone-completion
+    criteria:
+      - All milestone success criteria met from milestones.yaml
+      - Fixed sidebar renders at 1/3 width
+      - All 10 workflow steps display with status icons
+      - Step navigation updates workflow state
+      - Current step visually highlighted
+      - Integration tests verify navigation behavior
+      - Responsive on desktop viewports
+      - Code review completed
+  - stage: pre-push
+    commands:
+      - npm run test:integration
+      - npm run build
+      - git fetch origin main
+
+tasks:
+  - id: m1-001
+    name: "Create sidebar feature structure"
+    description: |
+      Establish the sidebar feature module with proper folder structure following
+      feature-module-structure pattern. Creates foundation for all sidebar work.
+    estimate_minutes: 30
+    type: config
+    dependencies: []
+    files:
+      create:
+        - packages/web/src/features/sidebar/index.ts
+        - packages/web/src/features/sidebar/components/.gitkeep
+        - packages/web/src/features/sidebar/state/.gitkeep
+    instructions: |
+      **Objective:**
+      Create sidebar feature folder structure following feature-based architecture.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/features/sidebar/` directory
+      2. Create subdirectories: `components/`, `state/`
+      3. Create `index.ts` with placeholder export: `export const Sidebar = null;`
+      4. Add .gitkeep files to empty directories for git tracking
+
+      **Constraints:**
+      - ONLY use: Feature-based structure from **feature-module-structure**
+      - Follow pattern: features/[feature-name]/{components,state}/
+      - NEVER create: api/ folder (not needed for M1, sidebar has no server data)
+      - Keep structure flat (no nested subdirectories yet)
+
+      **Testing Requirements:**
+      - Verify folder structure exists with test in m1-002
+
+      **Success Criteria:**
+      - Folder structure matches feature-module-structure pattern
+      - index.ts exists and exports placeholder
+      - Ready for component and state files
+
+  - id: m1-002
+    name: "Define workflow steps constant and types"
+    description: |
+      Create TypeScript types and constants for the 10 sherpy workflow steps.
+      Defines the data model for workflow state that will be used across sidebar.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m1-001]
+    files:
+      create:
+        - packages/web/src/features/sidebar/types.ts
+    instructions: |
+      **Objective:**
+      Define workflow step types and constants matching sherpy-flow pipeline.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/features/sidebar/types.ts`
+      2. Define WorkflowStep type:
+         ```typescript
+         export type WorkflowStep =
+           | 'intake'
+           | 'gap-analysis'
+           | 'business-requirements'
+           | 'technical-requirements'
+           | 'style-anchors'
+           | 'implementation-planning'
+           | 'plan-review'
+           | 'architecture-decisions'
+           | 'delivery-timeline'
+           | 'qa-test-plan';
+         ```
+      3. Define WorkflowStepConfig interface with id, name, description
+      4. Export WORKFLOW_STEPS constant: array of 10 steps with metadata
+      5. Define StepStatus type: 'complete' | 'current' | 'pending'
+      6. Add helper function getStepIndex(step: WorkflowStep): number
+
+      **Constraints:**
+      - ONLY use: TypeScript type definitions, const arrays
+      - Match pipeline values from technical-requirements.yaml (pipelineStatus field)
+      - NEVER use: Enums (use string literal unions)
+      - Export all types and constants
+
+      **Testing Requirements:**
+      - Unit tests for getStepIndex function
+      - Validate WORKFLOW_STEPS array has 10 entries
+
+      **Success Criteria:**
+      - WorkflowStep type includes all 10 steps
+      - WORKFLOW_STEPS constant has complete metadata
+      - getStepIndex function works correctly
+      - All types exported
+      - Tests passing with >90% coverage
+
+  - id: m1-003
+    name: "Create workflow state atoms with jotai"
+    description: |
+      Implement jotai atoms for managing workflow step state. Includes current step,
+      step statuses, and navigation logic. Core state management for sidebar.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m1-002]
+    files:
+      create:
+        - packages/web/src/features/sidebar/state/workflow-atoms.ts
+      touch_only:
+        - packages/web/src/features/sidebar/types.ts
+    style_anchor_refs:
+      - jotai-feature-state
+    instructions: |
+      **Objective:**
+      Create jotai atoms for workflow state management following jotai-feature-state pattern.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/features/sidebar/state/workflow-atoms.ts`
+      2. Import atom, atomWithStorage from jotai
+      3. Define currentStepAtom using atomWithStorage:
+         - Key: 'sherpy:workflow:currentStep'
+         - Default: 'intake' (first step)
+         - Type: WorkflowStep
+      4. Define completedStepsAtom using atomWithStorage:
+         - Key: 'sherpy:workflow:completedSteps'
+         - Default: [] (empty array)
+         - Type: WorkflowStep[]
+      5. Create derived stepStatusesAtom (read-only):
+         - Maps each step to 'complete' | 'current' | 'pending'
+         - Based on completedStepsAtom and currentStepAtom
+      6. Create nextStepAtom (read/write):
+         - Read: returns next step after current
+         - Write: advances to next step and updates current
+      7. Create prevStepAtom (read/write):
+         - Read: returns previous step
+         - Write: goes back to previous step
+      8. Add markStepCompleteAtom (write-only):
+         - Adds step to completedStepsAtom
+
+      **Constraints:**
+      - ONLY use: jotai atoms (atom, atomWithStorage), no react-query
+      - Follow pattern in **jotai-feature-state** for atom structure
+      - Use atomWithStorage for persistence across page reloads
+      - NEVER use: React context, Redux, or other state libraries
+      - Name all atoms with Atom suffix
+      - Export all atoms directly (not wrapped in functions)
+
+      **Testing Requirements:**
+      - Unit tests for each atom's behavior
+      - Test derived atom logic (stepStatusesAtom)
+      - Test navigation atoms (next/prev)
+      - Test localStorage persistence
+
+      **Success Criteria:**
+      - All atoms defined with correct types
+      - Derived atoms compute correct values
+      - Navigation logic works (next/prev)
+      - State persists in localStorage
+      - Tests passing with >85% coverage
+
+  - id: m1-004
+    name: "Add workflow atoms unit tests"
+    description: |
+      Comprehensive test coverage for workflow atoms including state updates,
+      derived values, and localStorage persistence.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m1-003]
+    files:
+      create:
+        - packages/web/src/features/sidebar/state/workflow-atoms.test.ts
+      touch_only:
+        - packages/web/src/features/sidebar/state/workflow-atoms.ts
+    style_anchor_refs:
+      - jotai-feature-state
+    instructions: |
+      **Objective:**
+      Achieve >85% test coverage for workflow atoms with comprehensive behavior tests.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/features/sidebar/state/workflow-atoms.test.ts`
+      2. Setup jotai Provider wrapper for tests
+      3. Test currentStepAtom:
+         - Read initial value ('intake')
+         - Update to different step
+         - Verify localStorage persistence
+      4. Test completedStepsAtom:
+         - Add steps to completed list
+         - Verify persistence
+      5. Test stepStatusesAtom (derived):
+         - Current step returns 'current'
+         - Completed steps return 'complete'
+         - Future steps return 'pending'
+      6. Test nextStepAtom:
+         - Read returns correct next step
+         - Write advances current step
+         - Last step behavior (no next)
+      7. Test prevStepAtom:
+         - Read returns correct previous step
+         - Write goes back
+         - First step behavior (no previous)
+      8. Test markStepCompleteAtom:
+         - Adds step to completed list
+         - Doesn't duplicate
+
+      **Constraints:**
+      - ONLY use: Vitest, @testing-library/react, renderHook
+      - Follow testing pattern in **jotai-feature-state**
+      - Mock localStorage for isolation
+      - NEVER use: Real localStorage in tests
+
+      **Testing Requirements:**
+      - All atoms tested
+      - Both read and write operations covered
+      - Edge cases documented and tested
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >85% for workflow-atoms.ts
+      - Clear test descriptions (describe/it)
+      - Mock setup/teardown between tests
+
+  - id: m1-005
+    name: "Create StepIndicator component"
+    description: |
+      Reusable UI component showing step status icon (✓ complete, → current, ○ pending).
+      Small, focused component following shadcn patterns.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m1-002]
+    files:
+      create:
+        - packages/web/src/features/sidebar/components/step-indicator.tsx
+      touch_only:
+        - packages/web/src/features/sidebar/types.ts
+    style_anchor_refs:
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Create StepIndicator component with CVA variants for different statuses.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/features/sidebar/components/step-indicator.tsx`
+      2. Import cva, VariantProps, forwardRef
+      3. Define stepIndicatorVariants with CVA:
+         - Base: "inline-flex items-center justify-center rounded-full w-6 h-6 text-sm font-medium"
+         - Variants for status: complete, current, pending
+         - Complete: green background, checkmark icon
+         - Current: blue background, arrow icon
+         - Pending: gray background, circle icon
+      4. Define StepIndicatorProps extending HTMLAttributes with status prop
+      5. Implement component with forwardRef
+      6. Render appropriate icon based on status:
+         - ✓ (Check) for complete
+         - → (ArrowRight) for current
+         - ○ (Circle) for pending
+      7. Use lucide-react for icons
+
+      **Constraints:**
+      - ONLY use: CVA for variants, lucide-react for icons, Tailwind
+      - Follow pattern in **shadcn-component-pattern**
+      - Use forwardRef for composition
+      - NEVER use: Inline styles, custom SVG icons
+      - Component is feature-specific (stays in sidebar/components/, not shared)
+
+      **Testing Requirements:**
+      - Unit tests in next task (m1-006)
+
+      **Success Criteria:**
+      - Component renders all three status variants
+      - Icons display correctly
+      - Tailwind classes applied via CVA
+      - TypeScript types correct
+      - forwardRef implemented
+
+  - id: m1-006
+    name: "Add StepIndicator component tests"
+    description: |
+      Test StepIndicator rendering for all status variants and prop handling.
+    estimate_minutes: 30
+    type: test
+    dependencies: [m1-005]
+    files:
+      create:
+        - packages/web/src/features/sidebar/components/step-indicator.test.tsx
+      touch_only:
+        - packages/web/src/features/sidebar/components/step-indicator.tsx
+    instructions: |
+      **Objective:**
+      Achieve >90% test coverage for StepIndicator component.
+
+      **Implementation Steps:**
+      1. Create test file with render helper
+      2. Test complete status:
+         - Renders checkmark icon
+         - Has correct styling classes
+      3. Test current status:
+         - Renders arrow icon
+         - Has current styling
+      4. Test pending status:
+         - Renders circle icon
+         - Has pending styling
+      5. Test ref forwarding:
+         - Can attach ref to component
+      6. Test className override:
+         - Custom classes merge correctly
+
+      **Constraints:**
+      - ONLY use: @testing-library/react, vitest
+      - Test visual output (classes, icons)
+      - NEVER use: Snapshot tests
+
+      **Testing Requirements:**
+      - All status variants tested
+      - Icon rendering verified
+      - Ref forwarding validated
+
+      **Success Criteria:**
+      - All tests passing
+      - Coverage >90% for step-indicator.tsx
+      - Clear test descriptions
+
+  - id: m1-007
+    name: "Create SidebarStep component"
+    description: |
+      Individual step item component with name, description, status indicator, and
+      click handler. Building block for the step list.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m1-005, m1-002]
+    files:
+      create:
+        - packages/web/src/features/sidebar/components/sidebar-step.tsx
+      touch_only:
+        - packages/web/src/features/sidebar/components/step-indicator.tsx
+        - packages/web/src/features/sidebar/types.ts
+    style_anchor_refs:
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Create SidebarStep component displaying step info with status indicator.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/features/sidebar/components/sidebar-step.tsx`
+      2. Define SidebarStepProps:
+         - step: WorkflowStepConfig
+         - status: StepStatus
+         - isActive: boolean (for current step highlighting)
+         - onClick: () => void
+      3. Use CVA for variant styles:
+         - Base: "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors"
+         - Active variant: different background color
+         - Hover states
+      4. Component structure:
+         - StepIndicator with status prop
+         - Text container with step name (bold) and description (smaller, muted)
+         - Apply active styling when isActive=true
+      5. Use forwardRef
+      6. Make entire component clickable (not just text)
+
+      **Constraints:**
+      - ONLY use: CVA, Tailwind, StepIndicator component, forwardRef
+      - Follow pattern in **shadcn-component-pattern**
+      - NEVER use: Inline styles, button wrapper (div is clickable)
+      - Use semantic HTML (accessible click handling with role="button")
+
+      **Testing Requirements:**
+      - Unit tests in next task (m1-008)
+
+      **Success Criteria:**
+      - Component renders step info correctly
+      - Status indicator shows correct state
+      - Active state visually distinct
+      - Click handler fires on interaction
+      - Accessible (keyboard navigation, aria attributes)
+
+  - id: m1-008
+    name: "Add SidebarStep component tests"
+    description: |
+      Test SidebarStep rendering, styling, and interaction handling.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m1-007]
+    files:
+      create:
+        - packages/web/src/features/sidebar/components/sidebar-step.test.tsx
+      touch_only:
+        - packages/web/src/features/sidebar/components/sidebar-step.tsx
+    instructions: |
+      **Objective:**
+      Achieve >85% test coverage for SidebarStep component including interactions.
+
+      **Implementation Steps:**
+      1. Create test file with mock step config
+      2. Test rendering:
+         - Step name displays
+         - Step description displays
+         - StepIndicator renders with correct status
+      3. Test active state:
+         - Active styling applied when isActive=true
+         - No active styling when false
+      4. Test click handling:
+         - onClick called when component clicked
+         - onClick called on keyboard Enter
+      5. Test accessibility:
+         - Has role="button"
+         - Has appropriate aria attributes
+         - Keyboard accessible
+
+      **Constraints:**
+      - ONLY use: @testing-library/react, @testing-library/user-event, vitest
+      - Test user interactions with userEvent
+      - NEVER use: FireEvent (use userEvent for realistic interactions)
+
+      **Testing Requirements:**
+      - Rendering and interaction tests
+      - Accessibility validated
+      - User interactions simulated
+
+      **Success Criteria:**
+      - All tests passing
+      - Coverage >85% for sidebar-step.tsx
+      - Click and keyboard interactions tested
+
+  - id: m1-009
+    name: "Create Sidebar container component"
+    description: |
+      Main sidebar container displaying all workflow steps with navigation logic.
+      Connects to jotai atoms for state management. Core feature component.
+    estimate_minutes: 90
+    type: code
+    dependencies: [m1-007, m1-003]
+    files:
+      create:
+        - packages/web/src/features/sidebar/components/sidebar.tsx
+      touch_only:
+        - packages/web/src/features/sidebar/components/sidebar-step.tsx
+        - packages/web/src/features/sidebar/state/workflow-atoms.ts
+        - packages/web/src/features/sidebar/types.ts
+    style_anchor_refs:
+      - jotai-feature-state
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Create main Sidebar component integrating workflow state with step list UI.
+
+      **Implementation Steps:**
+      1. Create `packages/web/src/features/sidebar/components/sidebar.tsx`
+      2. Import useAtom, useAtomValue, useSetAtom from jotai
+      3. Import workflow atoms (currentStepAtom, stepStatusesAtom)
+      4. Import WORKFLOW_STEPS constant and SidebarStep component
+      5. Define Sidebar component (no props needed):
+         - Read currentStepAtom for current step
+         - Read stepStatusesAtom for all step statuses
+         - Use setAtom to update currentStepAtom on click
+      6. Component structure:
+         - Aside element with fixed width (w-1/3), full height, bg color, border
+         - Header section: "Workflow Steps" title
+         - Scrollable step list container
+         - Map over WORKFLOW_STEPS array
+         - Render SidebarStep for each with:
+           - step config
+           - status from stepStatusesAtom
+           - isActive based on currentStepAtom
+           - onClick updates currentStepAtom
+      7. Use Tailwind for layout (flexbox, spacing)
+
+      **Constraints:**
+      - ONLY use: jotai hooks (useAtom, useAtomValue, useSetAtom), Tailwind
+      - Follow **jotai-feature-state** pattern for state usage
+      - Fixed width: w-1/3 (always visible, no collapse)
+      - NEVER use: React context, prop drilling, inline styles
+      - Use semantic HTML (aside, nav)
+
+      **Testing Requirements:**
+      - Integration tests in next task (m1-010)
+
+      **Success Criteria:**
+      - Sidebar renders all 10 steps
+      - Current step highlighted correctly
+      - Status indicators show correct states
+      - Clicking step updates currentStepAtom
+      - Fixed at 1/3 screen width
+      - Scrollable when steps overflow
+
+  - id: m1-010
+    name: "Add Sidebar integration tests"
+    description: |
+      Integration tests for Sidebar component verifying step rendering, state updates,
+      and navigation behavior. Tests full feature interaction.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m1-009]
+    files:
+      create:
+        - packages/web/src/features/sidebar/components/sidebar.test.tsx
+      touch_only:
+        - packages/web/src/features/sidebar/components/sidebar.tsx
+    style_anchor_refs:
+      - jotai-feature-state
+    instructions: |
+      **Objective:**
+      Test Sidebar component with jotai state integration and user interactions.
+
+      **Implementation Steps:**
+      1. Create test file with jotai Provider wrapper
+      2. Test initial render:
+         - All 10 steps render
+         - First step ('intake') is current
+         - Correct status indicators show
+      3. Test step navigation:
+         - Click on step
+         - Verify currentStepAtom updates
+         - Verify UI reflects new current step
+      4. Test status updates:
+         - Mark step complete
+         - Verify status indicator changes
+         - Verify completed state persists
+      5. Test keyboard navigation:
+         - Tab to step
+         - Press Enter
+         - Verify navigation works
+      6. Test multiple step clicks:
+         - Navigate between various steps
+         - Verify state updates correctly
+
+      **Constraints:**
+      - ONLY use: @testing-library/react, @testing-library/user-event, vitest
+      - Wrap component in jotai Provider (follow **jotai-feature-state** testing pattern)
+      - Mock localStorage for isolation
+      - NEVER use: Real localStorage, external dependencies
+
+      **Testing Requirements:**
+      - Full user interaction flow tested
+      - State updates verified
+      - Keyboard accessibility validated
+
+      **Success Criteria:**
+      - All tests passing
+      - Coverage >80% for sidebar.tsx
+      - User interactions realistic (userEvent)
+      - State integration validated
+
+  - id: m1-011
+    name: "Update feature index to export Sidebar"
+    description: |
+      Export Sidebar component and types through feature's public API (index.ts).
+      Completes feature encapsulation.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m1-009]
+    files:
+      modify:
+        - packages/web/src/features/sidebar/index.ts
+      touch_only:
+        - packages/web/src/features/sidebar/components/sidebar.tsx
+        - packages/web/src/features/sidebar/types.ts
+        - packages/web/src/features/sidebar/state/workflow-atoms.ts
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Define public API for sidebar feature following feature-module-structure pattern.
+
+      **Implementation Steps:**
+      1. Open `packages/web/src/features/sidebar/index.ts`
+      2. Export Sidebar component from components/sidebar
+      3. Export types from types.ts:
+         - WorkflowStep
+         - WorkflowStepConfig
+         - StepStatus
+      4. Export workflow atoms from state/workflow-atoms:
+         - currentStepAtom
+         - stepStatusesAtom
+         - completedStepsAtom
+         (For potential use in other parts of app, not other features)
+      5. DO NOT export internal components (SidebarStep, StepIndicator)
+      6. Add JSDoc comment describing feature
+
+      **Constraints:**
+      - ONLY export: Public API (Sidebar component, types, key atoms)
+      - Follow pattern in **feature-module-structure**
+      - NEVER export: Internal components, implementation details
+      - Keep exports minimal and intentional
+
+      **Testing Requirements:**
+      - Verify exports with import test in m1-012
+
+      **Success Criteria:**
+      - Sidebar component exported
+      - Public types exported
+      - Key atoms exported
+      - Internal components NOT exported
+      - JSDoc added
+
+  - id: m1-012
+    name: "Create feature integration smoke test"
+    description: |
+      End-to-end smoke test importing sidebar feature and verifying public API works.
+      Validates feature encapsulation and exports.
+    estimate_minutes: 30
+    type: test
+    dependencies: [m1-011]
+    files:
+      create:
+        - packages/web/src/features/sidebar/sidebar-integration.test.tsx
+      touch_only:
+        - packages/web/src/features/sidebar/index.ts
+    instructions: |
+      **Objective:**
+      Verify sidebar feature can be imported and used through public API only.
+
+      **Implementation Steps:**
+      1. Create integration test file
+      2. Import from feature index ONLY (not deep imports):
+         - `import { Sidebar, WorkflowStep, currentStepAtom } from '@/features/sidebar'`
+      3. Test Sidebar renders in app context:
+         - Render Sidebar component
+         - Verify it displays without errors
+      4. Test public types are usable:
+         - Create WorkflowStep variable
+         - TypeScript should allow this
+      5. Test atoms are accessible:
+         - Can read currentStepAtom
+         - Can write to currentStepAtom
+      6. Verify internal components NOT accessible:
+         - Try importing SidebarStep (should fail)
+
+      **Constraints:**
+      - ONLY import: From feature index.ts, no deep imports
+      - Validate feature encapsulation
+      - NEVER use: Deep imports like '@/features/sidebar/components/...'
+
+      **Testing Requirements:**
+      - Public API works
+      - Internal API not exposed
+      - Feature is self-contained
+
+      **Success Criteria:**
+      - Test imports only from feature index
+      - Sidebar renders successfully
+      - Types and atoms accessible
+      - Internal components not importable
+      - All tests passing
+
+  - id: m1-013
+    name: "Add Sidebar to app layout"
+    description: |
+      Integrate Sidebar component into main app layout. Makes sidebar visible in
+      running application. First user-visible milestone deliverable.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m1-011]
+    files:
+      modify:
+        - packages/web/src/app.tsx
+      touch_only:
+        - packages/web/src/features/sidebar/index.ts
+    instructions: |
+      **Objective:**
+      Add Sidebar to app layout so it's visible when app runs.
+
+      **Implementation Steps:**
+      1. Open `packages/web/src/app.tsx` (or main layout component)
+      2. Import Sidebar from feature: `import { Sidebar } from '@/features/sidebar'`
+      3. Add layout structure:
+         - Main container: flex, h-screen
+         - Sidebar component (fixed 1/3 width)
+         - Main content area (remaining 2/3 width, flex-1)
+      4. Use Tailwind for layout
+      5. Ensure sidebar is always visible (no conditional rendering)
+      6. Add placeholder content to main area for now (e.g., "Main Content")
+
+      **Constraints:**
+      - ONLY use: Feature public API, Tailwind for layout
+      - Import from '@/features/sidebar' NOT deep imports
+      - Fixed layout: sidebar 1/3, content 2/3
+      - NEVER use: CSS modules, inline styles, flexbox without Tailwind
+
+      **Testing Requirements:**
+      - Manual testing in browser (dev server)
+      - Visual verification in m1-014
+
+      **Success Criteria:**
+      - Sidebar visible in running app
+      - Proper layout (1/3 sidebar, 2/3 content)
+      - No console errors
+      - Sidebar interactive (can click steps)
+      - App compiles without errors
+
+  - id: m1-014
+    name: "Manual testing and visual verification"
+    description: |
+      Manual browser testing to verify sidebar appearance, interactions, and
+      responsiveness. Quality check before final code review.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m1-013]
+    files:
+      touch_only:
+        - packages/web/src/app.tsx
+        - packages/web/src/features/sidebar/index.ts
+    instructions: |
+      **Objective:**
+      Manually verify sidebar works correctly in browser with visual inspection.
+
+      **Manual Test Checklist:**
+      1. Start dev server: npm run dev
+      2. Open browser to localhost
+      3. Visual appearance:
+         - Sidebar takes up 1/3 of screen width
+         - All 10 workflow steps visible
+         - Status icons display correctly (○ pending, → current, ✓ complete)
+         - First step ('intake') highlighted as current
+      4. Interaction testing:
+         - Click each step
+         - Verify current step updates
+         - Verify visual highlighting changes
+         - Check that status icons update
+      5. Responsive testing:
+         - Test at 1920x1080 (standard desktop)
+         - Test at 1366x768 (smaller desktop)
+         - Verify sidebar remains 1/3 width
+         - Check scrolling if needed
+      6. Accessibility:
+         - Tab through steps with keyboard
+         - Press Enter on focused step
+         - Verify navigation works
+      7. State persistence:
+         - Navigate to different step
+         - Refresh page
+         - Verify step selection persists (localStorage)
+
+      **Constraints:**
+      - ONLY test: Desktop web browsers (Chrome, Firefox, Safari)
+      - NEVER test: Mobile browsers (out of scope)
+      - Document any visual issues or bugs found
+
+      **Testing Requirements:**
+      - All manual tests completed
+      - Issues documented if found
+      - Screenshots of working sidebar (optional)
+
+      **Success Criteria:**
+      - Sidebar renders correctly at 1/3 width
+      - All 10 steps display
+      - Step navigation works on click and keyboard
+      - Current step highlighted correctly
+      - Status indicators show correct states
+      - State persists after refresh
+      - No console errors or warnings
+
+  - id: m1-015
+    name: "Comprehensive milestone code review"
+    description: |
+      Final code review of all M1 work. Verify code quality, patterns, tests, and
+      milestone success criteria before marking complete. Critical quality gate.
+    estimate_minutes: 90
+    type: docs
+    dependencies: [m1-014]
+    files:
+      touch_only:
+        - packages/web/src/features/sidebar/index.ts
+        - packages/web/src/features/sidebar/types.ts
+        - packages/web/src/features/sidebar/state/workflow-atoms.ts
+        - packages/web/src/features/sidebar/components/step-indicator.tsx
+        - packages/web/src/features/sidebar/components/sidebar-step.tsx
+        - packages/web/src/features/sidebar/components/sidebar.tsx
+    instructions: |
+      **Objective:**
+      Comprehensive code review ensuring quality, patterns, and milestone goals met.
+
+      **Code Review Checklist:**
+
+      **1. Feature Structure (feature-module-structure):**
+      - [ ] Feature in features/sidebar/ folder
+      - [ ] Proper subdirectories (components/, state/)
+      - [ ] Public API through index.ts
+      - [ ] No cross-feature imports
+      - [ ] Internal components not exported
+
+      **2. State Management (jotai-feature-state):**
+      - [ ] Atoms in state/ folder
+      - [ ] Named with Atom suffix
+      - [ ] Using atomWithStorage for persistence
+      - [ ] Derived atoms for computed values
+      - [ ] No server data in atoms
+
+      **3. Component Patterns (shadcn-component-pattern):**
+      - [ ] CVA used for variants
+      - [ ] forwardRef on all components
+      - [ ] Tailwind for all styling
+      - [ ] No inline styles
+      - [ ] Accessible markup (aria, roles)
+
+      **4. TypeScript Quality:**
+      - [ ] All exports typed
+      - [ ] No any types
+      - [ ] Proper type inference
+      - [ ] No type assertions
+      - [ ] Interfaces/types documented
+
+      **5. Test Coverage:**
+      - [ ] Unit tests for atoms (>85% coverage)
+      - [ ] Component tests for UI (>80% coverage)
+      - [ ] Integration test for Sidebar
+      - [ ] Manual browser testing completed
+      - [ ] All tests passing
+
+      **6. Milestone Success Criteria (from milestones.yaml):**
+      - [ ] Fixed sidebar at 1/3 screen width, always visible
+      - [ ] All 10 workflow steps displayed with names
+      - [ ] Status icons render correctly (✓ → ○)
+      - [ ] Steps clickable and navigate to correct state
+      - [ ] Current step visually highlighted
+      - [ ] Workflow state managed with jotai atoms
+      - [ ] Integration tests verify navigation behavior
+      - [ ] Responsive on desktop/web viewports
+
+      **7. Code Quality:**
+      - [ ] No lint errors or warnings
+      - [ ] No TypeScript errors
+      - [ ] Formatted with Prettier
+      - [ ] Comments where needed (not obvious code)
+      - [ ] No console.log or debug code
+      - [ ] No TODO/FIXME comments
+
+      **8. Performance:**
+      - [ ] No unnecessary re-renders
+      - [ ] Proper use of useAtomValue/useSetAtom
+      - [ ] No expensive computations in render
+      - [ ] Derived atoms used for computed state
+
+      **Review Actions:**
+      1. Run all commands:
+         - npm run lint (should pass)
+         - npm run type-check (should pass)
+         - npm run test (should pass, >80% coverage)
+         - npm run build (should succeed)
+      2. Review each file against checklist
+      3. Test in browser manually
+      4. Document any issues found
+      5. Fix issues before marking milestone complete
+
+      **Constraints:**
+      - MUST fix: Any failing tests, lint errors, type errors
+      - MUST verify: All milestone success criteria met
+      - SHOULD improve: Any code smells or anti-patterns found
+
+      **Success Criteria:**
+      - All checklist items verified
+      - All tests passing
+      - No lint/type errors
+      - Build succeeds
+      - Manual testing confirms functionality
+      - Milestone success criteria met
+      - Ready to proceed to M2

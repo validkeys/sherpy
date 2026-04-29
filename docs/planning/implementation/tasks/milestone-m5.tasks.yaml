@@ -1,0 +1,1320 @@
+version: 1.0.0
+milestone: m5
+name: Polish, Accessibility, and Advanced Features
+generated: 2026-04-28
+
+dependencies:
+  milestones: [m4]
+
+business_requirements_ref: ../../requirements/business-requirements.yaml
+technical_requirements_ref: ../../requirements/technical-requirements.yaml
+style_anchors_ref: ../../artifacts/style-anchors/index.yaml
+
+scope:
+  focus: |
+    Final production polish: keyboard navigation, cascade updates, WCAG 2.1 AA compliance,
+    error handling refinement, notifications, and loading state improvements.
+
+  functional_requirements:
+    - FR-009 (Cascade Update Mechanism)
+    - FR-011 (Keyboard Navigation)
+    - NFR-Accessibility (WCAG 2.1 AA compliance)
+
+  out_of_scope:
+    - Mobile optimization
+    - New features beyond requirements
+    - Backend/API changes
+
+global_constraints:
+  allowed_patterns:
+    - "Use feature-module-structure for features/cascade-updates/"
+    - "Use shadcn components for accessibility (Radix UI primitives)"
+    - "Use jotai atoms for keyboard shortcut state"
+    - "Use react-query for cascade update mutations"
+    - "Use ARIA labels and semantic HTML"
+    - "Use focus-visible for focus indicators"
+
+  forbidden_patterns:
+    - "NO custom focus management (use browser defaults + focus-visible)"
+    - "NO inline styles for accessibility (use Tailwind classes)"
+    - "NO div buttons (use proper button elements)"
+    - "NO missing alt text on images"
+    - "NO color-only indicators (always pair with text/icon)"
+
+  accessibility_requirements:
+    - "All interactive elements must have visible focus indicators"
+    - "Minimum 4.5:1 contrast ratio for normal text (WCAG AA)"
+    - "Minimum 3:1 contrast ratio for large text and UI components"
+    - "Proper heading hierarchy (h1 → h2 → h3, no skipping)"
+    - "All form inputs must have associated labels"
+    - "All images must have descriptive alt text"
+    - "Keyboard navigation must follow logical tab order"
+    - "ARIA labels for icon-only buttons"
+
+  max_task_duration_minutes: 150
+
+tasks:
+  # ============================================================================
+  # Keyboard Navigation
+  # ============================================================================
+
+  - id: m5-001
+    name: Create keyboard shortcuts state with jotai
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    priority: high
+
+    style_anchors:
+      - id: jotai-feature-state
+        relevance: Define keyboard shortcut atoms and state management
+
+    files:
+      create:
+        - packages/web/src/shared/state/keyboard-shortcuts.ts
+
+    instructions: |
+      Create jotai atoms for managing keyboard shortcuts state.
+
+      **Requirements:**
+      - Atom for active keyboard shortcuts map
+      - Atom for keyboard shortcut enabled/disabled state
+      - Atom for current focus context (sidebar, chat, files)
+      - Helper functions for registering/unregistering shortcuts
+
+      **Implementation:**
+      ```typescript
+      // Keyboard shortcut configuration
+      export const keyboardShortcutsAtom = atom<Map<string, KeyboardShortcut>>()
+      export const shortcutsEnabledAtom = atom(true)
+      export const focusContextAtom = atom<'sidebar' | 'chat' | 'files'>('sidebar')
+
+      // Types
+      interface KeyboardShortcut {
+        key: string
+        description: string
+        handler: () => void
+        context?: 'global' | 'sidebar' | 'chat' | 'files'
+      }
+      ```
+
+      **Validation:**
+      - TypeScript compiles without errors
+      - Atoms are exported and importable
+      - Helper functions have proper type signatures
+
+  - id: m5-002
+    name: Implement useKeyboardShortcut hook
+    estimate_minutes: 60
+    type: code
+    dependencies: [m5-001]
+    priority: high
+
+    files:
+      create:
+        - packages/web/src/shared/hooks/use-keyboard-shortcut.ts
+
+    instructions: |
+      Create custom hook for registering keyboard shortcuts with proper cleanup.
+
+      **Requirements:**
+      - Register shortcut on mount, unregister on unmount
+      - Support modifier keys (Ctrl, Alt, Shift, Meta)
+      - Respect shortcutsEnabledAtom state
+      - Prevent default browser behavior when shortcut triggered
+      - Support context-specific shortcuts
+
+      **Implementation:**
+      ```typescript
+      export function useKeyboardShortcut(
+        key: string,
+        handler: () => void,
+        options?: {
+          enabled?: boolean
+          context?: 'global' | 'sidebar' | 'chat' | 'files'
+          preventDefault?: boolean
+        }
+      ) {
+        // Register keyboard event listener
+        // Check if shortcuts enabled
+        // Match key combination
+        // Execute handler if context matches
+      }
+      ```
+
+      **Validation:**
+      - Hook registers and cleans up properly
+      - Shortcuts work with modifier keys (Ctrl+K, Alt+1, etc.)
+      - Context filtering works correctly
+
+  - id: m5-003
+    name: Add keyboard navigation to sidebar
+    estimate_minutes: 75
+    type: code
+    dependencies: [m5-002]
+    priority: high
+
+    style_anchors:
+      - id: feature-module-structure
+        relevance: Add keyboard hooks to sidebar feature
+
+    files:
+      modify:
+        - packages/web/src/features/sidebar/components/sidebar.tsx
+        - packages/web/src/features/sidebar/components/workflow-step-item.tsx
+
+    instructions: |
+      Add keyboard shortcuts for sidebar navigation.
+
+      **Requirements (FR-011):**
+      - Arrow Up/Down: Navigate workflow steps
+      - Enter: Select current step
+      - 1-9: Jump to workflow step by number
+      - Escape: Return focus to main content
+
+      **Implementation:**
+      - Use useKeyboardShortcut hook for each shortcut
+      - Visual indicator for keyboard-focused step
+      - Update currentStepAtom on navigation
+      - Announce navigation to screen readers (aria-live)
+
+      **Accessibility:**
+      - Add role="navigation" to sidebar
+      - Add aria-label="Workflow navigation"
+      - Use aria-current="step" for current step
+      - Focus management follows ARIA best practices
+
+      **Validation:**
+      ```bash
+      npm test -- sidebar.keyboard.test.tsx
+      ```
+      - Arrow keys navigate steps
+      - Enter selects step
+      - Number keys jump to correct step
+      - Focus indicators visible
+
+  - id: m5-004
+    name: Add keyboard navigation to tabs
+    estimate_minutes: 45
+    type: code
+    dependencies: [m5-002]
+    priority: high
+
+    files:
+      modify:
+        - packages/web/src/components/tabbed-content.tsx
+
+    instructions: |
+      Add keyboard shortcuts for tab switching.
+
+      **Requirements (FR-011):**
+      - Tab key: Switch between Chat and Files tabs
+      - Ctrl+1: Jump to Chat tab
+      - Ctrl+2: Jump to Files tab
+
+      **Implementation:**
+      - Use Radix UI Tabs keyboard behavior (built-in)
+      - Add custom shortcuts for Ctrl+1/2
+      - Update activeTabAtom on switch
+
+      **Accessibility:**
+      - Tabs already have role="tablist" from Radix
+      - Ensure aria-selected properly set
+      - Focus moves to tab panel content after selection
+
+      **Validation:**
+      - Tab key cycles through tabs
+      - Ctrl+1/2 jump to specific tabs
+      - Screen reader announces tab changes
+
+  - id: m5-005
+    name: Add keyboard shortcuts help dialog
+    estimate_minutes: 90
+    type: code
+    dependencies: [m5-001, m5-002]
+    priority: medium
+
+    style_anchors:
+      - id: shadcn-component-pattern
+        relevance: Use shadcn Dialog component
+
+    files:
+      create:
+        - packages/web/src/components/keyboard-shortcuts-dialog.tsx
+
+    instructions: |
+      Create dialog showing all available keyboard shortcuts.
+
+      **Requirements:**
+      - Triggered by ? or Ctrl+/
+      - Shows all registered shortcuts grouped by context
+      - Searchable/filterable list
+      - Close on Escape or click outside
+
+      **Implementation:**
+      - Use shadcn Dialog component
+      - Read from keyboardShortcutsAtom
+      - Group shortcuts: Global, Sidebar, Chat, Files
+      - Display key combinations with visual kbd style
+
+      **Accessibility:**
+      - Dialog has aria-label="Keyboard shortcuts"
+      - Focus trap within dialog
+      - Return focus to trigger element on close
+
+      **Validation:**
+      - ? opens dialog
+      - All shortcuts listed correctly
+      - Dialog is keyboard-navigable
+      - Escape closes dialog
+
+  # ============================================================================
+  # Cascade Updates Feature
+  # ============================================================================
+
+  - id: m5-006
+    name: Create cascade-updates feature structure
+    estimate_minutes: 30
+    type: config
+    dependencies: []
+    priority: high
+
+    style_anchors:
+      - id: feature-module-structure
+        relevance: Follow feature-based organization pattern
+
+    files:
+      create:
+        - packages/web/src/features/cascade-updates/index.ts
+        - packages/web/src/features/cascade-updates/logic/detect-changes.ts
+        - packages/web/src/features/cascade-updates/logic/identify-affected.ts
+        - packages/web/src/features/cascade-updates/logic/update-artifacts.ts
+        - packages/web/src/features/cascade-updates/types/index.ts
+
+    instructions: |
+      Create feature folder structure for cascade updates functionality.
+
+      **Requirements (FR-009):**
+      - Logic for detecting requirement changes
+      - Logic for identifying affected downstream artifacts
+      - Logic for updating artifacts with new information
+
+      **Structure:**
+      ```
+      features/cascade-updates/
+      ├── logic/              # Core cascade logic (no UI)
+      │   ├── detect-changes.ts
+      │   ├── identify-affected.ts
+      │   └── update-artifacts.ts
+      ├── types/              # TypeScript interfaces
+      │   └── index.ts
+      └── index.ts            # Public API
+      ```
+
+      **Validation:**
+      - Folder structure matches feature-module-structure pattern
+      - All files exist and are importable
+      - index.ts exports public API
+
+  - id: m5-007
+    name: Implement change detection logic
+    estimate_minutes: 90
+    type: code
+    dependencies: [m5-006]
+    priority: high
+
+    files:
+      modify:
+        - packages/web/src/features/cascade-updates/logic/detect-changes.ts
+        - packages/web/src/features/cascade-updates/types/index.ts
+
+    instructions: |
+      Implement logic to detect when foundational documents change.
+
+      **Requirements (FR-009):**
+      - Detect changes to business-requirements
+      - Detect changes to technical-requirements
+      - Compare document versions to identify diffs
+      - Return structured change information
+
+      **Implementation:**
+      ```typescript
+      export interface DocumentChange {
+        documentType: string
+        version: { previous: number; current: number }
+        changes: Change[]
+      }
+
+      export interface Change {
+        path: string  // YAML path (e.g., "functional_requirements[2]")
+        type: 'added' | 'modified' | 'removed'
+        oldValue?: unknown
+        newValue?: unknown
+      }
+
+      export function detectChanges(
+        previousDoc: Document,
+        currentDoc: Document
+      ): DocumentChange | null
+      ```
+
+      **Approach:**
+      - Use deep comparison (e.g., lodash isEqual or custom)
+      - Track YAML paths for changes
+      - Handle arrays and nested objects
+
+      **Validation:**
+      - Unit tests for various change scenarios
+      - Detects added requirements
+      - Detects modified requirements
+      - Detects removed requirements
+
+  - id: m5-008
+    name: Implement affected artifacts identification
+    estimate_minutes: 75
+    type: code
+    dependencies: [m5-007]
+    priority: high
+
+    files:
+      modify:
+        - packages/web/src/features/cascade-updates/logic/identify-affected.ts
+
+    instructions: |
+      Implement logic to identify which downstream artifacts need updates.
+
+      **Requirements (FR-009):**
+      - Map foundational documents to downstream artifacts
+      - Return list of documents that need regeneration
+      - Include dependency order (technical-req before impl-plan)
+
+      **Implementation:**
+      ```typescript
+      export function identifyAffectedArtifacts(
+        changedDoc: DocumentChange
+      ): AffectedArtifact[] {
+        // Dependency map
+        const dependencies = {
+          'business-requirements': [
+            'technical-requirements',
+            'implementation-plan',
+            'qa-test-plan',
+            'delivery-timeline',
+            'executive-summary',
+            'developer-summary'
+          ],
+          'technical-requirements': [
+            'implementation-plan',
+            'delivery-timeline',
+            'architecture-decision-record'
+          ]
+        }
+
+        // Return affected artifacts in dependency order
+      }
+
+      export interface AffectedArtifact {
+        documentType: string
+        reason: string
+        priority: number  // For ordering updates
+      }
+      ```
+
+      **Validation:**
+      - Business req changes cascade to all downstream docs
+      - Technical req changes cascade to implementation docs only
+      - Artifacts returned in correct dependency order
+
+  - id: m5-009
+    name: Implement artifact update orchestration
+    estimate_minutes: 120
+    type: code
+    dependencies: [m5-008]
+    priority: high
+
+    style_anchors:
+      - id: react-query-mutations
+        relevance: Use mutations for regenerating documents
+
+    files:
+      modify:
+        - packages/web/src/features/cascade-updates/logic/update-artifacts.ts
+      create:
+        - packages/web/src/features/cascade-updates/api/cascade-update.ts
+
+    instructions: |
+      Implement orchestration logic for updating affected artifacts.
+
+      **Requirements (FR-009):**
+      - Walk through affected steps to update artifacts
+      - Invoke appropriate skills for each document type
+      - Track update progress
+      - Handle errors gracefully
+      - Present updated artifacts for review
+
+      **Implementation:**
+      ```typescript
+      export async function orchestrateCascadeUpdate(
+        projectId: string,
+        affectedArtifacts: AffectedArtifact[],
+        onProgress: (update: ProgressUpdate) => void
+      ): Promise<CascadeResult> {
+        const results: DocumentUpdateResult[] = []
+
+        // Update each artifact in dependency order
+        for (const artifact of affectedArtifacts) {
+          onProgress({ artifact, status: 'updating' })
+
+          const result = await regenerateDocument(projectId, artifact.documentType)
+          results.push(result)
+
+          onProgress({ artifact, status: 'complete', result })
+        }
+
+        return { success: true, results }
+      }
+      ```
+
+      **API Integration:**
+      - POST /api/projects/:projectId/cascade-update
+      - Use react-query useMutation
+      - Include optimistic updates
+      - Cache invalidation for updated documents
+
+      **Validation:**
+      - Updates process in correct order
+      - Progress callback invoked correctly
+      - Errors don't halt entire cascade
+      - Cache updated after successful mutations
+
+  - id: m5-010
+    name: Add cascade update UI trigger and progress
+    estimate_minutes: 90
+    type: code
+    dependencies: [m5-009]
+    priority: high
+
+    style_anchors:
+      - id: shadcn-component-pattern
+        relevance: Use shadcn Dialog and Progress components
+
+    files:
+      create:
+        - packages/web/src/features/cascade-updates/components/cascade-update-dialog.tsx
+      modify:
+        - packages/web/src/features/sidebar/components/workflow-step-item.tsx
+
+    instructions: |
+      Add UI for triggering and monitoring cascade updates.
+
+      **Requirements (FR-009):**
+      - Detect when user modifies foundational document
+      - Show dialog explaining cascade impact
+      - Display progress during update
+      - Show results summary after completion
+      - Option to accept/reject updates
+
+      **Implementation:**
+      - Add "Update downstream artifacts?" prompt after document save
+      - Show list of affected artifacts
+      - Use shadcn Dialog for confirmation
+      - Use shadcn Progress for update status
+      - Show success/error notifications
+
+      **User Flow:**
+      1. User modifies business requirements
+      2. Dialog: "Changes detected. Update 6 downstream artifacts?"
+      3. List affected: technical-requirements, implementation-plan, etc.
+      4. User clicks "Update All"
+      5. Progress bar shows updates: "Updating technical-requirements (2/6)"
+      6. Completion: "Successfully updated 6 artifacts"
+
+      **Accessibility:**
+      - Dialog announces via aria-live
+      - Progress updates announced to screen readers
+      - Keyboard-accessible (Enter to confirm, Escape to cancel)
+
+      **Validation:**
+      - Dialog appears after foundational doc changes
+      - Progress updates shown correctly
+      - Success/error states handled properly
+
+  # ============================================================================
+  # Accessibility Compliance (WCAG 2.1 AA)
+  # ============================================================================
+
+  - id: m5-011
+    name: Audit and fix heading hierarchy
+    estimate_minutes: 60
+    type: refactor
+    dependencies: []
+    priority: high
+
+    files:
+      modify:
+        - packages/web/src/features/sidebar/components/sidebar.tsx
+        - packages/web/src/features/chat/components/chat-container.tsx
+        - packages/web/src/features/files/components/files-container.tsx
+        - packages/web/src/components/tabbed-content.tsx
+
+    instructions: |
+      Audit and fix heading hierarchy across all features for WCAG 2.1 AA.
+
+      **Requirements (NFR-Accessibility):**
+      - Single h1 per page (app title)
+      - Proper heading sequence (no skipping levels)
+      - Headings describe content structure
+
+      **Expected Structure:**
+      ```html
+      <h1>Sherpy Flow</h1>
+
+      <h2>Workflow Steps</h2>
+      <!-- Sidebar content -->
+
+      <h2>Chat</h2> or <h2>Files</h2>
+      <!-- Tab content -->
+      ```
+
+      **Changes:**
+      - Ensure sidebar has h2 "Workflow Steps"
+      - Ensure tabs have h2 for active tab title
+      - Check no headings skip levels (h2 → h4)
+      - Use aria-labelledby to connect headings
+
+      **Validation:**
+      - Run accessibility audit: `npm run a11y-audit`
+      - Verify with HeadingsMap browser extension
+      - Screen reader announces proper structure
+
+  - id: m5-012
+    name: Audit and fix color contrast ratios
+    estimate_minutes: 75
+    type: refactor
+    dependencies: []
+    priority: high
+
+    files:
+      modify:
+        - packages/web/src/styles/globals.css
+        - packages/web/tailwind.config.ts
+
+    instructions: |
+      Audit and fix all color contrast issues for WCAG 2.1 AA compliance.
+
+      **Requirements (NFR-Accessibility):**
+      - Normal text: Minimum 4.5:1 contrast ratio
+      - Large text (18pt+): Minimum 3:1 contrast ratio
+      - UI components: Minimum 3:1 contrast ratio
+      - Focus indicators: Minimum 3:1 contrast ratio
+
+      **Areas to Audit:**
+      - Workflow step status indicators (✓, →, ○)
+      - Tab labels (active vs inactive)
+      - File tree items (selected vs unselected)
+      - Button text and backgrounds
+      - Link text
+      - Disabled states
+
+      **Tools:**
+      - Use browser DevTools contrast checker
+      - Use WebAIM Contrast Checker: https://webaim.org/resources/contrastchecker/
+      - Test with automated tools: axe DevTools
+
+      **Validation:**
+      ```bash
+      npm run a11y-audit
+      ```
+      - All text meets 4.5:1 ratio
+      - All UI components meet 3:1 ratio
+      - No contrast failures in automated audit
+
+  - id: m5-013
+    name: Add ARIA labels and semantic HTML
+    estimate_minutes: 90
+    type: refactor
+    dependencies: []
+    priority: high
+
+    files:
+      modify:
+        - packages/web/src/features/sidebar/components/workflow-step-item.tsx
+        - packages/web/src/features/files/components/file-tree-item.tsx
+        - packages/web/src/components/tabbed-content.tsx
+
+    instructions: |
+      Add proper ARIA labels and ensure semantic HTML throughout.
+
+      **Requirements (NFR-Accessibility):**
+      - All icon-only buttons have aria-label
+      - All form inputs have associated labels
+      - All images have alt text
+      - Proper ARIA roles where needed
+      - Semantic HTML elements (button, nav, main, aside)
+
+      **Changes:**
+
+      **Sidebar:**
+      - Add aria-label to icon-only buttons
+      - Use aria-current="step" for current step
+      - Add role="navigation" to sidebar wrapper
+
+      **Files:**
+      - Add aria-label="File tree" to tree container
+      - Add aria-expanded for collapsible folders
+      - Add aria-selected for selected file
+
+      **Tabs:**
+      - Radix Tabs includes ARIA (verify it's correct)
+      - Add aria-label to tab panel content if needed
+
+      **Validation:**
+      - Run screen reader test (VoiceOver or NVDA)
+      - Verify all interactive elements announced
+      - Check with axe DevTools
+
+  - id: m5-014
+    name: Implement focus indicators for all interactive elements
+    estimate_minutes: 60
+    type: refactor
+    dependencies: []
+    priority: high
+
+    files:
+      modify:
+        - packages/web/src/styles/globals.css
+
+    instructions: |
+      Ensure all interactive elements have visible focus indicators.
+
+      **Requirements (NFR-Accessibility):**
+      - Visible focus indicator on all interactive elements
+      - Focus indicator has 3:1 contrast ratio
+      - Indicator visible against all backgrounds
+      - Use :focus-visible to avoid mouse focus styles
+
+      **Implementation:**
+      ```css
+      /* Global focus styles */
+      *:focus-visible {
+        outline: 2px solid hsl(var(--primary));
+        outline-offset: 2px;
+        border-radius: 2px;
+      }
+
+      /* Specific element overrides if needed */
+      button:focus-visible {
+        /* Custom button focus style */
+      }
+      ```
+
+      **Validation:**
+      - Tab through entire UI
+      - Every interactive element shows focus indicator
+      - Indicators visible on all backgrounds
+      - Mouse clicks don't show focus (only keyboard navigation)
+
+  # ============================================================================
+  # Error Handling and Notifications Polish
+  # ============================================================================
+
+  - id: m5-015
+    name: Create notification system with shadcn Toast
+    estimate_minutes: 75
+    type: code
+    dependencies: []
+    priority: medium
+
+    style_anchors:
+      - id: shadcn-component-pattern
+        relevance: Use shadcn Toast component
+
+    files:
+      create:
+        - packages/web/src/components/toast-provider.tsx
+        - packages/web/src/hooks/use-toast.ts
+
+    instructions: |
+      Create centralized notification system using shadcn Toast.
+
+      **Requirements:**
+      - Success notifications (green)
+      - Error notifications (red)
+      - Info notifications (blue)
+      - Warning notifications (yellow)
+      - Auto-dismiss after 5 seconds (configurable)
+      - Manual dismiss button
+
+      **Implementation:**
+      - Use shadcn Toast component
+      - Create useToast hook for easy usage
+      - Support action buttons in toasts
+      - Queue multiple toasts
+
+      **Usage Example:**
+      ```typescript
+      const { toast } = useToast()
+
+      toast({
+        title: 'Success',
+        description: 'Document saved successfully',
+        variant: 'success'
+      })
+      ```
+
+      **Accessibility:**
+      - Toast has role="status" or role="alert"
+      - Screen reader announces notifications
+      - Keyboard dismissible (Escape or action button)
+
+      **Validation:**
+      - Toasts appear and auto-dismiss
+      - Multiple toasts queue correctly
+      - Screen reader announces content
+
+  - id: m5-016
+    name: Add error boundaries with user-friendly messages
+    estimate_minutes: 90
+    type: code
+    dependencies: [m5-015]
+    priority: medium
+
+    files:
+      create:
+        - packages/web/src/components/error-boundary.tsx
+      modify:
+        - packages/web/src/app.tsx
+
+    instructions: |
+      Implement error boundaries for graceful error handling.
+
+      **Requirements:**
+      - Catch React component errors
+      - Display user-friendly error message
+      - Log error details to console
+      - Provide "Try Again" button
+      - Don't crash entire app
+
+      **Implementation:**
+      ```typescript
+      export class ErrorBoundary extends React.Component<
+        { children: React.ReactNode },
+        { hasError: boolean; error?: Error }
+      > {
+        static getDerivedStateFromError(error: Error) {
+          return { hasError: true, error }
+        }
+
+        componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+          console.error('ErrorBoundary caught:', error, errorInfo)
+        }
+
+        render() {
+          if (this.state.hasError) {
+            return <ErrorFallback error={this.state.error} onReset={() => this.setState({ hasError: false })} />
+          }
+          return this.props.children
+        }
+      }
+      ```
+
+      **Error Fallback UI:**
+      - Friendly message: "Something went wrong"
+      - Brief error description (not stack trace)
+      - "Try Again" button to reset state
+      - "Report Issue" link (optional)
+
+      **Validation:**
+      - Trigger error in component (throw new Error())
+      - Error boundary catches and displays fallback
+      - Try Again button resets error state
+
+  - id: m5-017
+    name: Improve skill invocation error handling
+    estimate_minutes: 90
+    type: refactor
+    dependencies: [m5-015]
+    priority: medium
+
+    files:
+      modify:
+        - packages/web/src/features/chat/hooks/use-skill-invocation.ts
+        - packages/web/src/features/sidebar/components/workflow-step-item.tsx
+
+    instructions: |
+      Enhance error handling for skill invocation failures.
+
+      **Requirements:**
+      - Detect skill invocation failures
+      - Display user-friendly error messages
+      - Provide retry option
+      - Allow skip to next step
+      - Log errors for debugging
+
+      **Error Scenarios:**
+      - Skill not found
+      - Skill timeout
+      - Skill execution error
+      - Network/WebSocket error
+
+      **Implementation:**
+      - Wrap skill invocation in try-catch
+      - Show toast notification on error
+      - Add "Retry" and "Skip" buttons to error message
+      - Update workflow status to reflect error
+
+      **User Experience:**
+      ```
+      Toast: "Failed to run business-requirements-interview"
+      Description: "Skill execution timed out after 30 seconds"
+      Actions: [Retry] [Skip]
+      ```
+
+      **Validation:**
+      - Trigger skill failure (disconnect WebSocket)
+      - Error toast appears with clear message
+      - Retry button attempts skill again
+      - Skip button moves to next step
+
+  - id: m5-018
+    name: Polish loading states across all features
+    estimate_minutes: 75
+    type: refactor
+    dependencies: []
+    priority: medium
+
+    style_anchors:
+      - id: shadcn-component-pattern
+        relevance: Use shadcn Skeleton component
+
+    files:
+      modify:
+        - packages/web/src/features/sidebar/components/sidebar.tsx
+        - packages/web/src/features/chat/components/chat-container.tsx
+        - packages/web/src/features/files/components/files-container.tsx
+      create:
+        - packages/web/src/components/loading-skeleton.tsx
+
+    instructions: |
+      Improve loading states with consistent skeletons and spinners.
+
+      **Requirements:**
+      - Loading skeletons for initial data fetch
+      - Inline spinners for actions in progress
+      - Consistent loading patterns across features
+      - Accessible loading announcements
+
+      **Patterns:**
+
+      **Sidebar:**
+      - Skeleton loader while fetching workflow state
+      - Spinner on step item during skill invocation
+
+      **Chat:**
+      - Typing indicator while AI responds (already handled by assistant-ui)
+      - Ensure consistent with app theme
+
+      **Files:**
+      - Skeleton tree while fetching documents
+      - Spinner in preview pane while loading file content
+
+      **Implementation:**
+      - Use shadcn Skeleton component
+      - Add aria-busy="true" during loading
+      - Add visually-hidden text for screen readers: "Loading..."
+
+      **Validation:**
+      - All loading states display skeletons/spinners
+      - Screen reader announces loading state
+      - Smooth transition from loading to content
+
+  # ============================================================================
+  # Testing and Quality Assurance
+  # ============================================================================
+
+  - id: m5-019
+    name: Write integration tests for keyboard navigation
+    estimate_minutes: 90
+    type: test
+    dependencies: [m5-003, m5-004, m5-005]
+    priority: high
+
+    files:
+      create:
+        - packages/web/src/features/sidebar/components/__tests__/sidebar.keyboard.test.tsx
+        - packages/web/src/components/__tests__/tabbed-content.keyboard.test.tsx
+
+    instructions: |
+      Write integration tests for keyboard navigation functionality.
+
+      **Test Coverage:**
+
+      **Sidebar Navigation:**
+      ```typescript
+      describe('Sidebar Keyboard Navigation', () => {
+        it('navigates steps with arrow keys', async () => {
+          render(<Sidebar />)
+          const firstStep = screen.getByText('Intake')
+          firstStep.focus()
+
+          await userEvent.keyboard('{ArrowDown}')
+          expect(screen.getByText('Gap Analysis')).toHaveFocus()
+        })
+
+        it('selects step with Enter key', async () => {
+          // Test Enter key selection
+        })
+
+        it('jumps to step with number key', async () => {
+          // Test number key shortcuts
+        })
+      })
+      ```
+
+      **Tab Navigation:**
+      ```typescript
+      describe('Tab Keyboard Navigation', () => {
+        it('switches tabs with Tab key', async () => {
+          // Test Tab key cycling
+        })
+
+        it('jumps to tab with Ctrl+1/2', async () => {
+          // Test Ctrl+number shortcuts
+        })
+      })
+      ```
+
+      **Validation:**
+      ```bash
+      npm test -- sidebar.keyboard.test.tsx
+      npm test -- tabbed-content.keyboard.test.tsx
+      ```
+
+  - id: m5-020
+    name: Write integration tests for cascade updates
+    estimate_minutes: 120
+    type: test
+    dependencies: [m5-009, m5-010]
+    priority: high
+
+    files:
+      create:
+        - packages/web/src/features/cascade-updates/__tests__/cascade-update.test.tsx
+        - packages/web/src/features/cascade-updates/logic/__tests__/detect-changes.test.ts
+        - packages/web/src/features/cascade-updates/logic/__tests__/identify-affected.test.ts
+
+    instructions: |
+      Write tests for cascade update functionality.
+
+      **Test Coverage:**
+
+      **Unit Tests (Logic):**
+      ```typescript
+      describe('detectChanges', () => {
+        it('detects added functional requirements', () => {
+          // Test change detection
+        })
+
+        it('detects modified requirements', () => {
+          // Test modification detection
+        })
+      })
+
+      describe('identifyAffectedArtifacts', () => {
+        it('returns correct downstream artifacts for business req changes', () => {
+          // Test dependency mapping
+        })
+      })
+      ```
+
+      **Integration Tests (UI + API):**
+      ```typescript
+      describe('Cascade Update Flow', () => {
+        it('shows dialog when foundational doc changes', async () => {
+          // Mock document save
+          // Verify dialog appears
+        })
+
+        it('updates downstream artifacts on confirmation', async () => {
+          // Mock API calls
+          // Trigger cascade update
+          // Verify progress shown
+          // Verify completion notification
+        })
+      })
+      ```
+
+      **Validation:**
+      ```bash
+      npm test -- cascade-update
+      ```
+
+  - id: m5-021
+    name: Run accessibility audit and fix issues
+    estimate_minutes: 120
+    type: test
+    dependencies: [m5-011, m5-012, m5-013, m5-014]
+    priority: high
+
+    files:
+      create:
+        - docs/accessibility-audit-report.md
+
+    instructions: |
+      Run comprehensive accessibility audit and fix all WCAG 2.1 AA violations.
+
+      **Audit Tools:**
+      1. axe DevTools browser extension
+      2. WAVE browser extension
+      3. Lighthouse accessibility audit
+      4. Manual keyboard navigation testing
+      5. Manual screen reader testing (VoiceOver or NVDA)
+
+      **Testing Checklist:**
+      - [ ] All pages pass axe automated audit
+      - [ ] All pages pass WAVE audit
+      - [ ] Lighthouse accessibility score ≥ 90
+      - [ ] Complete workflow navigable with keyboard only
+      - [ ] All content announced correctly by screen reader
+      - [ ] All images have descriptive alt text
+      - [ ] All form inputs have labels
+      - [ ] Proper heading hierarchy (no skipped levels)
+      - [ ] Color contrast meets WCAG AA (4.5:1 for text)
+      - [ ] Focus indicators visible on all interactive elements
+
+      **Report Format:**
+      ```markdown
+      # Accessibility Audit Report
+
+      ## Tool Results
+      - axe DevTools: X violations found
+      - WAVE: X errors found
+      - Lighthouse: Score X/100
+
+      ## Issues Found
+      1. [Issue description]
+         - Severity: Critical/Moderate/Minor
+         - Location: [file path]
+         - Fix: [what was done]
+
+      ## Manual Testing
+      - Keyboard navigation: Pass/Fail
+      - Screen reader: Pass/Fail
+
+      ## WCAG 2.1 AA Compliance
+      - Status: Compliant / Non-compliant
+      - Remaining issues: [list if any]
+      ```
+
+      **Validation:**
+      - All critical/moderate issues resolved
+      - Lighthouse score ≥ 90
+      - No automated audit failures
+
+  # ============================================================================
+  # Final Polish and Code Review
+  # ============================================================================
+
+  - id: m5-022
+    name: Add animation polish for better UX
+    estimate_minutes: 60
+    type: refactor
+    dependencies: []
+    priority: low
+
+    files:
+      modify:
+        - packages/web/src/styles/globals.css
+        - packages/web/tailwind.config.ts
+
+    instructions: |
+      Add subtle animations for better user experience (optional polish).
+
+      **Animations to Add:**
+      - Fade in for page transitions
+      - Slide in for sidebar step navigation
+      - Smooth expand/collapse for file tree folders
+      - Toast slide in from bottom
+      - Dialog fade in/scale
+
+      **Implementation:**
+      - Use Tailwind animation utilities
+      - Use Radix UI animation props (built-in)
+      - Keep animations subtle (<300ms)
+      - Respect prefers-reduced-motion
+
+      **Example:**
+      ```css
+      @media (prefers-reduced-motion: no-preference) {
+        .animate-fade-in {
+          animation: fadeIn 200ms ease-in;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .animate-fade-in {
+          animation: none;
+        }
+      }
+      ```
+
+      **Validation:**
+      - Animations smooth and subtle
+      - Animations disabled when prefers-reduced-motion set
+      - No animation jank or performance issues
+
+  - id: m5-023
+    name: Update documentation for new features
+    estimate_minutes: 60
+    type: docs
+    dependencies: [m5-005, m5-010]
+    priority: medium
+
+    files:
+      modify:
+        - README.md
+      create:
+        - docs/keyboard-shortcuts.md
+        - docs/cascade-updates.md
+
+    instructions: |
+      Update documentation for M5 features.
+
+      **keyboard-shortcuts.md:**
+      - List all keyboard shortcuts grouped by context
+      - Include key combinations and descriptions
+      - Explain how to open shortcuts dialog
+
+      **cascade-updates.md:**
+      - Explain cascade update feature
+      - Describe when it triggers
+      - Show example workflow
+      - Explain how to review/accept updates
+
+      **README.md:**
+      - Add "Accessibility" section mentioning WCAG 2.1 AA compliance
+      - Add "Keyboard Navigation" section with link to shortcuts doc
+      - Add "Cascade Updates" section with link to cascade doc
+
+      **Validation:**
+      - Documentation is clear and accurate
+      - Examples match actual feature behavior
+      - Links work correctly
+
+  - id: m5-024
+    name: Comprehensive code review for M5
+    estimate_minutes: 150
+    type: review
+    dependencies: [m5-001, m5-002, m5-003, m5-004, m5-005, m5-006, m5-007, m5-008, m5-009, m5-010, m5-011, m5-012, m5-013, m5-014, m5-015, m5-016, m5-017, m5-018, m5-019, m5-020, m5-021, m5-022, m5-023]
+    priority: high
+
+    files:
+      create:
+        - code-reviews/milestone-m5-code-review.md
+
+    instructions: |
+      Conduct comprehensive code review for all M5 tasks.
+
+      **Review Checklist:**
+
+      **Code Quality:**
+      - [ ] All code follows TypeScript best practices
+      - [ ] No any types, proper type safety
+      - [ ] Consistent naming conventions
+      - [ ] Proper error handling throughout
+      - [ ] No console.log statements (use proper logging)
+
+      **Architecture:**
+      - [ ] Cascade-updates feature follows feature-module-structure
+      - [ ] Proper separation of concerns
+      - [ ] No circular dependencies
+      - [ ] Shared code in shared/, not duplicated
+
+      **Performance:**
+      - [ ] No unnecessary re-renders
+      - [ ] Proper memoization where needed
+      - [ ] Efficient keyboard event listeners
+      - [ ] No performance regressions
+
+      **Accessibility:**
+      - [ ] WCAG 2.1 AA compliant
+      - [ ] All automated audits pass
+      - [ ] Keyboard navigation works correctly
+      - [ ] Screen reader compatibility verified
+
+      **Testing:**
+      - [ ] Integration tests for all new features
+      - [ ] Tests pass reliably
+      - [ ] Good test coverage for critical paths
+      - [ ] Manual testing completed
+
+      **Documentation:**
+      - [ ] Code comments for complex logic
+      - [ ] README updated
+      - [ ] Feature documentation complete
+
+      **Review Report Format:**
+      ```markdown
+      # Milestone M5 Code Review
+
+      ## Summary
+      - Total tasks: 24
+      - Tasks reviewed: 24
+      - Issues found: X
+
+      ## Issues
+      1. [Issue description]
+         - Severity: Critical/Major/Minor
+         - File: [path]
+         - Recommendation: [fix]
+
+      ## Strengths
+      - [What was done well]
+
+      ## Recommendations
+      - [Suggestions for future improvements]
+
+      ## Approval
+      - [ ] Approved for merge
+      - [ ] Requires changes
+      ```
+
+      **Validation:**
+      - All critical issues resolved
+      - All tests passing
+      - Code review documented
+      - Milestone ready for merge
+
+meta:
+  total_tasks: 24
+  estimated_duration: 2160 minutes (36 hours / 4.5 days)
+
+  task_breakdown:
+    keyboard_navigation: 6 tasks (405 minutes)
+    cascade_updates: 5 tasks (405 minutes)
+    accessibility: 4 tasks (285 minutes)
+    error_handling_polish: 4 tasks (330 minutes)
+    testing_qa: 2 tasks (210 minutes)
+    final_polish: 3 tasks (270 minutes)
+
+  critical_path:
+    - Keyboard navigation (m5-001 → m5-002 → m5-003, m5-004, m5-005)
+    - Cascade updates (m5-006 → m5-007 → m5-008 → m5-009 → m5-010)
+    - Accessibility audit (m5-011, m5-012, m5-013, m5-014 → m5-021)
+    - Final review (all tasks → m5-024)
+
+  parallel_opportunities:
+    - Keyboard navigation and cascade updates can be developed in parallel
+    - Accessibility tasks (m5-011 through m5-014) can be done in parallel
+    - Error handling tasks (m5-015 through m5-018) can be done in parallel
+
+  risk_areas:
+    - Cascade updates complexity (allow extra time for m5-009)
+    - Accessibility audit may uncover additional issues (m5-021)
+    - Integration testing may reveal edge cases (m5-019, m5-020)
+
+  notes: |
+    M5 focuses on production polish and advanced features. All tasks are 30-150 minutes.
+    Feature-module-structure applied to cascade-updates feature. Shadcn components used
+    for accessibility. WCAG 2.1 AA compliance is critical requirement. Final code review
+    ensures quality before milestone completion.

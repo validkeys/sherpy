@@ -1,0 +1,242 @@
+version: 1.0.0
+project: Sherpy Flow UI Refactor
+generated: 2026-04-28
+ordering_strategy: value-first-demo-driven
+
+business_requirements_ref: ../requirements/business-requirements.yaml
+technical_requirements_ref: ../requirements/technical-requirements.yaml
+style_anchors_ref: ../artifacts/style-anchors/index.yaml
+
+summary:
+  total_milestones: 6
+  estimated_total_duration: 20-26 days
+  approach: |
+    Value-First (Demo-Driven) ordering to surface user-visible features early.
+    M0 establishes clean foundation with comprehensive backend validation, then M1-M3
+    deliver visible features quickly for stakeholder demos. M4 adds persistence with
+    improved resume capability. M5 completes with polish.
+
+ordering_rationale: |
+  Using Value-First strategy to maximize early demo-ability and stakeholder feedback:
+  - M0 bundles all necessary foundation work (clean setup, tooling, structure)
+  - M1 delivers first visible feature (sidebar with workflow steps)
+  - M2 delivers core value (guided chat with auto-skill invocation)
+  - M3 adds secondary value (files viewing)
+  - M4 defers infrastructure (database persistence)
+  - M5 defers polish features (keyboard nav, cascade updates, accessibility)
+
+  This allows early demos after M2 (sidebar + chat working end-to-end) while
+  deferring non-critical infrastructure and polish work.
+
+milestones:
+  - id: m0
+    name: Clean Slate Setup & Migration Preparation
+    status: in_progress
+    progress: "12/20 tasks completed (60%)"
+    started_at: "2026-04-28"
+    description: |
+      Move existing web package to web-legacy for reference. Create fresh React + Vite
+      project with all dependencies installed. Set up tooling, configure bulletproof-react
+      structure, and create project-structure.yaml. Includes comprehensive backend validation
+      spike, error boundary architecture, migration strategy, and performance budgets.
+      This milestone bundles all foundation work needed before feature development.
+
+    dependencies: []
+
+    estimated_duration: 3-4 days
+
+    tasks_file: tasks/milestone-m0.tasks.yaml
+
+    success_criteria:
+      - New packages/web exists with fresh React 19 + Vite setup
+      - Old code preserved in packages/web-legacy
+      - All dependencies installed (jotai, bunshi, react-query, assistant-ui, shadcn)
+      - TypeScript, ESLint, Prettier configured
+      - project-structure.yaml created and referenced in CLAUDE.md
+      - Feature folders structure established (features/, shared/, lib/)
+      - Dev server runs successfully
+      - Basic routing and app shell in place
+      - Error boundary architecture implemented
+      - Backend validation spike completed with no critical blockers
+      - Migration strategy documented
+      - Performance budgets defined
+
+    ordering_rationale: |
+      Foundation-first requirement for Value-First strategy. Bundles all setup work
+      into M0 so subsequent milestones can focus purely on feature delivery. Backend
+      validation spike prevents costly rework in later milestones.
+
+  - id: m1
+    name: Sidebar with Workflow Navigation
+    description: |
+      Build fixed-position sidebar showing all 10 sherpy workflow steps with status
+      indicators. Implement step navigation with visual feedback. This is the first
+      user-visible feature that demonstrates the guided workflow concept.
+
+    dependencies: [m0]
+
+    estimated_duration: 3-4 days
+
+    tasks_file: tasks/milestone-m1.tasks.yaml
+
+    success_criteria:
+      - Fixed sidebar at 1/3 screen width, always visible
+      - All 10 workflow steps displayed with names
+      - Status icons render correctly (✓ complete, → current, ○ pending)
+      - Steps are clickable and navigate to correct workflow state
+      - Current step is visually highlighted
+      - Workflow state managed with jotai atoms
+      - Integration tests verify navigation behavior
+      - Responsive on desktop/web viewports
+
+    ordering_rationale: |
+      First visible feature. Sidebar is core to the guided workflow UX and provides
+      immediate visual differentiation from current UI. Stakeholders can see the
+      new structure immediately after M1.
+
+  - id: m2
+    name: Chat Integration with Auto-Skill Invocation
+    description: |
+      Integrate @assistant-ui/react for chat interface. Implement tabbed main area
+      (Chat/Files). Build auto-skill invocation mechanism triggered by step navigation.
+      Connect WebSocket for streaming AI responses. This delivers core product value.
+
+    dependencies: [m1]
+
+    estimated_duration: 4-5 days
+
+    tasks_file: tasks/milestone-m2.tasks.yaml
+
+    success_criteria:
+      - Tabbed main area with Chat and Files tabs
+      - Chat tab renders @assistant-ui Thread component
+      - WebSocket connection established with authentication
+      - Skills auto-invoke when navigating to workflow steps (no manual commands)
+      - Streaming AI responses display in real-time
+      - Loading states and progress indicators working
+      - Hybrid chat: guided interview + occasional free-form
+      - Integration tests for skill invocation flow
+
+    ordering_rationale: |
+      Core value delivery. After M2, stakeholders can demo end-to-end: navigate sidebar
+      steps, see auto-invoked skills, interact with guided chat. This is the MVP for
+      feedback and validation.
+
+  - id: m3
+    name: Files Tab with Tree View and Preview
+    description: |
+      Build Files tab with hierarchical tree view of planning artifacts. Implement
+      inline file preview supporting YAML and Markdown rendering. Fetch document
+      data from API. This completes the basic feature set for artifact review.
+
+    dependencies: [m2]
+
+    estimated_duration: 3-4 days
+
+    tasks_file: tasks/milestone-m3.tasks.yaml
+
+    success_criteria:
+      - Files tab shows tree view with folders (requirements/, implementation/, etc.)
+      - Expand/collapse folders working
+      - Click file to preview inline
+      - YAML and Markdown rendering implemented
+      - Preview pane is read-only
+      - Visual feedback for selected file
+      - React Query integration for fetching documents
+      - Integration tests for file tree and preview
+
+    ordering_rationale: |
+      Secondary value. Files viewing is important but not critical for initial demos.
+      By M3, all core user-facing features are complete and demo-ready.
+
+  - id: m4
+    name: Database Integration and State Persistence
+    description: |
+      Integrate with backend API for projects, documents, and chat messages. Implement
+      database-driven state tracking. Add resume capability to load existing projects
+      with comprehensive state hydration. Connect workflow state to database via API
+      mutations. Includes WebSocket testing strategy documentation. This adds production-readiness.
+
+    dependencies: [m3]
+
+    estimated_duration: 4-5 days
+
+    tasks_file: tasks/milestone-m4.tasks.yaml
+
+    success_criteria:
+      - Projects API integration (create, list, get, update)
+      - Documents API integration (generate, list, get by type)
+      - Chat messages API integration (send, get history)
+      - Workflow state persists to database via pipelineStatus field
+      - Resume capability: project selector UI, loader hook, and state hydration
+      - Complete state restoration on project load (workflow, documents, chat)
+      - WebSocket testing strategy documented with mocks
+      - React Query cache management for server state
+      - Integration tests with mocked API responses
+
+    ordering_rationale: |
+      Infrastructure deferred after visible features. M0-M3 can work with local/mock
+      state for demos. M4 adds real persistence for production use. Resume capability
+      split into focused subtasks for better tracking and reduced risk.
+
+  - id: m5
+    name: Polish, Accessibility, and Advanced Features
+    description: |
+      Add keyboard navigation shortcuts. Implement cascade update mechanism for
+      requirement changes. Complete WCAG 2.1 AA accessibility compliance. Add polish
+      (loading states, error handling, notifications). This completes production-ready
+      quality.
+
+    dependencies: [m4]
+
+    estimated_duration: 4-5 days
+
+    tasks_file: tasks/milestone-m5.tasks.yaml
+
+    success_criteria:
+      - Keyboard navigation working (arrows for steps, tab for tabs, shortcuts)
+      - Cascade updates detect requirement changes and update downstream artifacts
+      - WCAG 2.1 AA compliance verified (heading hierarchy, contrast, ARIA labels)
+      - Focus indicators on all interactive elements
+      - Error handling for skill failures and API errors
+      - Success/error notifications for user actions
+      - Loading states polished across all features
+      - Full keyboard navigation testing
+
+    ordering_rationale: |
+      Polish deferred to final milestone. M0-M4 deliver all core functionality.
+      M5 adds nice-to-haves and production polish. Can be deprioritized if timeline
+      pressure requires shipping earlier.
+
+meta:
+  critical_path: [m0, m1, m2, m3, m4, m5]
+  parallel_opportunities: []
+
+  mvp_scope: |
+    Milestones m0-m2 constitute the MVP for stakeholder demos:
+    - Clean setup with proper structure (m0)
+    - Visible sidebar with workflow steps (m1)
+    - Working chat with auto-skill invocation (m2)
+
+    This MVP demonstrates the core value proposition: guided workflow with automatic
+    skill execution. M3-M5 add production-readiness and completeness.
+
+  demo_ready_after: m2
+  production_ready_after: m5
+
+  risk_mitigation: |
+    - M0 includes early validation of skill invocation mechanism (spike task)
+    - M2 includes WebSocket connection testing before full chat integration
+    - Each milestone ends with comprehensive code review task
+    - Integration tests throughout prevent regression
+
+  assumptions:
+    - Backend API endpoints exist and are functional (validated in M0 spike)
+    - Sherpy-flow skills support programmatic invocation (validated in M0 spike)
+    - Database schema supports projects.pipelineStatus field (validated in M0 spike)
+    - WebSocket authentication mechanism is understood (validated in M0 spike)
+
+  validation_gates:
+    - M0 backend validation spike must complete successfully before M1
+    - If critical blockers found in M0 spike, pause and resolve before proceeding
+    - Resume capability split into 3 subtasks (m4-017, m4-018, m4-019) for better tracking

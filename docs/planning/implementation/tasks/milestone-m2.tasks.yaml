@@ -1,0 +1,1101 @@
+milestone: m2
+name: "Chat Integration with Auto-Skill Invocation"
+generated: "2026-04-28T00:00:00Z"
+
+style_anchor_refs:
+  - assistant-ui-integration
+  - feature-module-structure
+  - react-query-api-layer
+  - react-query-mutations
+  - jotai-feature-state
+
+global_constraints:
+  allowed_patterns:
+    - "Use @assistant-ui/react Thread component for all chat UI"
+    - "Use react-query three-part pattern (fetcher + queryOptions + hook) for all API calls"
+    - "Use jotai atoms for client state (workflow state, tab selection, UI state)"
+    - "Use feature-based structure (features/chat/, features/tabs/) with index.ts exports"
+    - "Use WebSocket runtime from @assistant-ui/react for streaming"
+    - "Use shadcn Tabs component for tabbed main area"
+    - "Follow assistant-ui-integration pattern for chat implementation"
+  forbidden_patterns:
+    - "Custom WebSocket implementation (use @assistant-ui/react runtime)"
+    - "Manual message state management (runtime handles it)"
+    - "Cross-feature imports (features don't import from each other)"
+    - "Server state in jotai atoms (use react-query for API data)"
+    - "Direct fetch calls without react-query wrapper"
+    - "Multiple WebSocket connections per session"
+    - "Imperative DOM manipulation for streaming UI"
+  tdd_required: true
+  max_task_duration_minutes: 150
+  commit_strategy: "Commit after each task"
+
+quality_gates:
+  - stage: pre-task
+    criteria:
+      - M1 (Sidebar with Workflow Navigation) completed
+      - Development environment running (npm run dev)
+      - All M1 success criteria verified
+      - Style anchors reviewed (assistant-ui-integration, feature-module-structure)
+      - Branch up to date with main
+  - stage: pre-commit
+    commands:
+      - npm run lint
+      - npm run type-check
+      - npm run test
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No lint errors
+      - No type errors
+      - Code formatted with Prettier
+      - Component documentation updated (JSDoc where appropriate)
+      - Test coverage >70% for new code
+      - Integration tests verify feature behavior
+  - stage: milestone-completion
+    criteria:
+      - Tabbed main area renders with Chat and Files tabs
+      - Chat tab displays @assistant-ui Thread component
+      - WebSocket connection established with authentication
+      - Skills auto-invoke when navigating workflow steps
+      - Streaming AI responses display in real-time
+      - Loading states and progress indicators working
+      - Hybrid chat mode functional (guided + free-form)
+      - Integration tests pass for skill invocation flow
+      - Manual testing: complete workflow step with auto-skill
+  - stage: pre-push
+    commands:
+      - npm run test
+      - npm run build
+      - git fetch origin main
+
+tasks:
+  - id: m2-001
+    name: "Create tabbed main area feature structure"
+    description: |
+      Set up features/tabs/ folder structure with Tabs component wrapper for main
+      content area. Establishes foundation for Chat and Files tabs using shadcn
+      Tabs component. Creates jotai atom for active tab state.
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/web/src/features/tabs/index.ts
+        - packages/web/src/features/tabs/components/main-tabs.tsx
+        - packages/web/src/features/tabs/stores/tab-atoms.ts
+    style_anchor_refs:
+      - feature-module-structure
+      - jotai-feature-state
+    instructions: |
+      **Objective:**
+      Create tabbed main area with Chat and Files tabs using shadcn Tabs component.
+
+      **Implementation Steps:**
+      1. Create `features/tabs/` folder following **feature-module-structure** pattern
+      2. Create `stores/tab-atoms.ts` with jotai atom:
+         - `activeTabAtom = atom<'chat' | 'files'>('chat')` (default to chat)
+      3. Create `components/main-tabs.tsx`:
+         - Import shadcn Tabs, TabsList, TabsTrigger, TabsContent
+         - Use `useAtom(activeTabAtom)` for controlled tab state
+         - Render TabsList with two triggers: "Chat" and "Files"
+         - TabsContent for chat: placeholder div "Chat content"
+         - TabsContent for files: placeholder div "Files content"
+      4. Export MainTabs component from `index.ts`
+      5. Style with Tailwind: full height, proper spacing
+
+      **Constraints:**
+      - ONLY use: shadcn Tabs components, jotai atoms for state
+      - Follow pattern in **feature-module-structure** for folder organization
+      - Follow pattern in **jotai-feature-state** for atom definition
+      - NEVER use: React useState for tab state (use jotai), custom tab implementation
+
+      **Testing Requirements:**
+      - Integration test: renders both tab triggers
+      - Integration test: clicking tab trigger changes active tab
+      - Integration test: tab content switches correctly
+
+      **Success Criteria:**
+      - MainTabs component renders with Chat and Files tabs
+      - Tab switching works via click
+      - activeTabAtom updates on tab change
+      - Keyboard navigation works (built-in with shadcn Tabs)
+      - No console errors or warnings
+
+  - id: m2-002
+    name: "Add MainTabs integration tests"
+    description: |
+      Test tabbed main area behavior including tab switching, state management,
+      and keyboard navigation. Validates that activeTabAtom updates correctly
+      and tab content renders based on active tab.
+    estimate_minutes: 30
+    type: test
+    dependencies: [m2-001]
+    files:
+      create:
+        - packages/web/src/features/tabs/components/main-tabs.test.tsx
+      touch_only:
+        - packages/web/src/features/tabs/components/main-tabs.tsx
+        - packages/web/src/features/tabs/stores/tab-atoms.ts
+    instructions: |
+      **Objective:**
+      Achieve >80% test coverage for MainTabs component with state integration.
+
+      **Implementation Steps:**
+      1. Create `main-tabs.test.tsx`
+      2. Setup test with Provider wrapper for jotai atoms
+      3. Test initial render (Chat tab active by default)
+      4. Test tab switching via click (chat → files → chat)
+      5. Test that activeTabAtom updates when tab changes
+      6. Test tab content visibility (only active tab content shown)
+      7. Test keyboard navigation (Tab key, Arrow keys)
+
+      **Constraints:**
+      - ONLY use: @testing-library/react, @testing-library/user-event, vitest
+      - Mock jotai Provider for atom testing
+      - NEVER use: Real API calls or external dependencies
+
+      **Testing Requirements:**
+      - All tab interactions tested
+      - State updates verified
+      - Keyboard accessibility validated
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >80% for main-tabs.tsx
+      - Tests run in <2 seconds
+      - Clear test descriptions (describe/it blocks)
+
+  - id: m2-003
+    name: "Set up WebSocket configuration and auth"
+    description: |
+      Create WebSocket connection configuration with JWT authentication support.
+      Establishes lib/websocket.ts with connection URL builder and auth token
+      injection. Foundation for @assistant-ui/react runtime.
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/web/src/lib/websocket.ts
+      touch_only:
+        - packages/web/src/lib/api-client.ts
+    style_anchor_refs:
+      - assistant-ui-integration
+    instructions: |
+      **Objective:**
+      Create WebSocket configuration utilities with authentication support.
+
+      **Implementation Steps:**
+      1. Create `lib/websocket.ts`
+      2. Define `getWebSocketUrl()` function:
+         - Reads VITE_WS_URL from environment (defaults to 'ws://localhost:3000/ws')
+         - Returns formatted WebSocket URL
+      3. Define `getAuthToken()` function:
+         - Returns JWT token from localStorage or sessionStorage
+         - Returns null if DEV_MODE enabled (bypass auth)
+      4. Define `buildAuthenticatedWsUrl(projectId: string)` function:
+         - Constructs WebSocket URL with query params: token and projectId
+         - Format: `${wsUrl}?token=${token}&projectId=${projectId}`
+         - Skip token param if DEV_MODE
+      5. Export all functions
+
+      **Constraints:**
+      - ONLY use: Environment variables (VITE_*), localStorage for token
+      - NEVER use: Hardcoded URLs, expose sensitive tokens in logs
+      - Handle DEV_MODE bypass for local development
+
+      **Testing Requirements:**
+      - Unit tests in next task (m2-004)
+
+      **Success Criteria:**
+      - buildAuthenticatedWsUrl returns correct format
+      - DEV_MODE bypasses token requirement
+      - Functions are type-safe (TypeScript strict mode)
+      - No hardcoded credentials or URLs
+
+  - id: m2-004
+    name: "Add WebSocket configuration unit tests"
+    description: |
+      Test WebSocket URL building, authentication token handling, and DEV_MODE
+      bypass logic. Validates correct query parameter construction for WebSocket
+      connection authentication.
+    estimate_minutes: 30
+    type: test
+    dependencies: [m2-003]
+    files:
+      create:
+        - packages/web/src/lib/websocket.test.ts
+      touch_only:
+        - packages/web/src/lib/websocket.ts
+    instructions: |
+      **Objective:**
+      Achieve >85% test coverage for WebSocket configuration utilities.
+
+      **Implementation Steps:**
+      1. Create `websocket.test.ts`
+      2. Mock environment variables (VITE_WS_URL, VITE_DEV_MODE)
+      3. Mock localStorage for token storage
+      4. Test getWebSocketUrl() with custom and default URLs
+      5. Test getAuthToken() returns token from storage
+      6. Test getAuthToken() returns null in DEV_MODE
+      7. Test buildAuthenticatedWsUrl() with valid token
+      8. Test buildAuthenticatedWsUrl() without token (DEV_MODE)
+      9. Test projectId is included in query params
+
+      **Constraints:**
+      - ONLY use: vitest, mock localStorage and env vars
+      - NEVER use: Real WebSocket connections or external services
+
+      **Testing Requirements:**
+      - All utility functions tested
+      - DEV_MODE bypass verified
+      - URL formatting validated
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >85% for websocket.ts
+      - Edge cases covered (missing token, invalid projectId)
+      - Tests run in <2 seconds
+
+  - id: m2-005
+    name: "Create chat feature structure with @assistant-ui runtime"
+    description: |
+      Set up features/chat/ folder structure following feature-module-structure
+      pattern. Create ChatContainer component with @assistant-ui/react Thread
+      and useWebSocketRuntime hook for streaming AI responses.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m2-003]
+    files:
+      create:
+        - packages/web/src/features/chat/index.ts
+        - packages/web/src/features/chat/components/chat-container.tsx
+        - packages/web/src/features/chat/hooks/use-chat-runtime.ts
+    style_anchor_refs:
+      - feature-module-structure
+      - assistant-ui-integration
+    instructions: |
+      **Objective:**
+      Create chat feature with @assistant-ui Thread component and WebSocket runtime.
+
+      **Implementation Steps:**
+      1. Create `features/chat/` folder following **feature-module-structure**
+      2. Create `hooks/use-chat-runtime.ts`:
+         - Custom hook `useChatRuntime(projectId: string)`
+         - Import `useWebSocketRuntime` from '@assistant-ui/react/websocket'
+         - Import `buildAuthenticatedWsUrl` from lib/websocket
+         - Create runtime with url: `buildAuthenticatedWsUrl(projectId)`
+         - Add onError handler (console.error for now)
+         - Return runtime
+      3. Create `components/chat-container.tsx`:
+         - Accept props: `{ projectId: string }`
+         - Call `useChatRuntime(projectId)` to get runtime
+         - Import Thread from '@assistant-ui/react'
+         - Render Thread component with runtime prop
+         - Add welcome message: "Let's start the sherpy workflow. I'll guide you through each step."
+         - Style: full height flex column, overflow-y-auto
+      4. Export ChatContainer from `index.ts`
+
+      **Constraints:**
+      - ONLY use: @assistant-ui/react Thread and useWebSocketRuntime
+      - Follow pattern in **assistant-ui-integration** for chat setup
+      - Follow pattern in **feature-module-structure** for folder organization
+      - NEVER use: Custom WebSocket implementation, manual message state
+
+      **Testing Requirements:**
+      - Integration tests in next task (m2-006)
+
+      **Success Criteria:**
+      - ChatContainer renders Thread component
+      - WebSocket runtime created with correct URL
+      - Welcome message displays on mount
+      - No console errors on render
+      - TypeScript compiles without errors
+
+  - id: m2-006
+    name: "Add ChatContainer integration tests"
+    description: |
+      Test chat container rendering, WebSocket runtime initialization, and Thread
+      component integration. Validates that chat UI renders correctly and runtime
+      is configured with proper authentication.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m2-005]
+    files:
+      create:
+        - packages/web/src/features/chat/components/chat-container.test.tsx
+        - packages/web/src/test/mocks/websocket-mock.ts
+      touch_only:
+        - packages/web/src/features/chat/components/chat-container.tsx
+        - packages/web/src/features/chat/hooks/use-chat-runtime.ts
+    instructions: |
+      **Objective:**
+      Achieve >75% test coverage for ChatContainer with mocked WebSocket.
+
+      **Implementation Steps:**
+      1. Create `test/mocks/websocket-mock.ts`:
+         - Mock useWebSocketRuntime hook
+         - Return mock runtime with append, switchToNewThread methods
+      2. Create `chat-container.test.tsx`
+      3. Mock '@assistant-ui/react/websocket' module
+      4. Test ChatContainer renders without errors
+      5. Test Thread component is rendered
+      6. Test welcome message displays
+      7. Test useChatRuntime called with correct projectId
+      8. Test WebSocket URL includes projectId and token params
+
+      **Constraints:**
+      - ONLY use: @testing-library/react, vitest mocks
+      - Mock WebSocket runtime (don't create real connections)
+      - NEVER use: Real WebSocket connections in tests
+
+      **Testing Requirements:**
+      - Chat rendering verified
+      - Runtime initialization tested
+      - WebSocket URL validation
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >75% for chat-container.tsx
+      - Mock WebSocket runtime works correctly
+      - Tests run in <3 seconds
+
+  - id: m2-007
+    name: "Integrate ChatContainer into MainTabs"
+    description: |
+      Replace placeholder Chat tab content with ChatContainer component. Connect
+      chat feature to tabbed main area. Add projectId prop passing from app level
+      to ChatContainer.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m2-005, m2-001]
+    files:
+      modify:
+        - packages/web/src/features/tabs/components/main-tabs.tsx
+      touch_only:
+        - packages/web/src/features/chat/index.ts
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Integrate ChatContainer into Chat tab of MainTabs component.
+
+      **Implementation Steps:**
+      1. Update `main-tabs.tsx`:
+         - Add props: `{ projectId: string }`
+         - Import ChatContainer from '@/features/chat'
+         - Replace "Chat content" placeholder with `<ChatContainer projectId={projectId} />`
+         - Keep Files tab as placeholder for now
+         - Ensure proper height/overflow handling
+
+      **Constraints:**
+      - ONLY use: Feature exports (import from feature index.ts)
+      - Follow **feature-module-structure** rule: no cross-feature direct imports
+      - NEVER use: Direct imports from feature internals
+
+      **Testing Requirements:**
+      - Integration test: ChatContainer renders in Chat tab
+      - Integration test: projectId prop passed correctly
+
+      **Success Criteria:**
+      - ChatContainer renders when Chat tab active
+      - Files tab still shows placeholder
+      - Tab switching works without remounting chat (unless desired)
+      - No console errors
+      - TypeScript compiles without errors
+
+  - id: m2-008
+    name: "Create useChatActions hook for programmatic control"
+    description: |
+      Implement custom hook for programmatic chat control including sending messages,
+      clearing thread, and auto-invoking skills. Wraps @assistant-ui runtime methods
+      for use in other features (like sidebar step navigation).
+    estimate_minutes: 45
+    type: code
+    dependencies: [m2-005]
+    files:
+      create:
+        - packages/web/src/features/chat/hooks/use-chat-actions.ts
+      touch_only:
+        - packages/web/src/features/chat/index.ts
+    style_anchor_refs:
+      - assistant-ui-integration
+    instructions: |
+      **Objective:**
+      Create hook for programmatic chat control following assistant-ui patterns.
+
+      **Implementation Steps:**
+      1. Create `hooks/use-chat-actions.ts`
+      2. Import `useAssistantRuntime` from '@assistant-ui/react'
+      3. Define `useChatActions()` hook:
+         - Get runtime via `useAssistantRuntime()`
+         - Define `sendMessage(content: string)` function:
+           - Calls `runtime.append({ role: 'user', content: [{ type: 'text', text: content }] })`
+         - Define `sendSystemMessage(content: string)` function:
+           - Calls `runtime.append({ role: 'system', content: [{ type: 'text', text: content }] })`
+         - Define `clearThread()` function:
+           - Calls `runtime.switchToNewThread()`
+         - Return { sendMessage, sendSystemMessage, clearThread }
+      4. Export from `features/chat/index.ts`
+      5. Add JSDoc comments explaining usage
+
+      **Constraints:**
+      - ONLY use: @assistant-ui/react hooks and runtime methods
+      - Follow pattern in **assistant-ui-integration** for programmatic control
+      - NEVER use: Direct WebSocket send, custom message queue
+
+      **Testing Requirements:**
+      - Unit tests in next task (m2-009)
+
+      **Success Criteria:**
+      - useChatActions hook exports all three functions
+      - sendMessage formats message correctly for runtime
+      - TypeScript types are correct
+      - Hook works within @assistant-ui runtime context
+
+  - id: m2-009
+    name: "Add useChatActions unit tests"
+    description: |
+      Test programmatic chat control hook with mocked assistant runtime. Validates
+      message sending, thread clearing, and proper runtime method invocation.
+    estimate_minutes: 30
+    type: test
+    dependencies: [m2-008]
+    files:
+      create:
+        - packages/web/src/features/chat/hooks/use-chat-actions.test.ts
+      touch_only:
+        - packages/web/src/features/chat/hooks/use-chat-actions.ts
+    instructions: |
+      **Objective:**
+      Achieve >85% test coverage for useChatActions hook.
+
+      **Implementation Steps:**
+      1. Create `use-chat-actions.test.ts`
+      2. Mock `useAssistantRuntime` from '@assistant-ui/react'
+      3. Create mock runtime with append, switchToNewThread methods
+      4. Test sendMessage calls runtime.append with user role
+      5. Test sendSystemMessage calls runtime.append with system role
+      6. Test clearThread calls runtime.switchToNewThread
+      7. Test message content format (role, content structure)
+
+      **Constraints:**
+      - ONLY use: renderHook from @testing-library/react, vitest mocks
+      - Mock assistant runtime (don't use real runtime)
+      - NEVER use: Real WebSocket or assistant-ui provider in tests
+
+      **Testing Requirements:**
+      - All hook functions tested
+      - Runtime method calls verified
+      - Message format validated
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >85% for use-chat-actions.ts
+      - Mock runtime interactions work correctly
+      - Tests run in <2 seconds
+
+  - id: m2-010
+    name: "Create skill invocation service layer"
+    description: |
+      Create shared/services/skill-service.ts with functions to trigger skill execution
+      via chat. Maps workflow steps to skill commands. Provides invokeSkillForStep
+      function that generates appropriate message for auto-skill invocation.
+    estimate_minutes: 60
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/web/src/shared/services/skill-service.ts
+        - packages/web/src/shared/types/workflow.ts
+      touch_only:
+        - packages/web/src/features/sidebar/stores/workflow-atoms.ts
+    style_anchor_refs:
+      - feature-module-structure
+    instructions: |
+      **Objective:**
+      Create service layer for auto-skill invocation based on workflow steps.
+
+      **Implementation Steps:**
+      1. Create `shared/types/workflow.ts`:
+         - Define WorkflowStep type: id (pipelineStatus value), name, number, skillCommand
+         - Define 10 workflow steps with skill commands:
+           - Step 1: intake → "Start new project intake"
+           - Step 2: business-requirements → "Continue Sherpy Flow: Business Requirements"
+           - Step 3: gap-analysis → "Continue Sherpy Flow: Gap Analysis"
+           - Step 4: technical-requirements → "Continue Sherpy Flow: Technical Requirements"
+           - Step 5: style-anchors → "Continue Sherpy Flow: Style Anchors"
+           - Step 6: implementation-planning → "Continue Sherpy Flow: Implementation Planning"
+           - Step 7: architecture-decisions → "Continue Sherpy Flow: Architecture Decisions"
+           - Step 8: delivery-timeline → "Continue Sherpy Flow: Delivery Timeline"
+           - Step 9: qa-test-plan → "Continue Sherpy Flow: QA Test Plan"
+           - Step 10: summaries → "Continue Sherpy Flow: Summaries"
+         - Export WORKFLOW_STEPS array and WorkflowStep type
+      2. Create `shared/services/skill-service.ts`:
+         - Define `getSkillMessageForStep(stepId: string): string | null` function:
+           - Finds step in WORKFLOW_STEPS by id
+           - Returns skillCommand if found, null otherwise
+         - Export function
+
+      **Constraints:**
+      - ONLY use: Type-safe workflow step definitions
+      - Match pipelineStatus values from technical-requirements.yaml
+      - NEVER use: Hardcoded strings outside WORKFLOW_STEPS array
+
+      **Testing Requirements:**
+      - Unit tests in next task (m2-011)
+
+      **Success Criteria:**
+      - WORKFLOW_STEPS includes all 10 steps
+      - getSkillMessageForStep returns correct command for each step
+      - Returns null for invalid step id
+      - TypeScript types are strict
+
+  - id: m2-011
+    name: "Add skill service unit tests"
+    description: |
+      Test skill invocation service layer including step-to-command mapping and
+      edge cases. Validates that correct skill messages are generated for each
+      workflow step.
+    estimate_minutes: 30
+    type: test
+    dependencies: [m2-010]
+    files:
+      create:
+        - packages/web/src/shared/services/skill-service.test.ts
+      touch_only:
+        - packages/web/src/shared/services/skill-service.ts
+        - packages/web/src/shared/types/workflow.ts
+    instructions: |
+      **Objective:**
+      Achieve >90% test coverage for skill service layer.
+
+      **Implementation Steps:**
+      1. Create `skill-service.test.ts`
+      2. Test getSkillMessageForStep for each workflow step (10 tests)
+      3. Test returns null for invalid step id
+      4. Test returns null for empty string
+      5. Test WORKFLOW_STEPS has exactly 10 entries
+      6. Test each step has required fields (id, name, number, skillCommand)
+
+      **Constraints:**
+      - ONLY use: vitest
+      - NEVER use: External dependencies or API calls
+
+      **Testing Requirements:**
+      - All workflow steps covered
+      - Edge cases tested
+      - Data structure validated
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >90% for skill-service.ts
+      - Each workflow step validated
+      - Tests run in <2 seconds
+
+  - id: m2-012
+    name: "Implement auto-skill invocation in sidebar step navigation"
+    description: |
+      Update sidebar step click handler to auto-invoke skills via chat. When user
+      clicks workflow step, update pipelineStatus and send skill command to chat
+      using useChatActions hook. Implements core auto-invocation requirement.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m2-008, m2-010]
+    files:
+      modify:
+        - packages/web/src/features/sidebar/components/step-button.tsx
+      touch_only:
+        - packages/web/src/features/chat/hooks/use-chat-actions.ts
+        - packages/web/src/shared/services/skill-service.ts
+    style_anchor_refs:
+      - assistant-ui-integration
+      - react-query-mutations
+    instructions: |
+      **Objective:**
+      Auto-invoke skills when user navigates to workflow step via sidebar.
+
+      **Implementation Steps:**
+      1. Update `step-button.tsx`:
+         - Import useChatActions from '@/features/chat'
+         - Import getSkillMessageForStep from '@/shared/services/skill-service'
+         - Get { sendMessage } from useChatActions()
+         - Update handleStepClick function:
+           - Get skill message: `const message = getSkillMessageForStep(step.id)`
+           - If message exists: call `sendMessage(message)`
+           - If message null: log warning (no skill for step)
+         - Add loading state during skill invocation
+         - Show visual feedback (button disabled during loading)
+
+      **Constraints:**
+      - ONLY use: useChatActions hook for sending messages
+      - Follow pattern in **assistant-ui-integration** for programmatic control
+      - Follow pattern in **react-query-mutations** if updating project status
+      - NEVER use: Direct WebSocket send, manual skill execution
+
+      **Testing Requirements:**
+      - Integration tests in next task (m2-013)
+
+      **Success Criteria:**
+      - Clicking step sends skill message to chat
+      - Chat receives and displays skill invocation
+      - Loading state shows during invocation
+      - Button disabled during loading
+      - No skill invocation for steps without commands
+
+  - id: m2-013
+    name: "Add auto-skill invocation integration tests"
+    description: |
+      Test end-to-end auto-skill invocation flow from sidebar click to chat message.
+      Validates that clicking workflow step sends correct skill command to chat
+      runtime and triggers AI response.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m2-012]
+    files:
+      create:
+        - packages/web/src/features/sidebar/components/step-button.integration.test.tsx
+      touch_only:
+        - packages/web/src/features/sidebar/components/step-button.tsx
+    instructions: |
+      **Objective:**
+      Test auto-skill invocation flow with mocked chat runtime.
+
+      **Implementation Steps:**
+      1. Create `step-button.integration.test.tsx`
+      2. Mock useChatActions hook
+      3. Mock getSkillMessageForStep function
+      4. Render StepButton component with test step
+      5. Test clicking step calls getSkillMessageForStep(step.id)
+      6. Test clicking step calls sendMessage with skill command
+      7. Test loading state during invocation
+      8. Test button disabled during loading
+      9. Test no message sent if getSkillMessageForStep returns null
+
+      **Constraints:**
+      - ONLY use: @testing-library/react, @testing-library/user-event, vitest mocks
+      - Mock chat actions and skill service
+      - NEVER use: Real WebSocket or assistant-ui runtime
+
+      **Testing Requirements:**
+      - Full click-to-message flow tested
+      - Loading states verified
+      - Edge cases covered
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >80% for updated step-button.tsx
+      - Mock interactions verified
+      - Tests run in <3 seconds
+
+  - id: m2-014
+    name: "Add loading and streaming indicators to chat"
+    description: |
+      Enhance ChatContainer with loading spinners and streaming indicators. Show
+      loading state when skill is invoked and streaming indicator while AI is
+      responding. Improves user feedback per FR-010 requirements.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m2-005]
+    files:
+      modify:
+        - packages/web/src/features/chat/components/chat-container.tsx
+      create:
+        - packages/web/src/features/chat/components/loading-indicator.tsx
+        - packages/web/src/features/chat/components/streaming-indicator.tsx
+    style_anchor_refs:
+      - assistant-ui-integration
+      - shadcn-component-pattern
+    instructions: |
+      **Objective:**
+      Add loading and streaming indicators to chat UI for real-time feedback.
+
+      **Implementation Steps:**
+      1. Create `components/loading-indicator.tsx`:
+         - Spinner component using lucide-react Loader2 icon
+         - Animated spin with Tailwind classes
+         - Message: "Invoking skill..."
+      2. Create `components/streaming-indicator.tsx`:
+         - Pulsing dot indicator
+         - Message: "AI is thinking..."
+         - Use @assistant-ui message status to show when streaming
+      3. Update `chat-container.tsx`:
+         - Import useMessage hook from '@assistant-ui/react'
+         - Check message status for loading/streaming states
+         - Show LoadingIndicator when skill invoked (before response)
+         - Show StreamingIndicator when message.status === 'streaming'
+         - Position indicators appropriately in chat flow
+
+      **Constraints:**
+      - ONLY use: @assistant-ui/react hooks, lucide-react icons, shadcn patterns
+      - Follow pattern in **assistant-ui-integration** for status checking
+      - Follow pattern in **shadcn-component-pattern** for component styling
+      - NEVER use: Custom loading logic (use assistant-ui message status)
+
+      **Testing Requirements:**
+      - Integration tests verify indicators show at correct times
+
+      **Success Criteria:**
+      - Loading indicator shows when skill invoked
+      - Streaming indicator shows during AI response
+      - Indicators styled consistently with design system
+      - No flash of incorrect state
+      - Smooth transitions between states
+
+  - id: m2-015
+    name: "Implement hybrid chat mode (guided + free-form)"
+    description: |
+      Configure @assistant-ui to support hybrid chat mode where users primarily
+      follow guided interview questions but can occasionally send free-form messages.
+      System should handle both structured responses and off-script questions gracefully.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m2-005]
+    files:
+      modify:
+        - packages/web/src/features/chat/components/chat-container.tsx
+      create:
+        - packages/web/src/features/chat/components/custom-composer.tsx
+    style_anchor_refs:
+      - assistant-ui-integration
+    instructions: |
+      **Objective:**
+      Enable hybrid chat mode supporting both guided and free-form interactions.
+
+      **Implementation Steps:**
+      1. Create `components/custom-composer.tsx`:
+         - Import Composer components from '@assistant-ui/react'
+         - Customize ComposerInput to accept both structured and free-form input
+         - Add placeholder: "Answer the question or ask your own..."
+         - Style with shadcn input styling
+      2. Update `chat-container.tsx`:
+         - Pass custom Composer to Thread component via components prop
+         - Configure welcome message to explain hybrid mode
+         - Update message handling to accept free-form input
+         - Ensure AI responses adapt to input type (guided vs free-form)
+
+      **Constraints:**
+      - ONLY use: @assistant-ui/react Composer components and hooks
+      - Follow pattern in **assistant-ui-integration** for custom components
+      - NEVER use: Block free-form input, force only multiple choice
+
+      **Testing Requirements:**
+      - Integration test: user can send free-form message
+      - Integration test: user can answer guided question
+      - Integration test: chat handles both input types
+
+      **Success Criteria:**
+      - Custom composer renders with clear placeholder
+      - User can send both structured and free-form messages
+      - AI adapts responses appropriately
+      - No UI confusion about input mode
+      - Composer styling matches design system
+
+  - id: m2-016
+    name: "Add error handling for WebSocket disconnection"
+    description: |
+      Implement error handling and reconnection logic for WebSocket failures. Show
+      user-friendly error messages when connection drops and automatic reconnection
+      when connection restored. Improves reliability per NFR requirements.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m2-005]
+    files:
+      modify:
+        - packages/web/src/features/chat/hooks/use-chat-runtime.ts
+      create:
+        - packages/web/src/features/chat/components/connection-error.tsx
+    style_anchor_refs:
+      - assistant-ui-integration
+    instructions: |
+      **Objective:**
+      Add robust error handling and reconnection for WebSocket connection.
+
+      **Implementation Steps:**
+      1. Create `components/connection-error.tsx`:
+         - Error banner component showing connection status
+         - Message: "Connection lost. Reconnecting..."
+         - Retry button for manual reconnection
+         - Style with shadcn Alert component (destructive variant)
+      2. Update `use-chat-runtime.ts`:
+         - Add onError handler with error state
+         - Add onConnect handler to clear error state
+         - Implement reconnection logic (automatic after 3 seconds)
+         - Track connection status in state
+         - Return connection status and error from hook
+      3. Update `chat-container.tsx`:
+         - Show ConnectionError when WebSocket disconnected
+         - Hide chat input when disconnected
+         - Clear error when reconnected
+
+      **Constraints:**
+      - ONLY use: @assistant-ui/react error handlers, React state
+      - NEVER use: Custom WebSocket reconnection logic (use runtime)
+
+      **Testing Requirements:**
+      - Integration test: error shown on disconnect
+      - Integration test: auto-reconnection after delay
+      - Integration test: manual retry button works
+
+      **Success Criteria:**
+      - Error banner shows on WebSocket disconnect
+      - Automatic reconnection after 3 seconds
+      - Manual retry button works
+      - Connection status accurate
+      - User can't send messages while disconnected
+
+  - id: m2-017
+    name: "Add connection error handling integration tests"
+    description: |
+      Test WebSocket error handling and reconnection logic with simulated connection
+      failures. Validates error states, user feedback, and automatic recovery.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m2-016]
+    files:
+      create:
+        - packages/web/src/features/chat/hooks/use-chat-runtime.error.test.ts
+        - packages/web/src/features/chat/components/connection-error.test.tsx
+      touch_only:
+        - packages/web/src/features/chat/hooks/use-chat-runtime.ts
+        - packages/web/src/features/chat/components/connection-error.tsx
+    instructions: |
+      **Objective:**
+      Achieve >75% test coverage for WebSocket error handling.
+
+      **Implementation Steps:**
+      1. Create `use-chat-runtime.error.test.ts`:
+         - Mock WebSocket runtime with error simulation
+         - Test onError handler updates state
+         - Test onConnect handler clears error
+         - Test automatic reconnection after delay (use fake timers)
+         - Test connection status tracking
+      2. Create `connection-error.test.tsx`:
+         - Test error banner renders with message
+         - Test retry button calls reconnection
+         - Test banner hidden when connected
+
+      **Constraints:**
+      - ONLY use: vitest fake timers, mock WebSocket runtime
+      - NEVER use: Real WebSocket connections in tests
+
+      **Testing Requirements:**
+      - All error states tested
+      - Reconnection logic verified
+      - User feedback validated
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >75% for error handling code
+      - Fake timers correctly test reconnection delay
+      - Tests run in <3 seconds
+
+  - id: m2-018
+    name: "Create react-query API integration for chat messages"
+    description: |
+      Implement react-query three-part pattern for fetching chat message history
+      from API. Enables loading previous conversation when resuming project. Follows
+      react-query-api-layer style anchor pattern.
+    estimate_minutes: 60
+    type: code
+    dependencies: []
+    files:
+      create:
+        - packages/web/src/features/chat/api/get-chat-messages.ts
+        - packages/web/src/features/chat/api/send-chat-message.ts
+        - packages/web/src/features/chat/types/index.ts
+      touch_only:
+        - packages/web/src/lib/api-client.ts
+    style_anchor_refs:
+      - react-query-api-layer
+      - react-query-mutations
+    instructions: |
+      **Objective:**
+      Create API layer for chat messages using react-query three-part pattern.
+
+      **Implementation Steps:**
+      1. Create `types/index.ts`:
+         - Define ChatMessage type: id, projectId, role, content, createdAt
+         - Export type
+      2. Create `api/get-chat-messages.ts`:
+         - Fetcher: `getChatMessages({ projectId, page }): Promise<{ data: ChatMessage[], meta }>`
+         - Query options: `getChatMessagesQueryOptions(projectId, page)`
+         - Hook: `useChatMessages({ projectId, page, queryConfig })`
+         - Follow **react-query-api-layer** three-part pattern exactly
+      3. Create `api/send-chat-message.ts`:
+         - Mutation: `sendChatMessage({ projectId, content }): Promise<ChatMessage>`
+         - Hook: `useSendChatMessage({ mutationConfig })`
+         - Follow **react-query-mutations** pattern
+         - Invalidate getChatMessagesQueryOptions on success
+
+      **Constraints:**
+      - ONLY use: @tanstack/react-query, three-part pattern
+      - Follow pattern in **react-query-api-layer** for queries
+      - Follow pattern in **react-query-mutations** for mutations
+      - NEVER use: Direct fetch without react-query wrapper
+
+      **Testing Requirements:**
+      - Unit tests in next task (m2-019)
+
+      **Success Criteria:**
+      - Three-part pattern implemented for getChatMessages
+      - Mutation pattern implemented for sendChatMessage
+      - Query keys consistent and descriptive
+      - TypeScript types strict
+      - Cache invalidation on mutation success
+
+  - id: m2-019
+    name: "Add chat API layer unit tests"
+    description: |
+      Test react-query chat API layer including fetcher functions, query options,
+      and hooks. Validates proper query key management and cache invalidation.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m2-018]
+    files:
+      create:
+        - packages/web/src/features/chat/api/get-chat-messages.test.ts
+        - packages/web/src/features/chat/api/send-chat-message.test.ts
+      touch_only:
+        - packages/web/src/features/chat/api/get-chat-messages.ts
+        - packages/web/src/features/chat/api/send-chat-message.ts
+    instructions: |
+      **Objective:**
+      Achieve >80% test coverage for chat API layer.
+
+      **Implementation Steps:**
+      1. Create `get-chat-messages.test.ts`:
+         - Mock api-client
+         - Test getChatMessages fetcher calls API with correct params
+         - Test getChatMessagesQueryOptions returns correct structure
+         - Test useChatMessages hook with renderHook
+         - Test query key includes projectId and page
+      2. Create `send-chat-message.test.ts`:
+         - Test sendChatMessage calls API with content
+         - Test useSendChatMessage hook
+         - Test cache invalidation on success (mock queryClient)
+
+      **Constraints:**
+      - ONLY use: vitest, renderHook from @testing-library/react
+      - Mock api-client and QueryClient
+      - NEVER use: Real API calls
+
+      **Testing Requirements:**
+      - All fetchers and hooks tested
+      - Query key structure validated
+      - Cache invalidation verified
+
+      **Success Criteria:**
+      - All tests passing
+      - Test coverage >80% for API layer
+      - Mock interactions correct
+      - Tests run in <3 seconds
+
+  - id: m2-020
+    name: "Integrate main tabs into app root component"
+    description: |
+      Wire up MainTabs component into main application layout replacing existing
+      content area. Pass projectId from route params to MainTabs. Completes basic
+      UI integration for milestone demo.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m2-007]
+    files:
+      modify:
+        - packages/web/src/app.tsx
+      touch_only:
+        - packages/web/src/features/tabs/components/main-tabs.tsx
+    instructions: |
+      **Objective:**
+      Integrate MainTabs into app root replacing existing content area.
+
+      **Implementation Steps:**
+      1. Update `app.tsx`:
+         - Import MainTabs from '@/features/tabs'
+         - Get projectId from route params (use react-router useParams)
+         - Render layout: Sidebar (left 1/3) + MainTabs (right 2/3)
+         - Pass projectId to MainTabs component
+         - Ensure full height layout (h-screen flex)
+
+      **Constraints:**
+      - ONLY use: Feature exports via index.ts
+      - NEVER use: Direct imports from feature internals
+
+      **Testing Requirements:**
+      - Integration test: app renders with sidebar and tabs
+      - Integration test: projectId passed to MainTabs
+
+      **Success Criteria:**
+      - App renders sidebar and MainTabs side by side
+      - Layout is 1/3 sidebar, 2/3 main area
+      - projectId flows from route to ChatContainer
+      - Full height responsive layout
+      - No console errors
+
+  - id: m2-021
+    name: "Comprehensive M2 code review and integration test"
+    description: |
+      Final code review of all M2 tasks. Validate integration between sidebar,
+      tabs, chat, and auto-skill invocation. Test complete user flow from step
+      navigation to AI response. Verify all milestone success criteria met.
+    estimate_minutes: 90
+    type: test
+    dependencies: [m2-001, m2-002, m2-003, m2-004, m2-005, m2-006, m2-007, m2-008, m2-009, m2-010, m2-011, m2-012, m2-013, m2-014, m2-015, m2-016, m2-017, m2-018, m2-019, m2-020]
+    files:
+      create:
+        - packages/web/src/test/integration/m2-workflow.integration.test.tsx
+      modify:
+        - packages/web/README.md
+    instructions: |
+      **Objective:**
+      Comprehensive integration test and code review for M2 milestone completion.
+
+      **Implementation Steps:**
+      1. Create `test/integration/m2-workflow.integration.test.tsx`:
+         - Test complete flow: app loads → sidebar renders → tabs render
+         - Test: click sidebar step → skill message sent → chat receives message
+         - Test: tab switching works (chat ↔ files)
+         - Test: WebSocket connection established with auth
+         - Test: loading indicators show during skill invocation
+         - Test: streaming indicator shows during AI response
+         - Test: error handling for connection failure
+         - Test: hybrid chat mode (both guided and free-form input)
+      2. Manual testing checklist in README.md:
+         - Navigate to each workflow step via sidebar
+         - Verify skill auto-invocation in chat
+         - Send free-form message in chat
+         - Switch between Chat and Files tabs
+         - Test WebSocket reconnection by killing connection
+      3. Code review checklist:
+         - All style anchors followed (assistant-ui-integration, feature-module-structure, react-query-api-layer)
+         - No cross-feature imports
+         - All TypeScript strict mode passing
+         - All tests passing (>70% coverage)
+         - No console errors or warnings
+         - Loading states and error handling working
+         - Performance acceptable (no jank or lag)
+
+      **Constraints:**
+      - ONLY use: Full integration testing with all features enabled
+      - Test real interactions between features
+      - NEVER skip: Manual testing of visual/UX elements
+
+      **Testing Requirements:**
+      - Complete user flow tested end-to-end
+      - All M2 success criteria verified
+      - Manual testing performed
+
+      **Success Criteria:**
+      - All integration tests passing
+      - Manual testing checklist complete
+      - All M2 milestone success criteria met:
+        ✓ Tabbed main area renders with Chat and Files tabs
+        ✓ Chat tab displays @assistant-ui Thread component
+        ✓ WebSocket connection established with authentication
+        ✓ Skills auto-invoke when navigating workflow steps
+        ✓ Streaming AI responses display in real-time
+        ✓ Loading states and progress indicators working
+        ✓ Hybrid chat mode functional (guided + free-form)
+        ✓ Integration tests pass for skill invocation flow
+      - Ready to proceed to M3 (Files Tab)
