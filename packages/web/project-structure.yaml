@@ -1,0 +1,458 @@
+---
+name: "Sherpy PM Web Frontend"
+description: |
+  React 19 + Vite + TypeScript strict mode frontend following bulletproof-react
+  architecture with feature-based organization. Uses Jotai for client state,
+  React Query for server state, and assistant-ui for LLM chat.
+version: "1.0.0"
+last_updated: "2026-04-29"
+
+architecture:
+  pattern: "bulletproof-react"
+  principles:
+    - "Feature-based vertical slices (not layer-based)"
+    - "Features are independent and cannot import from each other"
+    - "Shared code lives in shared/ directory"
+    - "Configuration and library wrappers in lib/ and config/"
+    - "Co-located tests with source files"
+    - "Path aliases for clean imports (@/, @/features/*, etc.)"
+
+technology_stack:
+  core:
+    - name: "React"
+      version: "19.x"
+      purpose: "UI framework"
+    - name: "TypeScript"
+      version: "5.x"
+      purpose: "Type safety with strict mode enabled"
+    - name: "Vite"
+      version: "6.x"
+      purpose: "Build tool and dev server"
+
+  state_management:
+    - name: "Jotai"
+      version: "2.x"
+      purpose: "Client state (atoms)"
+    - name: "React Query (TanStack Query)"
+      version: "5.x"
+      purpose: "Server state and data fetching"
+    - name: "React Hook Form"
+      version: "7.x"
+      purpose: "Form state (when needed)"
+
+  ui_framework:
+    - name: "Tailwind CSS"
+      version: "4.x"
+      purpose: "Utility-first styling"
+    - name: "shadcn/ui"
+      version: "latest"
+      purpose: "Composable UI components"
+    - name: "assistant-ui"
+      version: "latest"
+      purpose: "LLM chat interface components"
+
+  routing:
+    - name: "React Router"
+      version: "7.x"
+      purpose: "Client-side routing"
+
+  testing:
+    - name: "Vitest"
+      version: "3.x"
+      purpose: "Test runner"
+    - name: "React Testing Library"
+      version: "16.x"
+      purpose: "Component testing"
+
+  code_quality:
+    - name: "ESLint"
+      version: "9.x"
+      purpose: "JavaScript/TypeScript linting"
+    - name: "Prettier"
+      version: "3.x"
+      purpose: "Code formatting"
+
+directory_structure:
+  root:
+    description: "Package root directory"
+    path: "packages/web/"
+    files:
+      - name: "package.json"
+        purpose: "Package manifest with dependencies and scripts"
+      - name: "vite.config.ts"
+        purpose: "Vite build configuration"
+      - name: "vitest.config.ts"
+        purpose: "Vitest test configuration"
+      - name: "tsconfig.json"
+        purpose: "TypeScript base configuration"
+      - name: "tsconfig.app.json"
+        purpose: "TypeScript config for application code"
+      - name: "tsconfig.node.json"
+        purpose: "TypeScript config for Vite config files"
+      - name: "tailwind.config.ts"
+        purpose: "Tailwind CSS configuration"
+      - name: "postcss.config.js"
+        purpose: "PostCSS configuration for Tailwind"
+      - name: ".eslintrc.cjs"
+        purpose: "ESLint configuration"
+      - name: ".prettierrc"
+        purpose: "Prettier formatting configuration"
+      - name: "index.html"
+        purpose: "HTML entry point for Vite"
+      - name: "project-structure.yaml"
+        purpose: "This file - canonical structure documentation"
+
+  src:
+    description: "Source code root"
+    path: "src/"
+    subdirectories:
+      features:
+        description: |
+          Feature modules organized as vertical slices. Each feature is
+          self-contained and independent. Features CANNOT import from other
+          features but CAN import from shared/, lib/, utils/, config/.
+        path: "src/features/"
+        pattern: "src/features/[feature-name]/"
+        structure:
+          - name: "api/"
+            description: "Feature-specific React Query hooks for data fetching"
+            example: "use-projects.ts, use-project-by-id.ts"
+            required: false
+          - name: "components/"
+            description: "Feature-specific React components"
+            example: "project-card.tsx, project-list.tsx"
+            required: true
+          - name: "hooks/"
+            description: "Feature-specific custom React hooks"
+            example: "use-project-form.ts, use-project-validation.ts"
+            required: false
+          - name: "state/"
+            description: "Feature-specific Jotai atoms for client state"
+            example: "project-atoms.ts, project-filters.ts"
+            required: false
+          - name: "types/"
+            description: "Feature-specific TypeScript types and interfaces"
+            example: "project.types.ts"
+            required: false
+          - name: "utils/"
+            description: "Feature-specific utility functions"
+            example: "format-project-date.ts"
+            required: false
+          - name: "index.ts"
+            description: "Public API exports - only exported items are visible outside feature"
+            required: true
+        examples:
+          - name: "projects"
+            description: "Project management feature"
+            exports:
+              - "ProjectList component"
+              - "ProjectCard component"
+              - "useProjects hook"
+              - "useCreateProject hook"
+          - name: "chat"
+            description: "LLM chat interface feature"
+            exports:
+              - "ChatPanel component"
+              - "ChatMessage component"
+              - "useChatSession hook"
+          - name: "people"
+            description: "People/team management feature"
+            exports:
+              - "PeopleList component"
+              - "PersonCard component"
+              - "usePeople hook"
+
+      shared:
+        description: |
+          Reusable code shared across features. This is where cross-cutting
+          concerns live. Features can freely import from shared/.
+        path: "src/shared/"
+        subdirectories:
+          - name: "components/"
+            description: "Reusable UI components (shadcn, custom shared components)"
+            path: "src/shared/components/"
+            structure:
+              - name: "ui/"
+                description: "shadcn/ui components installed via CLI"
+                example: "button.tsx, card.tsx, input.tsx"
+              - name: "layout/"
+                description: "Layout components (headers, footers, containers)"
+                example: "app-layout.tsx, sidebar.tsx, header.tsx"
+              - name: "common/"
+                description: "Common shared components"
+                example: "loading-spinner.tsx, error-boundary.tsx"
+          - name: "hooks/"
+            description: "Shared custom React hooks"
+            example: "use-local-storage.ts, use-debounce.ts"
+          - name: "api/"
+            description: "Shared API utilities and base hooks"
+            example: "api-base.ts, use-websocket.ts"
+          - name: "state/"
+            description: "Global Jotai atoms shared across features"
+            example: "auth-atoms.ts, theme-atoms.ts, navigation-atoms.ts"
+          - name: "utils/"
+            description: "Shared utility functions"
+            example: "format-date.ts, parse-error.ts"
+
+      lib:
+        description: |
+          Third-party library configuration and wrappers. This is where we
+          configure external libraries with app-specific settings.
+        path: "src/lib/"
+        files:
+          - name: "api-client.ts"
+            description: "Fetch wrapper with error handling and auth"
+            exports: ["apiClient"]
+          - name: "query-client.ts"
+            description: "React Query client configuration"
+            exports: ["queryClient"]
+          - name: "index.ts"
+            description: "Re-exports all lib modules"
+
+      utils:
+        description: |
+          Pure utility functions with no dependencies on React or other libraries.
+          These are simple, testable functions.
+        path: "src/utils/"
+        files:
+          - name: "cn.ts"
+            description: "className utility combining clsx and tailwind-merge"
+            exports: ["cn"]
+
+      config:
+        description: "Application configuration and environment variables"
+        path: "src/config/"
+        files:
+          - name: "env.ts"
+            description: "Type-safe environment variable access"
+            exports: ["env"]
+
+      routes:
+        description: "React Router route definitions and route guards"
+        path: "src/routes/"
+        files:
+          - name: "index.tsx"
+            description: "Route configuration and router setup"
+            exports: ["router", "AppRoutes"]
+
+      providers:
+        description: "React context providers for global state and services"
+        path: "src/providers/"
+        files:
+          - name: "app-provider.tsx"
+            description: "Root provider wrapping QueryClient, Router, etc."
+            exports: ["AppProvider"]
+
+      test:
+        description: "Test utilities and setup"
+        path: "src/test/"
+        files:
+          - name: "setup.ts"
+            description: "Vitest setup file (imported in vitest.config.ts)"
+          - name: "utils.tsx"
+            description: "Custom render function with providers for testing"
+            exports: ["render", "screen", "userEvent"]
+
+      assets:
+        description: "Static assets (images, fonts, etc.)"
+        path: "src/assets/"
+
+import_patterns:
+  path_aliases:
+    - alias: "@/"
+      resolves_to: "src/"
+      example: "import { Button } from '@/shared/components/ui/button'"
+    - alias: "@/features/*"
+      resolves_to: "src/features/*"
+      example: "import { ProjectList } from '@/features/projects'"
+    - alias: "@/shared/*"
+      resolves_to: "src/shared/*"
+      example: "import { apiClient } from '@/shared/api/api-base'"
+    - alias: "@/lib/*"
+      resolves_to: "src/lib/*"
+      example: "import { queryClient } from '@/lib/query-client'"
+    - alias: "@/utils/*"
+      resolves_to: "src/utils/*"
+      example: "import { cn } from '@/utils/cn'"
+    - alias: "@/config/*"
+      resolves_to: "src/config/*"
+      example: "import { env } from '@/config/env'"
+
+  rules:
+    allowed:
+      - description: "Features can import from shared/"
+        example: "import { Button } from '@/shared/components/ui/button'"
+      - description: "Features can import from lib/"
+        example: "import { apiClient } from '@/lib/api-client'"
+      - description: "Features can import from utils/"
+        example: "import { cn } from '@/utils/cn'"
+      - description: "Features can import from config/"
+        example: "import { env } from '@/config/env'"
+      - description: "Any module can import from utils/ (pure functions)"
+        example: "import { cn } from '@/utils/cn'"
+
+    forbidden:
+      - description: "Features CANNOT import from other features"
+        example: "❌ import { useProject } from '@/features/projects'"
+        reason: "Violates feature independence principle"
+        alternative: "Move shared logic to shared/ directory"
+      - description: "Avoid relative imports for cross-directory imports"
+        example: "❌ import { Button } from '../../../shared/components/ui/button'"
+        reason: "Hard to maintain and refactor"
+        alternative: "Use path aliases: import { Button } from '@/shared/components/ui/button'"
+      - description: "No circular dependencies between features"
+        example: "❌ Feature A imports Feature B, Feature B imports Feature A"
+        reason: "Creates tight coupling and bundle issues"
+        alternative: "Extract shared logic to shared/"
+
+naming_conventions:
+  files:
+    components: "kebab-case.tsx (e.g., project-card.tsx, user-profile.tsx)"
+    hooks: "kebab-case.ts with use- prefix (e.g., use-projects.ts)"
+    utils: "kebab-case.ts (e.g., format-date.ts)"
+    types: "kebab-case.types.ts (e.g., project.types.ts)"
+    tests: "*.test.ts or *.test.tsx co-located with source"
+
+  exports:
+    components: "PascalCase (e.g., ProjectCard, UserProfile)"
+    hooks: "camelCase with use prefix (e.g., useProjects, useAuth)"
+    utils: "camelCase (e.g., formatDate, parseError)"
+    types: "PascalCase (e.g., Project, User)"
+    constants: "UPPER_SNAKE_CASE (e.g., API_BASE_URL, MAX_RETRIES)"
+
+state_management_patterns:
+  client_state:
+    tool: "Jotai atoms"
+    location: "feature/state/ or shared/state/"
+    example: |
+      // src/features/projects/state/project-atoms.ts
+      import { atom } from 'jotai';
+
+      export const selectedProjectIdAtom = atom<string | null>(null);
+      export const projectFiltersAtom = atom({ status: 'active', search: '' });
+    use_case: "UI state, filters, selections, transient state"
+
+  server_state:
+    tool: "React Query (TanStack Query)"
+    location: "feature/api/"
+    example: |
+      // src/features/projects/api/use-projects.ts
+      import { useQuery } from '@tanstack/react-query';
+      import { apiClient } from '@/lib/api-client';
+
+      export const useProjects = () => {
+        return useQuery({
+          queryKey: ['projects'],
+          queryFn: () => apiClient.get('/api/projects'),
+        });
+      };
+    use_case: "Server data fetching, caching, synchronization"
+
+  form_state:
+    tool: "React Hook Form"
+    location: "feature/hooks/ or component file"
+    example: |
+      // src/features/projects/hooks/use-project-form.ts
+      import { useForm } from 'react-hook-form';
+
+      export const useProjectForm = () => {
+        return useForm({
+          defaultValues: { name: '', description: '' },
+        });
+      };
+    use_case: "Form validation, submission, field state"
+
+testing_patterns:
+  unit_tests:
+    location: "Co-located with source (*.test.ts)"
+    example: "src/utils/cn.test.ts"
+    pattern: "Test pure functions and utilities"
+
+  component_tests:
+    location: "Co-located with component (*.test.tsx)"
+    example: "src/features/projects/components/project-card.test.tsx"
+    pattern: |
+      import { render, screen } from '@/test/utils';
+      import { ProjectCard } from './project-card';
+
+      test('renders project name', () => {
+        render(<ProjectCard project={mockProject} />);
+        expect(screen.getByText('Project Name')).toBeInTheDocument();
+      });
+
+  integration_tests:
+    location: "Feature-level test files"
+    example: "src/features/projects/projects.test.tsx"
+    pattern: "Test feature workflows and interactions"
+
+build_outputs:
+  dev:
+    command: "pnpm run dev"
+    port: "5173 (Vite default)"
+    hot_reload: true
+    description: "Development server with HMR"
+
+  build:
+    command: "pnpm run build"
+    output_dir: "dist/"
+    description: "Production build optimized and minified"
+
+  preview:
+    command: "pnpm run preview"
+    port: "4173"
+    description: "Preview production build locally"
+
+quality_gates:
+  pre_commit:
+    - command: "pnpm run lint"
+      description: "ESLint checks all TypeScript and TSX files"
+    - command: "pnpm run typecheck"
+      description: "TypeScript strict mode type checking"
+    - command: "pnpm test"
+      description: "Vitest runs all tests"
+
+  ci_pipeline:
+    - command: "pnpm install --frozen-lockfile"
+      description: "Install exact dependencies from lockfile"
+    - command: "pnpm run lint"
+      description: "Lint check"
+    - command: "pnpm run typecheck"
+      description: "Type check"
+    - command: "pnpm test"
+      description: "Run test suite"
+    - command: "pnpm run build"
+      description: "Production build"
+
+migration_notes:
+  from_legacy:
+    - "Legacy code preserved in packages/web-legacy/"
+    - "Git history intact via move operation"
+    - "New React 19 app built from scratch"
+    - "No direct code migration - clean slate approach"
+
+  architectural_changes:
+    - "Old: Single-file components → New: Feature-based organization"
+    - "Old: Props drilling → New: Jotai atoms + React Query"
+    - "Old: Inline styles → New: Tailwind CSS utility classes"
+    - "Old: No routing → New: React Router 7"
+    - "Old: ad-hoc API calls → New: React Query with apiClient"
+
+resources:
+  documentation:
+    - name: "README.md"
+      path: "src/README.md"
+      description: "Quick reference for developers"
+    - name: "CLAUDE.md"
+      path: "CLAUDE.md"
+      description: "Development guidelines and standards"
+
+  references:
+    - name: "Bulletproof React"
+      url: "https://github.com/alan2207/bulletproof-react"
+      description: "Architecture pattern inspiration"
+    - name: "React 19 Docs"
+      url: "https://react.dev"
+      description: "Official React documentation"
+    - name: "Vite Docs"
+      url: "https://vitejs.dev"
+      description: "Vite build tool documentation"
