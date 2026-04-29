@@ -54,6 +54,8 @@ export function clearAuthToken(): void {
 
 /**
  * Builds full URL with query parameters
+ * Note: If path is an absolute URL (e.g., http://external-api.com/...),
+ * it overrides baseUrl, allowing calls to external APIs when needed.
  */
 function buildUrl(baseUrl: string, path: string, params?: RequestConfig['params']): string {
   const url = new URL(path, baseUrl);
@@ -71,8 +73,10 @@ function buildUrl(baseUrl: string, path: string, params?: RequestConfig['params'
 
 /**
  * Creates headers with authentication and content type
+ * @param config - Request configuration with optional custom headers
+ * @param hasBody - Whether the request has a body (sets Content-Type only if true)
  */
-function createHeaders(config?: RequestConfig): Headers {
+function createHeaders(config?: RequestConfig, hasBody = false): Headers {
   const headers = new Headers(config?.headers);
 
   const token = getAuthToken();
@@ -80,7 +84,8 @@ function createHeaders(config?: RequestConfig): Headers {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  if (!headers.has('Content-Type')) {
+  // Only set Content-Type for requests with a body (POST, PUT, PATCH)
+  if (hasBody && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -144,6 +149,26 @@ function delay(ms: number): Promise<void> {
 }
 
 /**
+ * Merges multiple abort signals into one
+ * When any signal aborts, the returned signal aborts
+ */
+function mergeAbortSignals(...signals: (AbortSignal | undefined)[]): AbortSignal {
+  const controller = new AbortController();
+  const validSignals = signals.filter((s): s is AbortSignal => s !== undefined);
+
+  for (const signal of validSignals) {
+    if (signal.aborted) {
+      controller.abort();
+      return controller.signal;
+    }
+
+    signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+
+  return controller.signal;
+}
+
+/**
  * Makes HTTP request with timeout, retry, and error handling
  */
 async function request<T>(
@@ -154,18 +179,23 @@ async function request<T>(
   retryCount = 0
 ): Promise<T> {
   const url = buildUrl(env.apiUrl, path, config?.params);
-  const headers = createHeaders(config);
+  const headers = createHeaders(config, !!body);
   const timeout = config?.timeout ?? DEFAULT_TIMEOUT;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(() => timeoutController.abort(), timeout);
+
+  // Merge user signal (if provided) with timeout signal so both can abort
+  const signal = config?.signal
+    ? mergeAbortSignals(config.signal, timeoutController.signal)
+    : timeoutController.signal;
 
   try {
     const response = await fetch(url, {
       method,
       headers,
       body: body ? JSON.stringify(body) : undefined,
-      signal: config?.signal ?? controller.signal,
+      signal,
     });
 
     clearTimeout(timeoutId);
@@ -218,6 +248,10 @@ export const api: ApiClient = {
 
   post<T>(url: string, data?: unknown, config?: RequestConfig): Promise<T> {
     return request<T>('POST', url, config, data);
+  },
+
+  put<T>(url: string, data?: unknown, config?: RequestConfig): Promise<T> {
+    return request<T>('PUT', url, config, data);
   },
 
   patch<T>(url: string, data?: unknown, config?: RequestConfig): Promise<T> {

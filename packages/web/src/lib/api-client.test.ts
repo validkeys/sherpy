@@ -155,6 +155,32 @@ describe('api-client', () => {
     });
   });
 
+  describe('PUT requests', () => {
+    it('makes successful PUT request', async () => {
+      const replaceData = { id: 1, name: 'Replaced Name', description: 'New' };
+
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify(replaceData), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const promise = api.put('/api/projects/1', replaceData);
+      await vi.runAllTimersAsync();
+      const result = await promise;
+
+      expect(result).toEqual(replaceData);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/projects/1'),
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify(replaceData),
+        })
+      );
+    });
+  });
+
   describe('PATCH requests', () => {
     it('makes successful PATCH request', async () => {
       const updateData = { name: 'Updated Name' };
@@ -563,6 +589,70 @@ describe('api-client', () => {
 
       const callHeaders = vi.mocked(fetch).mock.calls[0][1]?.headers as Headers;
       expect(callHeaders.get('Content-Type')).toBe('text/plain');
+    });
+
+    it('does not set Content-Type for GET requests', async () => {
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const promise = api.get('/api/projects');
+      await vi.runAllTimersAsync();
+      await promise;
+
+      const callHeaders = vi.mocked(fetch).mock.calls[0][1]?.headers as Headers;
+      expect(callHeaders.get('Content-Type')).toBeNull();
+    });
+
+    it('does not set Content-Type for DELETE requests', async () => {
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const promise = api.delete('/api/projects/1');
+      await vi.runAllTimersAsync();
+      await promise;
+
+      const callHeaders = vi.mocked(fetch).mock.calls[0][1]?.headers as Headers;
+      expect(callHeaders.get('Content-Type')).toBeNull();
+    });
+
+    it('sets Content-Type for POST requests with body', async () => {
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({ id: 1 }), {
+          status: 201,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const promise = api.post('/api/projects', { name: 'Test' });
+      await vi.runAllTimersAsync();
+      await promise;
+
+      const callHeaders = vi.mocked(fetch).mock.calls[0][1]?.headers as Headers;
+      expect(callHeaders.get('Content-Type')).toBe('application/json');
+    });
+
+    it('sets Content-Type for PUT requests with body', async () => {
+      vi.mocked(fetch).mockResolvedValue(
+        new Response(JSON.stringify({ id: 1 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      const promise = api.put('/api/projects/1', { name: 'Updated' });
+      await vi.runAllTimersAsync();
+      await promise;
+
+      const callHeaders = vi.mocked(fetch).mock.calls[0][1]?.headers as Headers;
+      expect(callHeaders.get('Content-Type')).toBe('application/json');
     });
   });
 
