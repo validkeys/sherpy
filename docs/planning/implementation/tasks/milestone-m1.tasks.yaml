@@ -810,6 +810,122 @@ tasks:
       - State persists after refresh
       - No console errors or warnings
 
+  - id: m1-014b
+    name: "Automated E2E verification with agent-browser"
+    description: |
+      Automated end-to-end testing using agent-browser skill to verify all M1
+      deliverables work in real browser with real backend. Final verification
+      before code review.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m1-014]
+    files:
+      create:
+        - docs/testing/e2e-results/M1_E2E_RESULTS.md
+      touch_only:
+        - packages/web/src/app.tsx
+        - packages/web/src/features/sidebar/index.ts
+    instructions: |
+      **Objective:**
+      Use agent-browser skill to automate E2E verification of all M1 deliverables.
+
+      **Preconditions:**
+      1. Backend server running (port 3100, 3101) - verify with curl
+      2. Web dev server running (npm run dev) - verify accessible
+      3. No console errors in backend logs
+
+      **E2E Test Cases (10 total):**
+
+      **TC-001: Sidebar Renders**
+      - Navigate to http://localhost:5173
+      - Verify sidebar visible on page
+      - Verify sidebar width approximately 33% of viewport
+      - Screenshot: `m1-sidebar-initial.png`
+
+      **TC-002: All 10 Steps Display**
+      - Count visible step elements (should be 10)
+      - Verify step names match expected workflow steps
+      - Verify all steps have status icons
+      - Screenshot: `m1-all-steps.png`
+
+      **TC-003: Current Step Highlighted**
+      - Verify first step ('Intake') has current/active styling
+      - Check for visual distinction (background, border, etc.)
+      - Screenshot: `m1-current-step.png`
+
+      **TC-004: Step Navigation Click**
+      - Click on step 3 ('Business Requirements')
+      - Wait 500ms for state update
+      - Verify step 3 now has current styling
+      - Verify step 1 no longer highlighted
+      - Screenshot: `m1-step-navigation.png`
+
+      **TC-005: Multiple Navigation**
+      - Click through sequence: step 1 → 5 → 3 → 10 → 1
+      - After each click, verify correct step highlighted
+      - Verify no console errors during navigation
+
+      **TC-006: Status Icons Display**
+      - Navigate through steps 1 → 2 → 3 in sequence
+      - Verify completed steps show checkmark (✓)
+      - Verify current step shows arrow (→)
+      - Verify pending steps show circle (○)
+      - Screenshot: `m1-status-icons.png`
+
+      **TC-007: State Persistence**
+      - Navigate to step 5
+      - Refresh page (reload)
+      - Verify step 5 still current after reload
+      - Check localStorage contains workflow state
+
+      **TC-008: Keyboard Navigation**
+      - Tab to focus first step
+      - Press Enter key
+      - Verify step becomes current
+      - Tab to third step, press Enter
+      - Verify navigation works via keyboard
+
+      **TC-009: Responsive Layout**
+      - Set viewport to 1920x1080
+      - Verify sidebar maintains ~1/3 width
+      - Resize to 1366x768
+      - Verify layout still correct
+      - Screenshot: `m1-responsive.png`
+
+      **TC-010: Error-Free Experience**
+      - Check browser console (should be clean)
+      - Check network tab (no failed requests)
+      - Verify no React errors or warnings
+
+      **Constraints:**
+      - ONLY use: agent-browser skill for automation
+      - Test against REAL backend (not mocked)
+      - Save screenshots to docs/testing/screenshots/
+      - Document results in M1_E2E_RESULTS.md
+      - NEVER skip test cases, run all 10
+
+      **Testing Requirements:**
+      - All 10 test cases executed
+      - Screenshots captured for key states
+      - Results documented with pass/fail
+      - Any failures investigated and documented
+
+      **Success Criteria:**
+      - All 10 test cases pass
+      - Screenshots show correct UI state
+      - No console errors detected
+      - No network errors
+      - Results documented in M1_E2E_RESULTS.md
+      - Ready for final code review (m1-015)
+
+      **Implementation Steps:**
+      1. Verify preconditions (servers running)
+      2. Invoke agent-browser skill with test script
+      3. Execute each test case sequentially
+      4. Capture screenshots at key moments
+      5. Document results in M1_E2E_RESULTS.md
+      6. If any failures, investigate and fix before proceeding
+
   - id: m1-015
     name: "Comprehensive milestone code review"
     description: |
@@ -864,7 +980,8 @@ tasks:
       - [ ] Unit tests for atoms (>85% coverage)
       - [ ] Component tests for UI (>80% coverage)
       - [ ] Integration test for Sidebar
-      - [ ] Manual browser testing completed
+      - [ ] Manual browser testing completed (m1-014)
+      - [ ] E2E automated tests completed (m1-014b) - 10/10 passing
       - [ ] All tests passing
 
       **6. Milestone Success Criteria (from milestones.yaml):**
