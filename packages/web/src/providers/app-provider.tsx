@@ -3,11 +3,13 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Provider as JotaiProvider } from 'jotai';
 import { queryClient } from '@/lib/query-client';
+import { ErrorBoundary } from '@/lib/error-boundary';
 
 /**
  * App Provider
  *
  * Root provider component that wraps the application with:
+ * - Global Error Boundary for catching and handling errors
  * - React Query (TanStack Query) for server state management
  * - Jotai for client state management
  * - React Query Devtools (development only)
@@ -20,9 +22,11 @@ interface AppProviderProps {
 
 export function AppProvider({ children }: AppProviderProps) {
   return (
-    <QueryClientProvider client={queryClient}>
-      <JotaiProvider>{children}</JotaiProvider>
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <JotaiProvider>{children}</JotaiProvider>
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

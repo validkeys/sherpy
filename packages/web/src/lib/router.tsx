@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { RootLayout } from '@/shared/layouts/root-layout';
 import { HomePage } from '@/shared/pages/home';
 import { NotFoundPage } from '@/shared/pages/not-found';
+import { ErrorBoundaryDemoPage } from '@/shared/pages';
 
 /**
  * Application router configuration
@@ -24,6 +25,10 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <HomePage />,
+      },
+      {
+        path: 'error-boundary-demo',
+        element: <ErrorBoundaryDemoPage />,
       },
       {
         path: '*',
