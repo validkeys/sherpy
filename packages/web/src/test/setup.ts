@@ -23,14 +23,17 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock IntersectionObserver (required for some components)
-(
-  globalThis as typeof globalThis & { IntersectionObserver: typeof IntersectionObserver }
-).IntersectionObserver = class IntersectionObserver {
-  constructor() {}
-  disconnect() {}
-  observe() {}
-  takeRecords() {
-    return [];
-  }
-  unobserve() {}
-};
+(globalThis as typeof globalThis & { IntersectionObserver: unknown }).IntersectionObserver =
+  class IntersectionObserver {
+    readonly root = null;
+    readonly rootMargin = '';
+    readonly scrollMargin = '';
+    readonly thresholds = [];
+    constructor() {}
+    disconnect() {}
+    observe() {}
+    takeRecords(): IntersectionObserverEntry[] {
+      return [];
+    }
+    unobserve() {}
+  };

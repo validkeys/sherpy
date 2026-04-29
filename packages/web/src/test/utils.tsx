@@ -1,5 +1,6 @@
-import { ReactElement, ReactNode } from 'react';
-import { RenderOptions, render as rtlRender } from '@testing-library/react';
+import type { ReactElement, ReactNode } from 'react';
+import type { RenderOptions } from '@testing-library/react';
+import { render as rtlRender } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 // Create a custom render function that includes providers

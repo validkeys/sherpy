@@ -48,9 +48,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   const url = `${env.apiUrl}${endpoint}`;
   const token = getAuthToken();
 
-  const headers: globalThis.HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...fetchOptions.headers,
+    ...(fetchOptions.headers as Record<string, string>),
   };
 
   if (token) {
