@@ -8,7 +8,8 @@
 
 import { atom } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
-import { WorkflowStep, StepStatus, WORKFLOW_STEPS } from '../types';
+import type { WorkflowStep, StepStatus } from '../types';
+import { WORKFLOW_STEPS } from '../types';
 
 /**
  * Current workflow step with localStorage persistence.
