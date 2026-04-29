@@ -1,6 +1,14 @@
 milestone: m1
 name: "Sidebar with Workflow Navigation"
 generated: "2026-04-28T00:00:00Z"
+completed: "2026-04-29T07:20:00Z"
+status: complete
+tasks_completed: 15
+tasks_total: 15
+tests_passing: 103
+tests_total: 103
+e2e_tests_passing: 10
+e2e_tests_total: 10
 
 style_anchor_refs:
   - feature-module-structure  # Feature-based organization
@@ -66,6 +74,8 @@ quality_gates:
 
 tasks:
   - id: m1-001
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Create sidebar feature structure"
     description: |
       Establish the sidebar feature module with proper folder structure following
@@ -103,6 +113,8 @@ tasks:
       - Ready for component and state files
 
   - id: m1-002
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Define workflow steps constant and types"
     description: |
       Create TypeScript types and constants for the 10 sherpy workflow steps.
@@ -156,6 +168,8 @@ tasks:
       - Tests passing with >90% coverage
 
   - id: m1-003
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Create workflow state atoms with jotai"
     description: |
       Implement jotai atoms for managing workflow step state. Includes current step,
@@ -219,6 +233,8 @@ tasks:
       - Tests passing with >85% coverage
 
   - id: m1-004
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Add workflow atoms unit tests"
     description: |
       Comprehensive test coverage for workflow atoms including state updates,
@@ -281,6 +297,8 @@ tasks:
       - Mock setup/teardown between tests
 
   - id: m1-005
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Create StepIndicator component"
     description: |
       Reusable UI component showing step status icon (✓ complete, → current, ○ pending).
@@ -334,6 +352,8 @@ tasks:
       - forwardRef implemented
 
   - id: m1-006
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Add StepIndicator component tests"
     description: |
       Test StepIndicator rendering for all status variants and prop handling.
@@ -381,6 +401,8 @@ tasks:
       - Clear test descriptions
 
   - id: m1-007
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Create SidebarStep component"
     description: |
       Individual step item component with name, description, status indicator, and
@@ -435,6 +457,8 @@ tasks:
       - Accessible (keyboard navigation, aria attributes)
 
   - id: m1-008
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Add SidebarStep component tests"
     description: |
       Test SidebarStep rendering, styling, and interaction handling.
@@ -483,6 +507,8 @@ tasks:
       - Click and keyboard interactions tested
 
   - id: m1-009
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Create Sidebar container component"
     description: |
       Main sidebar container displaying all workflow steps with navigation logic.
@@ -544,6 +570,8 @@ tasks:
       - Scrollable when steps overflow
 
   - id: m1-010
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Add Sidebar integration tests"
     description: |
       Integration tests for Sidebar component verifying step rendering, state updates,
@@ -602,6 +630,8 @@ tasks:
       - State integration validated
 
   - id: m1-011
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Update feature index to export Sidebar"
     description: |
       Export Sidebar component and types through feature's public API (index.ts).
@@ -654,6 +684,8 @@ tasks:
       - JSDoc added
 
   - id: m1-012
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Create feature integration smoke test"
     description: |
       End-to-end smoke test importing sidebar feature and verifying public API works.
@@ -704,6 +736,8 @@ tasks:
       - All tests passing
 
   - id: m1-013
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Add Sidebar to app layout"
     description: |
       Integrate Sidebar component into main app layout. Makes sidebar visible in
@@ -749,6 +783,8 @@ tasks:
       - App compiles without errors
 
   - id: m1-014
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Manual testing and visual verification"
     description: |
       Manual browser testing to verify sidebar appearance, interactions, and
@@ -811,6 +847,8 @@ tasks:
       - No console errors or warnings
 
   - id: m1-014b
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Automated E2E verification with agent-browser"
     description: |
       Automated end-to-end testing using agent-browser skill to verify all M1
@@ -927,6 +965,8 @@ tasks:
       6. If any failures, investigate and fix before proceeding
 
   - id: m1-015
+    status: complete
+    completed_at: "2026-04-29T07:20:00Z"
     name: "Comprehensive milestone code review"
     description: |
       Final code review of all M1 work. Verify code quality, patterns, tests, and
