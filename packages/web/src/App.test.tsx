@@ -15,19 +15,20 @@ describe('App', () => {
 
   it('renders a button with initial count', () => {
     render(<App />);
-    expect(screen.getByRole('button')).toHaveTextContent('Count is 0');
+    const button = screen.getByRole('button', { name: /Count is 0/i });
+    expect(button).toBeInTheDocument();
   });
 
   it('increments count when button is clicked', async () => {
     const userEvent = (await import('@testing-library/user-event')).default;
 
     render(<App />);
-    const button = screen.getByRole('button');
+    const button = screen.getByRole('button', { name: /Count is 0/i });
 
     await userEvent.click(button);
-    expect(button).toHaveTextContent('Count is 1');
+    expect(screen.getByRole('button', { name: /Count is 1/i })).toBeInTheDocument();
 
     await userEvent.click(button);
-    expect(button).toHaveTextContent('Count is 2');
+    expect(screen.getByRole('button', { name: /Count is 2/i })).toBeInTheDocument();
   });
 });
