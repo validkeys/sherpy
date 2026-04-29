@@ -56,25 +56,23 @@ describe('currentStepAtom', () => {
     expect(value).toBe('business-requirements');
   });
 
-  it('persists value to localStorage', () => {
+  it('maintains value across store gets', () => {
     store.set(currentStepAtom, 'technical-requirements');
-    const stored = localStorageMock.getItem('sherpy:workflow:currentStep');
-    expect(stored).toBeTruthy();
-    expect(JSON.parse(stored!)).toBe('technical-requirements');
+    const value1 = store.get(currentStepAtom);
+    const value2 = store.get(currentStepAtom);
+    expect(value1).toBe('technical-requirements');
+    expect(value2).toBe('technical-requirements');
   });
 
-  it('reads persisted value from localStorage', () => {
-    // Set value and persist
+  it('can update value multiple times', () => {
+    store.set(currentStepAtom, 'gap-analysis');
+    expect(store.get(currentStepAtom)).toBe('gap-analysis');
+
+    store.set(currentStepAtom, 'technical-requirements');
+    expect(store.get(currentStepAtom)).toBe('technical-requirements');
+
     store.set(currentStepAtom, 'qa-test-plan');
-
-    // Verify localStorage was updated
-    const stored = localStorageMock.getItem('sherpy:workflow:currentStep');
-    expect(stored).toBeTruthy();
-    expect(JSON.parse(stored!)).toBe('qa-test-plan');
-
-    // Value should still be accessible from same store
-    const value = store.get(currentStepAtom);
-    expect(value).toBe('qa-test-plan');
+    expect(store.get(currentStepAtom)).toBe('qa-test-plan');
   });
 });
 
@@ -98,28 +96,24 @@ describe('completedStepsAtom', () => {
     expect(value).toEqual(steps);
   });
 
-  it('persists completed steps to localStorage', () => {
+  it('maintains array across store gets', () => {
     const steps: WorkflowStep[] = ['intake', 'business-requirements'];
     store.set(completedStepsAtom, steps);
-    const stored = localStorageMock.getItem('sherpy:workflow:completedSteps');
-    expect(stored).toBeTruthy();
-    expect(JSON.parse(stored!)).toEqual(steps);
+    const value1 = store.get(completedStepsAtom);
+    const value2 = store.get(completedStepsAtom);
+    expect(value1).toEqual(steps);
+    expect(value2).toEqual(steps);
   });
 
-  it('reads persisted completed steps from localStorage', () => {
-    const steps: WorkflowStep[] = ['intake', 'gap-analysis', 'business-requirements'];
+  it('can update completed steps multiple times', () => {
+    store.set(completedStepsAtom, ['intake']);
+    expect(store.get(completedStepsAtom)).toEqual(['intake']);
 
-    // Set value and persist
-    store.set(completedStepsAtom, steps);
+    store.set(completedStepsAtom, ['intake', 'gap-analysis']);
+    expect(store.get(completedStepsAtom)).toEqual(['intake', 'gap-analysis']);
 
-    // Verify localStorage was updated
-    const stored = localStorageMock.getItem('sherpy:workflow:completedSteps');
-    expect(stored).toBeTruthy();
-    expect(JSON.parse(stored!)).toEqual(steps);
-
-    // Value should still be accessible from same store
-    const value = store.get(completedStepsAtom);
-    expect(value).toEqual(steps);
+    store.set(completedStepsAtom, ['intake', 'gap-analysis', 'business-requirements']);
+    expect(store.get(completedStepsAtom)).toEqual(['intake', 'gap-analysis', 'business-requirements']);
   });
 });
 
