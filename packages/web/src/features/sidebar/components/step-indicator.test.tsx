@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { StepIndicator } from './step-indicator';
 
 describe('StepIndicator', () => {
@@ -77,9 +77,7 @@ describe('StepIndicator', () => {
     });
 
     it('merges custom className with default classes', () => {
-      const { container } = render(
-        <StepIndicator status="complete" className="custom-class" />
-      );
+      const { container } = render(<StepIndicator status="complete" className="custom-class" />);
       const indicator = container.firstChild as HTMLElement;
       expect(indicator).toHaveClass('custom-class');
       expect(indicator).toHaveClass('bg-green-500'); // Still has variant class
@@ -87,11 +85,7 @@ describe('StepIndicator', () => {
 
     it('passes through additional HTML attributes', () => {
       const { container } = render(
-        <StepIndicator
-          status="complete"
-          data-testid="test-indicator"
-          aria-label="Complete step"
-        />
+        <StepIndicator status="complete" data-testid="test-indicator" aria-label="Complete step" />
       );
       const indicator = container.firstChild as HTMLElement;
       expect(indicator).toHaveAttribute('data-testid', 'test-indicator');
@@ -107,9 +101,7 @@ describe('StepIndicator', () => {
       const { container: currentContainer, unmount: unmountCurrent } = render(
         <StepIndicator status="current" />
       );
-      const { container: pendingContainer } = render(
-        <StepIndicator status="pending" />
-      );
+      const { container: pendingContainer } = render(<StepIndicator status="pending" />);
 
       // All should have an SVG
       expect(completeContainer.querySelector('svg')).toBeInTheDocument();

@@ -2,7 +2,7 @@
  * Unit tests for workflow state atoms
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createStore } from 'jotai';
 import {
   currentStepAtom,
@@ -113,7 +113,11 @@ describe('completedStepsAtom', () => {
     expect(store.get(completedStepsAtom)).toEqual(['intake', 'gap-analysis']);
 
     store.set(completedStepsAtom, ['intake', 'gap-analysis', 'business-requirements']);
-    expect(store.get(completedStepsAtom)).toEqual(['intake', 'gap-analysis', 'business-requirements']);
+    expect(store.get(completedStepsAtom)).toEqual([
+      'intake',
+      'gap-analysis',
+      'business-requirements',
+    ]);
   });
 });
 
@@ -274,11 +278,7 @@ describe('markStepCompleteAtom', () => {
     store.set(markStepCompleteAtom, 'gap-analysis');
     store.set(markStepCompleteAtom, 'business-requirements');
     const completedSteps = store.get(completedStepsAtom);
-    expect(completedSteps).toEqual([
-      'intake',
-      'gap-analysis',
-      'business-requirements',
-    ]);
+    expect(completedSteps).toEqual(['intake', 'gap-analysis', 'business-requirements']);
   });
 
   it('does not add duplicate steps', () => {
@@ -293,10 +293,6 @@ describe('markStepCompleteAtom', () => {
     store.set(completedStepsAtom, ['intake', 'gap-analysis']);
     store.set(markStepCompleteAtom, 'business-requirements');
     const completedSteps = store.get(completedStepsAtom);
-    expect(completedSteps).toEqual([
-      'intake',
-      'gap-analysis',
-      'business-requirements',
-    ]);
+    expect(completedSteps).toEqual(['intake', 'gap-analysis', 'business-requirements']);
   });
 });

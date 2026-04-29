@@ -864,6 +864,8 @@ tasks:
       This validates the shadcn setup and provides a pattern for other components.
     estimate_minutes: 45
     type: code
+    status: completed
+    completed_at: "2026-04-29"
     dependencies: [m0-012]
     files:
       create:

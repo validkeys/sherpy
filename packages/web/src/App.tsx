@@ -1,4 +1,5 @@
 import { Sidebar } from '@/features/sidebar';
+import { Button } from '@/shared/components/ui/button';
 
 function App() {
   return (
@@ -12,10 +13,16 @@ function App() {
           </p>
           <div className="bg-white rounded-lg border p-6">
             <h2 className="text-xl font-semibold mb-2">Main Content Area</h2>
-            <p className="text-gray-600">
-              This is where the content for each workflow step will be displayed.
-              Select a step from the sidebar to begin.
+            <p className="text-gray-600 mb-4">
+              This is where the content for each workflow step will be displayed. Select a step from
+              the sidebar to begin.
             </p>
+            <div className="flex gap-2">
+              <Button>Default Button</Button>
+              <Button variant="destructive">Delete</Button>
+              <Button variant="outline">Outline</Button>
+              <Button isLoading>Loading</Button>
+            </div>
           </div>
         </div>
       </main>

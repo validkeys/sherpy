@@ -1,3 +1,4 @@
+import * as React from 'react';
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@/test/utils';
 import { Button } from './button';
@@ -74,5 +75,28 @@ describe('Button', () => {
     render(<Button className="custom-class">Custom</Button>);
     const button = screen.getByRole('button', { name: /custom/i });
     expect(button.className).toContain('custom-class');
+  });
+
+  it('handles loading state', () => {
+    render(<Button isLoading>Loading</Button>);
+    const button = screen.getByRole('button', { name: /loading/i });
+    expect(button).toBeDisabled();
+    expect(button.querySelector('svg')).toBeInTheDocument();
+  });
+
+  it('disables button when loading', () => {
+    render(
+      <Button isLoading onClick={() => {}}>
+        Submit
+      </Button>
+    );
+    const button = screen.getByRole('button', { name: /submit/i });
+    expect(button).toBeDisabled();
+  });
+
+  it('forwards ref correctly', () => {
+    const ref = React.createRef<HTMLButtonElement>();
+    render(<Button ref={ref}>Button</Button>);
+    expect(ref.current).toBeInstanceOf(HTMLButtonElement);
   });
 });

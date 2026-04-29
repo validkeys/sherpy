@@ -3,14 +3,11 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Provider, createStore } from 'jotai';
 import { Sidebar } from './sidebar';
-import {
-  currentStepAtom,
-  completedStepsAtom,
-} from '../state/workflow-atoms';
+import { currentStepAtom, completedStepsAtom } from '../state/workflow-atoms';
 
 // Mock localStorage
 const localStorageMock = (() => {

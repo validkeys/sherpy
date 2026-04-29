@@ -32,7 +32,7 @@ milestones:
   - id: m0
     name: Clean Slate Setup & Migration Preparation
     status: in_progress
-    progress: "12/20 tasks completed (60%)"
+    progress: "13/20 tasks completed (65%)"
     started_at: "2026-04-28"
     description: |
       Move existing web package to web-legacy for reference. Create fresh React + Vite
