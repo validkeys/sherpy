@@ -70,3 +70,41 @@ export interface ApiClient {
   patch<T>(url: string, data?: unknown, config?: RequestConfig): Promise<T>;
   delete<T>(url: string, config?: RequestConfig): Promise<T>;
 }
+
+/**
+ * React Query configuration types
+ */
+
+/**
+ * Query configuration that can override query options
+ */
+export type QueryConfig<TQueryFnData> = Omit<
+  TQueryFnData extends (...args: any[]) => infer TReturnType
+    ? TReturnType
+    : TQueryFnData extends { queryKey: any; queryFn: any }
+      ? TQueryFnData
+      : never,
+  'queryKey' | 'queryFn'
+>;
+
+/**
+ * Mutation configuration that can override mutation options
+ */
+export type MutationConfig<TMutationFn extends (...args: any[]) => Promise<any>> = {
+  onSuccess?: (
+    data: Awaited<ReturnType<TMutationFn>>,
+    variables: Parameters<TMutationFn>[0],
+    context: unknown
+  ) => void;
+  onError?: (
+    error: Error,
+    variables: Parameters<TMutationFn>[0],
+    context: unknown
+  ) => void;
+  onSettled?: (
+    data: Awaited<ReturnType<TMutationFn>> | undefined,
+    error: Error | null,
+    variables: Parameters<TMutationFn>[0],
+    context: unknown
+  ) => void;
+};
