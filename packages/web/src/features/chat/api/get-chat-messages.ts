@@ -53,11 +53,7 @@ export type UseChatMessagesOptions = {
   queryConfig?: QueryConfig<typeof getChatMessagesQueryOptions>;
 };
 
-export const useChatMessages = ({
-  projectId,
-  page,
-  queryConfig,
-}: UseChatMessagesOptions) => {
+export const useChatMessages = ({ projectId, page, queryConfig }: UseChatMessagesOptions) => {
   return useQuery({
     ...getChatMessagesQueryOptions({ projectId, page }),
     ...queryConfig,

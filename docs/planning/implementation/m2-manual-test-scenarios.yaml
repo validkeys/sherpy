@@ -1,0 +1,210 @@
+milestone: m2
+name: "Chat Integration with Auto-Skill Invocation - Manual Test Scenarios"
+generated: "2026-04-30"
+
+description: |
+  Manual testing scenarios for M2 milestone features. These user stories can be
+  validated in the browser to ensure the chat integration, tabbed interface, and
+  auto-skill invocation are working correctly.
+
+test_scenarios:
+  - id: m2-test-001
+    feature: "Tabbed Main Area"
+    user_story: "As a user, I want to see a tabbed interface with Chat and Files tabs so I can switch between different views"
+    steps:
+      - "Open the application in browser (npm run dev)"
+      - "Verify Chat tab is active by default"
+      - "Verify Files tab is visible in tab list"
+      - "Click on Files tab"
+      - "Verify Files tab content displays"
+      - "Click on Chat tab"
+      - "Verify Chat tab content displays"
+    expected_results:
+      - "Tabs render with clear labels and visual active state"
+      - "Tab switching works smoothly without page reload"
+      - "Only active tab content is visible"
+      - "Keyboard navigation works (Tab, Arrow keys)"
+
+  - id: m2-test-002
+    feature: "Chat UI with @assistant-ui Thread"
+    user_story: "As a user, I want to see a chat interface where I can interact with the AI assistant"
+    steps:
+      - "Navigate to Chat tab"
+      - "Verify Thread component renders"
+      - "Verify welcome message displays: 'Let's start the sherpy workflow. I'll guide you through each step.'"
+      - "Verify chat input field is visible at bottom"
+      - "Verify placeholder text: 'Answer the question or ask your own...'"
+    expected_results:
+      - "Chat interface displays with proper styling"
+      - "Welcome message is visible"
+      - "Input field is accessible and styled correctly"
+      - "UI matches design system (shadcn styling)"
+
+  - id: m2-test-003
+    feature: "WebSocket Connection with Authentication"
+    user_story: "As a user, I want the chat to establish a secure WebSocket connection so I can have real-time conversations"
+    steps:
+      - "Open browser dev tools (Network tab, filter WS)"
+      - "Load the application"
+      - "Navigate to Chat tab"
+      - "Verify WebSocket connection established (ws:// or wss://)"
+      - "Verify connection URL includes projectId and token query params"
+      - "Check console for any connection errors"
+    expected_results:
+      - "WebSocket connection shows as active in Network tab"
+      - "No connection errors in console"
+      - "Connection includes authentication parameters"
+      - "Connection persists during navigation"
+
+  - id: m2-test-004
+    feature: "Auto-Skill Invocation from Sidebar"
+    user_story: "As a user, I want skills to automatically invoke when I click on workflow steps so I don't have to manually type commands"
+    steps:
+      - "View sidebar with workflow steps 1-10"
+      - "Click on Step 2 (Business Requirements)"
+      - "Verify chat receives message: 'Continue Sherpy Flow: Business Requirements'"
+      - "Verify AI begins responding"
+      - "Try clicking different steps (Gap Analysis, Technical Requirements)"
+      - "Verify each step sends its corresponding skill command"
+    expected_results:
+      - "Clicking step immediately sends skill command to chat"
+      - "Chat displays the skill invocation message"
+      - "AI responds to skill command appropriately"
+      - "Loading indicator shows during invocation"
+      - "Button is disabled while loading"
+
+  - id: m2-test-005
+    feature: "Streaming AI Responses"
+    user_story: "As a user, I want to see AI responses stream in real-time so I know the system is processing my request"
+    steps:
+      - "Invoke any skill via sidebar step click"
+      - "Watch for streaming indicator: 'AI is thinking...'"
+      - "Observe AI response appearing word-by-word"
+      - "Verify streaming indicator disappears when response complete"
+      - "Check that full message is visible after streaming"
+    expected_results:
+      - "Streaming indicator appears when AI starts responding"
+      - "Text streams in progressively (not all at once)"
+      - "Indicator disappears when streaming complete"
+      - "No flash or flicker during streaming"
+      - "Final message is fully readable"
+
+  - id: m2-test-006
+    feature: "Loading States and Progress Indicators"
+    user_story: "As a user, I want to see loading indicators so I know when the system is working"
+    steps:
+      - "Click sidebar workflow step"
+      - "Verify loading spinner appears with message: 'Invoking skill...'"
+      - "Wait for AI to start responding"
+      - "Verify streaming indicator appears: 'AI is thinking...'"
+      - "Verify loading states clear when complete"
+    expected_results:
+      - "Loading indicator shows immediately on skill invocation"
+      - "Streaming indicator shows when AI responds"
+      - "Indicators are visually distinct and clear"
+      - "No orphaned loading states"
+      - "UI remains responsive during loading"
+
+  - id: m2-test-007
+    feature: "Hybrid Chat Mode (Guided + Free-form)"
+    user_story: "As a user, I want to send both structured answers and free-form questions so I'm not locked into a rigid conversation"
+    steps:
+      - "Wait for AI to ask a guided question (from skill invocation)"
+      - "Type a free-form question: 'What is the purpose of this step?'"
+      - "Press Enter or click Send"
+      - "Verify AI responds to free-form question"
+      - "Answer the original guided question"
+      - "Verify AI accepts structured response and continues"
+    expected_results:
+      - "Custom composer accepts any text input"
+      - "AI responds appropriately to both guided and free-form input"
+      - "Conversation flow adapts to input type"
+      - "No error messages or blocked input"
+      - "Placeholder text explains hybrid mode capability"
+
+  - id: m2-test-008
+    feature: "WebSocket Error Handling and Reconnection"
+    user_story: "As a user, I want clear feedback when connection is lost and automatic reconnection so I can continue working"
+    steps:
+      - "Establish chat connection"
+      - "Simulate connection loss (kill server or disable network)"
+      - "Verify error banner appears: 'Connection lost. Reconnecting...'"
+      - "Verify chat input is disabled"
+      - "Verify Retry button is visible"
+      - "Restore connection (or wait 3 seconds for auto-reconnect)"
+      - "Verify error banner disappears"
+      - "Verify chat input is re-enabled"
+    expected_results:
+      - "Error banner shows immediately on disconnect"
+      - "User cannot send messages while disconnected"
+      - "Automatic reconnection after 3 seconds"
+      - "Manual retry button works"
+      - "Connection status is accurate"
+      - "Chat resumes normally after reconnection"
+
+  - id: m2-test-009
+    feature: "Complete Workflow Step Flow"
+    user_story: "As a user, I want to complete a full workflow step from navigation to AI response so I can make progress on my project"
+    steps:
+      - "Start at Step 1 (Intake)"
+      - "Click Step 1 in sidebar"
+      - "Verify skill invocation: 'Start new project intake'"
+      - "Interact with AI interview questions"
+      - "Answer questions (guided or free-form)"
+      - "Complete the step"
+      - "Click Step 2 (Business Requirements)"
+      - "Verify new skill invoked: 'Continue Sherpy Flow: Business Requirements'"
+      - "Verify chat context continues (not reset)"
+    expected_results:
+      - "Full step flow works end-to-end"
+      - "Skill invocation triggers AI interview"
+      - "User can provide answers"
+      - "Progress is visible"
+      - "Moving to next step works seamlessly"
+      - "Chat history persists across steps"
+
+  - id: m2-test-010
+    feature: "UI Layout and Responsiveness"
+    user_story: "As a user, I want a clean layout with sidebar and main area so I can easily navigate and focus on content"
+    steps:
+      - "View application at full screen"
+      - "Verify sidebar is 1/3 width on left"
+      - "Verify main tabs area is 2/3 width on right"
+      - "Verify layout is full height (no scroll on outer container)"
+      - "Verify chat scrolls within its container"
+      - "Resize browser window"
+      - "Verify layout adapts responsively"
+    expected_results:
+      - "Sidebar and main area are properly proportioned"
+      - "Full height layout with no unnecessary scrollbars"
+      - "Chat content scrolls independently"
+      - "Responsive design works at different viewport sizes"
+      - "No overlapping or clipped content"
+      - "Visual hierarchy is clear"
+
+validation_checklist:
+  - label: "All 10 test scenarios completed"
+    pass: false
+  - label: "No console errors during testing"
+    pass: false
+  - label: "All features work as described"
+    pass: false
+  - label: "Visual design matches requirements"
+    pass: false
+  - label: "Performance is acceptable (no lag)"
+    pass: false
+  - label: "WebSocket connection stable"
+    pass: false
+  - label: "Error handling works correctly"
+    pass: false
+  - label: "Ready for M3 (Files Tab)"
+    pass: false
+
+notes: |
+  These test scenarios should be run in a local development environment with:
+  - npm run dev (web frontend running)
+  - Backend API server running (for WebSocket connection)
+  - DEV_MODE enabled (or valid auth token)
+
+  For WebSocket testing, ensure backend is configured to accept connections
+  from localhost and has proper CORS settings.

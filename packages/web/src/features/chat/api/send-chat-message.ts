@@ -24,11 +24,7 @@ export interface SendChatMessageInput {
  * Mutation function
  * Sends a chat message to the API
  */
-export const sendChatMessage = ({
-  data,
-}: {
-  data: SendChatMessageInput;
-}): Promise<ChatMessage> => {
+export const sendChatMessage = ({ data }: { data: SendChatMessageInput }): Promise<ChatMessage> => {
   return api.post<ChatMessage>('/chat/messages', data);
 };
 

@@ -25,7 +25,9 @@ vi.mock('@assistant-ui/react', () => ({
       </div>
     )),
     Messages: vi.fn(({ children }: any) => (
-      <div data-testid="thread-messages">{typeof children === 'function' ? children() : children}</div>
+      <div data-testid="thread-messages">
+        {typeof children === 'function' ? children() : children}
+      </div>
     )),
     ViewportFooter: vi.fn(({ children, className }: any) => (
       <div data-testid="thread-viewport-footer" className={className}>

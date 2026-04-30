@@ -96,11 +96,7 @@ export type MutationConfig<TMutationFn extends (...args: any[]) => Promise<any>>
     variables: Parameters<TMutationFn>[0],
     context: unknown
   ) => void;
-  onError?: (
-    error: Error,
-    variables: Parameters<TMutationFn>[0],
-    context: unknown
-  ) => void;
+  onError?: (error: Error, variables: Parameters<TMutationFn>[0], context: unknown) => void;
   onSettled?: (
     data: Awaited<ReturnType<TMutationFn>> | undefined,
     error: Error | null,

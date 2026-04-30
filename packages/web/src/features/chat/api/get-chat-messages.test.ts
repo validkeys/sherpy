@@ -2,11 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { type ReactNode } from 'react';
-import {
-  getChatMessages,
-  getChatMessagesQueryOptions,
-  useChatMessages,
-} from './get-chat-messages';
+import { getChatMessages, getChatMessagesQueryOptions, useChatMessages } from './get-chat-messages';
 
 // Mock the API client
 vi.mock('@/lib/api-client', () => ({
@@ -165,10 +161,9 @@ describe('useChatMessages', () => {
 
     mockApiGet.mockResolvedValue(mockResponse);
 
-    const { result } = renderHook(
-      () => useChatMessages({ projectId: mockProjectId, page: 2 }),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useChatMessages({ projectId: mockProjectId, page: 2 }), {
+      wrapper,
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 

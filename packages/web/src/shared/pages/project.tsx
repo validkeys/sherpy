@@ -24,9 +24,7 @@ import { useMockRuntime } from '@/features/chat/hooks/use-mock-runtime';
 function ProjectContentWithRuntime({ projectId }: { projectId: string }) {
   // Create runtime
   const useMock = !import.meta.env.VITE_BACKEND_URL;
-  const { runtime } = useMock
-    ? useMockRuntime(projectId)
-    : useChatRuntime(projectId);
+  const { runtime } = useMock ? useMockRuntime(projectId) : useChatRuntime(projectId);
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

@@ -28,16 +28,13 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
     <div className="flex flex-col h-full">
       <div className="p-4 border-b bg-muted/50">
         <p className="text-sm text-muted-foreground">
-          Let's start the sherpy workflow. I'll guide you through each step.
-          You can follow the guided questions or ask your own questions anytime.
+          Let's start the sherpy workflow. I'll guide you through each step. You can follow the
+          guided questions or ask your own questions anytime.
         </p>
       </div>
 
       {showError && (
-        <ConnectionError
-          onRetry={manualRetry}
-          isReconnecting={connectionState.isReconnecting}
-        />
+        <ConnectionError onRetry={manualRetry} isReconnecting={connectionState.isReconnecting} />
       )}
 
       <div className="flex-1 relative">

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useLocalRuntime, type ChatModelAdapter } from '@assistant-ui/react';
+import { type ChatModelAdapter, useLocalRuntime } from '@assistant-ui/react';
 
 /**
  * Mock runtime hook for development and testing without a backend.
