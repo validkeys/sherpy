@@ -1,4 +1,4 @@
-import { Composer } from '@assistant-ui/react';
+import { ComposerPrimitive } from '@assistant-ui/react';
 import { cn } from '@/utils/cn';
 
 /**
@@ -7,8 +7,8 @@ import { cn } from '@/utils/cn';
  */
 export function CustomComposer() {
   return (
-    <Composer.Root className="flex w-full items-center gap-2 rounded-lg border bg-background p-2">
-      <Composer.Input
+    <ComposerPrimitive.Root className="flex w-full items-center gap-2 rounded-lg border bg-background p-2">
+      <ComposerPrimitive.Input
         autoFocus
         placeholder="Answer the question or ask your own..."
         className={cn(
@@ -17,9 +17,9 @@ export function CustomComposer() {
           'disabled:cursor-not-allowed disabled:opacity-50'
         )}
       />
-      <Composer.Send className={cn('rounded-md bg-primary px-4 py-2 text-primary-foreground', 'hover:bg-primary/90', 'disabled:pointer-events-none disabled:opacity-50')}>
+      <ComposerPrimitive.Send className={cn('rounded-md bg-primary px-4 py-2 text-primary-foreground', 'hover:bg-primary/90', 'disabled:pointer-events-none disabled:opacity-50')}>
         Send
-      </Composer.Send>
-    </Composer.Root>
+      </ComposerPrimitive.Send>
+    </ComposerPrimitive.Root>
   );
 }

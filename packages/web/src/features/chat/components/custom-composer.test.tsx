@@ -5,7 +5,7 @@ import { CustomComposer } from './custom-composer';
 
 // Mock @assistant-ui/react Composer components
 vi.mock('@assistant-ui/react', () => ({
-  Composer: {
+  ComposerPrimitive: {
     Root: vi.fn(({ children, className }: any) => (
       <div data-testid="composer-root" className={className}>
         {children}

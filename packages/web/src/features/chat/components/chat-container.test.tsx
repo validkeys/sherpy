@@ -6,26 +6,58 @@ import { createMockWebSocketRuntime } from '@/test/mocks/websocket-mock';
 
 // Mock @assistant-ui/react
 vi.mock('@assistant-ui/react', () => ({
-  Thread: vi.fn(({ runtime, components }: { runtime: any; components?: any }) => (
-    <div data-testid="mock-thread">
-      Thread component (runtime provided: {runtime ? 'yes' : 'no'}, custom composer:{' '}
-      {components?.Composer ? 'yes' : 'no'})
-    </div>
-  )),
   AssistantRuntimeProvider: vi.fn(
     ({ children, runtime }: { children: React.ReactNode; runtime: any }) => (
       <div data-testid="mock-runtime-provider">{children}</div>
     )
   ),
+  useAssistantRuntime: vi.fn(),
   useAssistantTransportRuntime: vi.fn(),
-  Composer: {
+  ThreadPrimitive: {
+    Root: vi.fn(({ children, className }: any) => (
+      <div data-testid="thread-root" className={className}>
+        {children}
+      </div>
+    )),
+    Viewport: vi.fn(({ children, className }: any) => (
+      <div data-testid="thread-viewport" className={className}>
+        {children}
+      </div>
+    )),
+    Messages: vi.fn(({ children }: any) => (
+      <div data-testid="thread-messages">{typeof children === 'function' ? children() : children}</div>
+    )),
+    ViewportFooter: vi.fn(({ children, className }: any) => (
+      <div data-testid="thread-viewport-footer" className={className}>
+        {children}
+      </div>
+    )),
+  },
+  MessagePrimitive: {
+    Root: vi.fn(({ children, className }: any) => (
+      <div data-testid="message-root" className={className}>
+        {children}
+      </div>
+    )),
+    Parts: vi.fn(({ children }: any) => (
+      <div data-testid="message-parts">
+        {typeof children === 'function' ? 'Message content' : children || 'Message content'}
+      </div>
+    )),
+  },
+  ComposerPrimitive: {
     Root: vi.fn(({ children, className }: any) => (
       <div data-testid="composer-root" className={className}>
         {children}
       </div>
     )),
-    Input: vi.fn(({ placeholder, className }: any) => (
-      <input data-testid="composer-input" placeholder={placeholder} className={className} />
+    Input: vi.fn(({ placeholder, className, autoFocus }: any) => (
+      <input
+        data-testid="composer-input"
+        placeholder={placeholder}
+        className={className}
+        autoFocus={autoFocus}
+      />
     )),
     Send: vi.fn(({ children, className }: any) => (
       <button data-testid="composer-send" className={className}>
@@ -33,6 +65,14 @@ vi.mock('@assistant-ui/react', () => ({
       </button>
     )),
   },
+  useAuiState: vi.fn((selector: any) => {
+    const mockState = { thread: { isEmpty: true }, message: { role: 'user' } };
+    return selector ? selector(mockState) : mockState;
+  }),
+  AuiIf: vi.fn(({ condition, children }: any) => {
+    const state = { thread: { isEmpty: true }, message: { role: 'user' } };
+    return condition(state) ? <>{children}</> : null;
+  }),
 }));
 
 // Mock WebSocket utilities
@@ -44,16 +84,16 @@ vi.mock('@/lib/websocket', () => ({
   ),
 }));
 
-// Mock the useChatRuntime hook to return the full structure with connection state
-vi.mock('../hooks/use-chat-runtime', () => ({
-  useChatRuntime: vi.fn(),
+// Mock the useConnectionState hook to return connection state
+vi.mock('../hooks/use-connection-state', () => ({
+  useConnectionState: vi.fn(),
 }));
 
 describe('ChatContainer', () => {
   const mockProjectId = 'test-project-123';
   let mockRuntime: ReturnType<typeof createMockWebSocketRuntime>;
-  let mockUseAssistantTransportRuntime: ReturnType<typeof vi.fn>;
-  let mockUseChatRuntime: ReturnType<typeof vi.fn>;
+  let mockUseAssistantRuntime: ReturnType<typeof vi.fn>;
+  let mockUseConnectionState: ReturnType<typeof vi.fn>;
   let mockGetWebSocketUrl: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
@@ -62,14 +102,13 @@ describe('ChatContainer', () => {
 
     // Get mocked functions
     const assistantUI = await import('@assistant-ui/react');
-    mockUseAssistantTransportRuntime = assistantUI.useAssistantTransportRuntime as any;
-    mockUseAssistantTransportRuntime.mockReturnValue(mockRuntime);
+    mockUseAssistantRuntime = assistantUI.useAssistantRuntime as any;
+    mockUseAssistantRuntime.mockReturnValue(mockRuntime);
 
-    const chatRuntime = await import('../hooks/use-chat-runtime');
-    mockUseChatRuntime = chatRuntime.useChatRuntime as any;
+    const connectionState = await import('../hooks/use-connection-state');
+    mockUseConnectionState = connectionState.useConnectionState as any;
     // Default mock returns connected state
-    mockUseChatRuntime.mockReturnValue({
-      runtime: mockRuntime,
+    mockUseConnectionState.mockReturnValue({
       connectionState: {
         isConnected: true,
         error: null,
@@ -84,7 +123,7 @@ describe('ChatContainer', () => {
 
   it('renders without errors', () => {
     render(<ChatContainer projectId={mockProjectId} />);
-    expect(screen.getByTestId('mock-thread')).toBeInTheDocument();
+    expect(screen.getByTestId('thread-root')).toBeInTheDocument();
   });
 
   it('displays welcome message with hybrid mode explanation', () => {
@@ -98,15 +137,14 @@ describe('ChatContainer', () => {
 
   it('renders Thread component with runtime', () => {
     render(<ChatContainer projectId={mockProjectId} />);
-    const threadElement = screen.getByTestId('mock-thread');
+    const threadElement = screen.getByTestId('thread-root');
     expect(threadElement).toBeInTheDocument();
-    expect(threadElement.textContent).toContain('runtime provided: yes');
   });
 
-  it('calls useChatRuntime with project ID', () => {
+  it('calls useConnectionState with project ID', () => {
     render(<ChatContainer projectId={mockProjectId} />);
 
-    expect(mockUseChatRuntime).toHaveBeenCalledWith(mockProjectId);
+    expect(mockUseConnectionState).toHaveBeenCalledWith(mockProjectId);
   });
 
   it('shows streaming indicator when runtime is running', () => {
@@ -123,25 +161,22 @@ describe('ChatContainer', () => {
 
   it('provides custom composer to Thread component', () => {
     render(<ChatContainer projectId={mockProjectId} />);
-    const threadElement = screen.getByTestId('mock-thread');
-    expect(threadElement.textContent).toContain('custom composer: yes');
+    const composerRoot = screen.getByTestId('composer-root');
+    expect(composerRoot).toBeInTheDocument();
   });
 
   it('Thread component receives custom composer configuration', () => {
     render(<ChatContainer projectId={mockProjectId} />);
 
-    // Verify the mock Thread was called with custom composer
-    const threadElement = screen.getByTestId('mock-thread');
-    expect(threadElement.textContent).toContain('custom composer: yes');
-
-    // This verifies that CustomComposer is properly integrated
-    expect(threadElement).toBeInTheDocument();
+    // Verify the custom composer is rendered
+    const composerInput = screen.getByTestId('composer-input');
+    expect(composerInput).toBeInTheDocument();
+    expect(composerInput).toHaveAttribute('placeholder', 'Answer the question or ask your own...');
   });
 
   it('shows connection error when not connected', () => {
     // Override the mock to return disconnected state
-    mockUseChatRuntime.mockReturnValueOnce({
-      runtime: mockRuntime,
+    mockUseConnectionState.mockReturnValueOnce({
       connectionState: {
         isConnected: false,
         error: new Error('Connection failed'),
@@ -156,9 +191,8 @@ describe('ChatContainer', () => {
   });
 
   it('hides composer when disconnected', () => {
-    // Check that the Thread receives undefined composer when disconnected
-    mockUseChatRuntime.mockReturnValueOnce({
-      runtime: mockRuntime,
+    // Check that the Thread does not render composer when disconnected
+    mockUseConnectionState.mockReturnValueOnce({
       connectionState: {
         isConnected: false,
         error: new Error('Connection failed'),
@@ -168,14 +202,12 @@ describe('ChatContainer', () => {
     });
 
     render(<ChatContainer projectId={mockProjectId} />);
-    const threadElement = screen.getByTestId('mock-thread');
-    // When disconnected, composer should be undefined
-    expect(threadElement.textContent).toContain('custom composer: no');
+    // When disconnected, composer should not be rendered
+    expect(screen.queryByTestId('composer-root')).not.toBeInTheDocument();
   });
 
   it('shows reconnecting message when reconnecting', () => {
-    mockUseChatRuntime.mockReturnValueOnce({
-      runtime: mockRuntime,
+    mockUseConnectionState.mockReturnValueOnce({
       connectionState: {
         isConnected: false,
         error: new Error('Connection failed'),
