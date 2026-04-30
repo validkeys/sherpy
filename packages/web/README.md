@@ -2,6 +2,100 @@
 
 React 19 + TypeScript + Vite frontend for Sherpy PM.
 
+## M2 Milestone Completion ✅
+
+**Status:** Complete (m2-001 through m2-021)  
+**Tests:** 239 passing (83 chat + 21 API + 109 sidebar/tabs + 26 integration)
+
+### Architecture Overview
+
+M2 delivers a fully integrated chat-driven planning experience with:
+
+- **Layout:** Sidebar (1/3) + MainTabs (2/3), full-height responsive design
+- **Sidebar Navigation:** 10 workflow steps with visual indicators (complete/current/pending)
+- **Auto-Skill Invocation:** Clicking workflow steps automatically sends skill commands to chat
+- **Tabbed Interface:** Chat and Files tabs with seamless switching
+- **Chat Integration:** @assistant-ui/react Thread component with hybrid mode (guided + free-form)
+- **WebSocket Runtime:** Real-time streaming with auto-reconnection and error recovery
+- **React Query API Layer:** Three-part pattern (hooks → service → client) for chat messages
+- **State Management:** Jotai atoms for UI state, React Query for server state
+
+### Key Features Delivered
+
+1. **Sidebar → Chat Integration:** Navigate workflow steps → skill message sent → AI responds
+2. **Hybrid Chat Mode:** Both guided workflow questions and free-form messages supported
+3. **Tab Management:** Switch between Chat and Files tabs while preserving state
+4. **Loading States:** Visual indicators for skill invocation and AI streaming
+5. **Error Handling:** Connection errors with manual retry UI
+6. **TypeScript Strict:** All code passes strict mode type checking
+7. **Comprehensive Tests:** Unit tests (213) + Integration tests (26)
+
+### Architecture Patterns
+
+**Feature-Based Vertical Slices:**
+```
+src/features/
+  chat/          - Chat UI with @assistant-ui Thread
+  sidebar/       - Workflow navigation with auto-skill
+  tabs/          - MainTabs component with state management
+```
+
+**API Layer (Three-Part Pattern):**
+```typescript
+// 1. React Query Hooks (features/chat/api/use-chat-messages.ts)
+export function useChatMessages(projectId: string) {
+  return useQuery({
+    queryKey: ['chat-messages', projectId],
+    queryFn: () => ChatService.getMessages(projectId)
+  });
+}
+
+// 2. Service Layer (features/chat/api/chat-service.ts)
+export const ChatService = {
+  getMessages: (projectId: string) => apiClient.get(`/chat/${projectId}/messages`)
+};
+
+// 3. API Client (lib/api-client.ts)
+export const apiClient = createApiClient({ baseURL: env.apiUrl });
+```
+
+**WebSocket Runtime:**
+- Custom hook (`use-chat-runtime.ts`) wraps @assistant-ui WebSocket adapter
+- Automatic reconnection with exponential backoff
+- Connection state tracking for UI feedback
+- Manual retry mechanism for user control
+
+### Testing Coverage
+
+- **Unit Tests:** 213 tests across chat, sidebar, tabs, and API layers
+- **Integration Tests:** 26 tests validating complete user flows
+- **Coverage:** >70% for all M2 features
+- **Test Co-location:** Tests live next to source files
+
+### Development Workflow
+
+```bash
+# Run all tests
+pnpm test --run
+
+# Run M2-specific tests
+pnpm test features/chat features/tabs features/sidebar test/integration --run
+
+# Type check
+pnpm typecheck
+
+# Dev server
+pnpm dev
+```
+
+### Next Steps (M3 and Beyond)
+
+- File explorer tab implementation
+- Project settings and configuration
+- Additional workflow steps
+- Performance optimization
+- E2E testing with Playwright
+
 ## Quick Start
 
 ```bash
