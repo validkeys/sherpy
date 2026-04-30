@@ -49,8 +49,8 @@ describe('getDocuments', () => {
     vi.clearAllMocks();
   });
 
-  it('should call correct API endpoint', async () => {
-    vi.mocked(api.get).mockResolvedValue(mockDocuments);
+  it('should call correct API endpoint and unwrap response', async () => {
+    vi.mocked(api.get).mockResolvedValue({ documents: mockDocuments });
 
     const result = await getDocuments({ projectId: 'project-1' });
 
@@ -88,7 +88,7 @@ describe('useDocuments', () => {
   });
 
   it('should fetch documents successfully', async () => {
-    vi.mocked(api.get).mockResolvedValue(mockDocuments);
+    vi.mocked(api.get).mockResolvedValue({ documents: mockDocuments });
 
     const { result } = renderHook(() => useDocuments({ projectId: 'project-1' }), {
       wrapper: createWrapper(),
@@ -116,7 +116,7 @@ describe('useDocuments', () => {
   });
 
   it('should accept custom query config', async () => {
-    vi.mocked(api.get).mockResolvedValue(mockDocuments);
+    vi.mocked(api.get).mockResolvedValue({ documents: mockDocuments });
 
     const { result } = renderHook(
       () =>

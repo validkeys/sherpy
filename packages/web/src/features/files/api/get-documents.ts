@@ -13,10 +13,18 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { Document } from '../types';
 
 /**
+ * Response type from the API endpoint
+ */
+interface GetDocumentsResponse {
+  documents: Document[];
+}
+
+/**
  * Fetcher: Fetches all documents for a project
  */
 export async function getDocuments({ projectId }: { projectId: string }): Promise<Document[]> {
-  return api.get<Document[]>(`/api/projects/${projectId}/documents`);
+  const response = await api.get<GetDocumentsResponse>(`/api/projects/${projectId}/documents`);
+  return response.documents;
 }
 
 /**
