@@ -2,6 +2,7 @@ import { Thread, AssistantRuntimeProvider } from '@assistant-ui/react';
 import { useChatRuntime } from '../hooks/use-chat-runtime';
 import { StreamingIndicator } from './streaming-indicator';
 import { CustomComposer } from './custom-composer';
+import { ConnectionError } from './connection-error';
 
 interface ChatContainerProps {
   projectId: string;
@@ -11,11 +12,13 @@ interface ChatContainerProps {
  * Main chat container component using @assistant-ui Thread component.
  * Handles WebSocket runtime initialization and displays the chat interface
  * with loading and streaming indicators. Supports hybrid mode with both
- * guided questions and free-form messages.
+ * guided questions and free-form messages. Shows connection errors and
+ * provides reconnection UI when WebSocket disconnects.
  */
 export function ChatContainer({ projectId }: ChatContainerProps) {
-  const runtime = useChatRuntime(projectId);
+  const { runtime, connectionState, manualRetry } = useChatRuntime(projectId);
   const isRunning = runtime?.isRunning || false;
+  const showError = !connectionState.isConnected || connectionState.error;
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -27,8 +30,23 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
             anytime.
           </p>
         </div>
+
+        {showError && (
+          <ConnectionError
+            onRetry={manualRetry}
+            isReconnecting={connectionState.isReconnecting}
+          />
+        )}
+
         <div className="flex-1">
-          <Thread runtime={runtime} components={{ Composer: CustomComposer }} />
+          <Thread
+            runtime={runtime}
+            components={{
+              Composer: connectionState.isConnected
+                ? CustomComposer
+                : undefined,
+            }}
+          />
           {isRunning && <StreamingIndicator />}
         </div>
       </div>

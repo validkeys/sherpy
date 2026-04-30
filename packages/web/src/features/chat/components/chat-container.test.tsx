@@ -44,10 +44,16 @@ vi.mock('@/lib/websocket', () => ({
   ),
 }));
 
+// Mock the useChatRuntime hook to return the full structure with connection state
+vi.mock('../hooks/use-chat-runtime', () => ({
+  useChatRuntime: vi.fn(),
+}));
+
 describe('ChatContainer', () => {
   const mockProjectId = 'test-project-123';
   let mockRuntime: ReturnType<typeof createMockWebSocketRuntime>;
   let mockUseAssistantTransportRuntime: ReturnType<typeof vi.fn>;
+  let mockUseChatRuntime: ReturnType<typeof vi.fn>;
   let mockGetWebSocketUrl: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
@@ -58,6 +64,19 @@ describe('ChatContainer', () => {
     const assistantUI = await import('@assistant-ui/react');
     mockUseAssistantTransportRuntime = assistantUI.useAssistantTransportRuntime as any;
     mockUseAssistantTransportRuntime.mockReturnValue(mockRuntime);
+
+    const chatRuntime = await import('../hooks/use-chat-runtime');
+    mockUseChatRuntime = chatRuntime.useChatRuntime as any;
+    // Default mock returns connected state
+    mockUseChatRuntime.mockReturnValue({
+      runtime: mockRuntime,
+      connectionState: {
+        isConnected: true,
+        error: null,
+        isReconnecting: false,
+      },
+      manualRetry: vi.fn(),
+    });
 
     const websocketLib = await import('@/lib/websocket');
     mockGetWebSocketUrl = websocketLib.getWebSocketUrl as any;
@@ -84,80 +103,10 @@ describe('ChatContainer', () => {
     expect(threadElement.textContent).toContain('runtime provided: yes');
   });
 
-  it('calls useChatRuntime with correct API URL', () => {
+  it('calls useChatRuntime with project ID', () => {
     render(<ChatContainer projectId={mockProjectId} />);
 
-    expect(mockGetWebSocketUrl).toHaveBeenCalled();
-    expect(mockUseAssistantTransportRuntime).toHaveBeenCalled();
-  });
-
-  it('passes runtime configuration with project context', () => {
-    render(<ChatContainer projectId={mockProjectId} />);
-
-    // Verify runtime was created with correct configuration
-    expect(mockUseAssistantTransportRuntime).toHaveBeenCalledWith(
-      expect.objectContaining({
-        api: expect.stringContaining('/chat'),
-        initialState: expect.objectContaining({
-          messages: expect.any(Array),
-          isRunning: expect.any(Boolean),
-        }),
-        converter: expect.any(Function),
-        headers: expect.any(Function),
-        onError: expect.any(Function),
-      })
-    );
-  });
-
-  it('includes projectId in request headers', async () => {
-    render(<ChatContainer projectId={mockProjectId} />);
-
-    const transportOptions = mockUseAssistantTransportRuntime.mock.calls[0][0];
-
-    // Call the headers function (it returns a promise)
-    const headers = await transportOptions.headers();
-
-    expect(headers['X-Project-Id']).toBe(mockProjectId);
-    expect(headers['Authorization']).toContain('Bearer');
-    expect(headers['Content-Type']).toBe('application/json');
-  });
-
-  it('configures error handler for transport runtime', () => {
-    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    render(<ChatContainer projectId={mockProjectId} />);
-
-    // Get the onError handler that was passed
-    const transportOptions = mockUseAssistantTransportRuntime.mock.calls[0][0];
-    const onErrorHandler = transportOptions.onError;
-
-    // Simulate an error
-    const mockError = new Error('Test chat transport error');
-    onErrorHandler(mockError);
-
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Chat transport error:', mockError);
-
-    consoleErrorSpy.mockRestore();
-  });
-
-  it('uses converter function to transform state', () => {
-    render(<ChatContainer projectId={mockProjectId} />);
-
-    const transportOptions = mockUseAssistantTransportRuntime.mock.calls[0][0];
-    const converter = transportOptions.converter;
-
-    // Test converter function
-    const mockState = {
-      messages: [{ id: '1', role: 'user', content: 'test' }],
-      isRunning: true,
-    };
-
-    const result = converter(mockState);
-
-    expect(result).toEqual({
-      messages: mockState.messages,
-      isRunning: true,
-    });
+    expect(mockUseChatRuntime).toHaveBeenCalledWith(mockProjectId);
   });
 
   it('shows streaming indicator when runtime is running', () => {
@@ -187,5 +136,60 @@ describe('ChatContainer', () => {
 
     // This verifies that CustomComposer is properly integrated
     expect(threadElement).toBeInTheDocument();
+  });
+
+  it('shows connection error when not connected', () => {
+    // Override the mock to return disconnected state
+    mockUseChatRuntime.mockReturnValueOnce({
+      runtime: mockRuntime,
+      connectionState: {
+        isConnected: false,
+        error: new Error('Connection failed'),
+        isReconnecting: false,
+      },
+      manualRetry: vi.fn(),
+    });
+
+    render(<ChatContainer projectId={mockProjectId} />);
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('Connection lost')).toBeInTheDocument();
+  });
+
+  it('hides composer when disconnected', () => {
+    // Check that the Thread receives undefined composer when disconnected
+    mockUseChatRuntime.mockReturnValueOnce({
+      runtime: mockRuntime,
+      connectionState: {
+        isConnected: false,
+        error: new Error('Connection failed'),
+        isReconnecting: false,
+      },
+      manualRetry: vi.fn(),
+    });
+
+    render(<ChatContainer projectId={mockProjectId} />);
+    const threadElement = screen.getByTestId('mock-thread');
+    // When disconnected, composer should be undefined
+    expect(threadElement.textContent).toContain('custom composer: no');
+  });
+
+  it('shows reconnecting message when reconnecting', () => {
+    mockUseChatRuntime.mockReturnValueOnce({
+      runtime: mockRuntime,
+      connectionState: {
+        isConnected: false,
+        error: new Error('Connection failed'),
+        isReconnecting: true,
+      },
+      manualRetry: vi.fn(),
+    });
+
+    render(<ChatContainer projectId={mockProjectId} />);
+    expect(screen.getByText('Connection lost. Reconnecting...')).toBeInTheDocument();
+  });
+
+  it('does not show error when connected', () => {
+    render(<ChatContainer projectId={mockProjectId} />);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });

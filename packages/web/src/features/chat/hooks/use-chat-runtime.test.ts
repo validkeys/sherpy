@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useChatRuntime } from './use-chat-runtime';
 
 // Mock @assistant-ui/react
@@ -138,12 +138,19 @@ describe('useChatRuntime', () => {
     consoleErrorSpy.mockRestore();
   });
 
-  it('returns runtime instance', () => {
+  it('returns runtime instance with connection state', () => {
     const { result } = renderHook(() => useChatRuntime(mockProjectId));
 
-    expect(result.current).toBe(mockRuntime);
-    expect(result.current).toHaveProperty('append');
-    expect(result.current).toHaveProperty('switchToNewThread');
+    expect(result.current.runtime).toBe(mockRuntime);
+    expect(result.current.runtime).toHaveProperty('append');
+    expect(result.current.runtime).toHaveProperty('switchToNewThread');
+    expect(result.current).toHaveProperty('connectionState');
+    expect(result.current).toHaveProperty('manualRetry');
+    expect(result.current.connectionState).toEqual({
+      isConnected: true,
+      error: null,
+      isReconnecting: false,
+    });
   });
 
   it('creates new runtime when projectId changes', () => {
@@ -163,5 +170,97 @@ describe('useChatRuntime', () => {
     secondCallOptions.headers().then((headers: Record<string, string>) => {
       expect(headers['X-Project-Id']).toBe('different-project-789');
     });
+  });
+
+  it('sets connection error state when error occurs', () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useChatRuntime(mockProjectId));
+
+    // Get the onError handler and simulate an error
+    const transportOptions = mockUseAssistantTransportRuntime.mock.calls[0][0];
+    const mockError = new Error('WebSocket connection failed');
+
+    // Use act to ensure state updates are flushed
+    act(() => {
+      transportOptions.onError(mockError);
+    });
+
+    // Check that connection state reflects the error
+    expect(result.current.connectionState.isConnected).toBe(false);
+    expect(result.current.connectionState.error).toBe(mockError);
+    expect(result.current.connectionState.isReconnecting).toBe(false);
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('schedules automatic reconnection after error', () => {
+    vi.useFakeTimers();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useChatRuntime(mockProjectId));
+
+    // Simulate error
+    const transportOptions = mockUseAssistantTransportRuntime.mock.calls[0][0];
+
+    act(() => {
+      transportOptions.onError(new Error('Connection failed'));
+    });
+
+    // Should not be reconnecting immediately
+    expect(result.current.connectionState.isReconnecting).toBe(false);
+
+    // Fast-forward 3 seconds
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    // Should now be in reconnecting state
+    expect(result.current.connectionState.isReconnecting).toBe(true);
+
+    consoleErrorSpy.mockRestore();
+    vi.useRealTimers();
+  });
+
+  it('allows manual retry', () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { result } = renderHook(() => useChatRuntime(mockProjectId));
+
+    // Simulate error
+    const transportOptions = mockUseAssistantTransportRuntime.mock.calls[0][0];
+
+    act(() => {
+      transportOptions.onError(new Error('Connection failed'));
+    });
+
+    expect(result.current.connectionState.isConnected).toBe(false);
+
+    // Manually retry
+    act(() => {
+      result.current.manualRetry();
+    });
+
+    // Should be marked as reconnecting and connected
+    expect(result.current.connectionState.isConnected).toBe(true);
+    expect(result.current.connectionState.error).toBe(null);
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it('clears reconnection timeout on unmount', () => {
+    vi.useFakeTimers();
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { result, unmount } = renderHook(() => useChatRuntime(mockProjectId));
+
+    // Simulate error
+    const transportOptions = mockUseAssistantTransportRuntime.mock.calls[0][0];
+    transportOptions.onError(new Error('Connection failed'));
+
+    // Unmount before reconnection timeout
+    unmount();
+
+    // Should not throw or cause issues when timer fires
+    expect(() => vi.advanceTimersByTime(3000)).not.toThrow();
+
+    consoleErrorSpy.mockRestore();
+    vi.useRealTimers();
   });
 });
