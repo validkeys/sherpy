@@ -2,6 +2,7 @@ import { RootLayout } from '@/shared/layouts/root-layout';
 import { ErrorBoundaryDemoPage } from '@/shared/pages';
 import { HomePage } from '@/shared/pages/home';
 import { NotFoundPage } from '@/shared/pages/not-found';
+import { ProjectPage } from '@/shared/pages/project';
 import { createBrowserRouter } from 'react-router-dom';
 
 /**
@@ -24,6 +25,14 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
+        element: <ProjectPage />,
+      },
+      {
+        path: 'project/:projectId',
+        element: <ProjectPage />,
+      },
+      {
+        path: 'home',
         element: <HomePage />,
       },
       {
