@@ -1,19 +1,20 @@
-import { render, screen } from "@testing-library/react";
-import { userEvent } from "@testing-library/user-event";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { ErrorBoundary } from "./error-boundary";
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { userEvent } from '@testing-library/user-event';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { ErrorBoundary } from './error-boundary';
 
 /**
  * Test component that throws an error
  */
 function ThrowError({ shouldThrow = false }: { shouldThrow?: boolean }) {
   if (shouldThrow) {
-    throw new Error("Test error thrown by ThrowError component");
+    throw new Error('Test error thrown by ThrowError component');
   }
   return <div>Normal content</div>;
 }
 
-describe("ErrorBoundary", () => {
+describe('ErrorBoundary', () => {
   // Suppress console.error during tests to avoid cluttering test output
   const originalConsoleError = console.error;
   beforeAll(() => {
@@ -23,34 +24,34 @@ describe("ErrorBoundary", () => {
     console.error = originalConsoleError;
   });
 
-  it("renders children when no error occurs", () => {
+  it('renders children when no error occurs', () => {
     render(
       <ErrorBoundary>
         <div>Test content</div>
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
-    expect(screen.getByText("Test content")).toBeInTheDocument();
+    expect(screen.getByText('Test content')).toBeInTheDocument();
   });
 
-  it("renders default fallback UI when error occurs", () => {
+  it('renders default fallback UI when error occurs', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
-    expect(screen.getByText("An unexpected error occurred. Please try again.")).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.getByText('An unexpected error occurred. Please try again.')).toBeInTheDocument();
   });
 
-  it("displays error message in development mode", () => {
+  it('displays error message in development mode', () => {
     // Note: In test environment, import.meta.env.DEV might not be set
     // This test assumes the dev error display is rendered
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
     // Check if the error message is visible (using getAllByText since it appears in both message and stack)
@@ -58,27 +59,27 @@ describe("ErrorBoundary", () => {
     expect(errorMessages.length).toBeGreaterThan(0);
   });
 
-  it("provides Try Again button", () => {
+  it('provides Try Again button', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
-    expect(screen.getByRole("button", { name: /try again/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();
   });
 
-  it("provides Go Home button", () => {
+  it('provides Go Home button', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
-    expect(screen.getByRole("button", { name: /go home/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /go home/i })).toBeInTheDocument();
   });
 
-  it("renders custom fallback when provided", () => {
+  it('renders custom fallback when provided', () => {
     const customFallback = (error: Error, reset: () => void) => (
       <div>
         <h1>Custom Error UI</h1>
@@ -90,20 +91,20 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary fallback={customFallback}>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
-    expect(screen.getByText("Custom Error UI")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /custom reset/i })).toBeInTheDocument();
+    expect(screen.getByText('Custom Error UI')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /custom reset/i })).toBeInTheDocument();
   });
 
-  it("calls onError callback when error occurs", () => {
+  it('calls onError callback when error occurs', () => {
     const onError = vi.fn();
 
     render(
       <ErrorBoundary onError={onError}>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
     expect(onError).toHaveBeenCalledTimes(1);
@@ -111,11 +112,11 @@ describe("ErrorBoundary", () => {
       expect.any(Error),
       expect.objectContaining({
         componentStack: expect.any(String),
-      }),
+      })
     );
   });
 
-  it("calls reset function when Try Again is clicked", async () => {
+  it('calls reset function when Try Again is clicked', async () => {
     const user = userEvent.setup();
     const resetFn = vi.fn();
 
@@ -136,43 +137,43 @@ describe("ErrorBoundary", () => {
     render(
       <ErrorBoundary fallback={customFallback}>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
     // Error UI should be visible
-    expect(screen.getByText("Error occurred")).toBeInTheDocument();
+    expect(screen.getByText('Error occurred')).toBeInTheDocument();
 
     // Click Try Again
-    const tryAgainButton = screen.getByRole("button", { name: /try again/i });
+    const tryAgainButton = screen.getByRole('button', { name: /try again/i });
     await user.click(tryAgainButton);
 
     // Verify reset was called
     expect(resetFn).toHaveBeenCalledTimes(1);
   });
 
-  it("resets when resetKeys change", () => {
+  it('resets when resetKeys change', () => {
     let shouldThrow = true;
 
     const { rerender } = render(
-      <ErrorBoundary resetKeys={["key1"]}>
+      <ErrorBoundary resetKeys={['key1']}>
         <ThrowError shouldThrow={shouldThrow} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
     // Error UI should be visible
-    expect(screen.getByText("Something went wrong")).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
 
     // Prepare to not throw on next render
     shouldThrow = false;
 
     // Change resetKeys
     rerender(
-      <ErrorBoundary resetKeys={["key2"]}>
+      <ErrorBoundary resetKeys={['key2']}>
         <ThrowError shouldThrow={shouldThrow} />
-      </ErrorBoundary>,
+      </ErrorBoundary>
     );
 
     // Normal content should now be visible
-    expect(screen.getByText("Normal content")).toBeInTheDocument();
+    expect(screen.getByText('Normal content')).toBeInTheDocument();
   });
 });

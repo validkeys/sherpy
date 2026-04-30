@@ -1,34 +1,63 @@
-import { describe, expect, it } from "vitest";
-import App from "./App";
-import { render, screen } from "./test/utils";
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import App from './App';
+import { render, screen } from './test/utils';
 
-describe("App", () => {
-  it("renders the main heading", () => {
+// Mock chat actions to avoid AuiProvider requirement
+vi.mock('@/features/chat', () => ({
+  useChatActions: () => ({
+    sendMessage: vi.fn(),
+    sendSystemMessage: vi.fn(),
+    clearThread: vi.fn(),
+  }),
+}));
+
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => {
+      store[key] = value;
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+  };
+})();
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
+
+describe('App', () => {
+  beforeEach(() => {
+    localStorageMock.clear();
+  });
+  it('renders the main heading', () => {
     render(<App />);
-    expect(screen.getByText("Sherpy Flow UI Refactor")).toBeInTheDocument();
+    expect(screen.getByText('Sherpy Planning Pipeline')).toBeInTheDocument();
   });
 
-  it("renders the description", () => {
+  it('renders the sidebar', () => {
     render(<App />);
-    expect(screen.getByText(/React 19 \+ Vite \+ TypeScript \+ Tailwind CSS/)).toBeInTheDocument();
+    expect(screen.getByRole('complementary')).toBeInTheDocument();
+    expect(screen.getByText('Workflow Steps')).toBeInTheDocument();
   });
 
-  it("renders a button with initial count", () => {
+  it('renders the main content area', () => {
     render(<App />);
-    const button = screen.getByRole("button", { name: /Count is 0/i });
-    expect(button).toBeInTheDocument();
+    expect(screen.getByText('Main Content Area')).toBeInTheDocument();
   });
 
-  it("increments count when button is clicked", async () => {
-    const userEvent = (await import("@testing-library/user-event")).default;
-
+  it('renders example buttons', () => {
     render(<App />);
-    const button = screen.getByRole("button", { name: /Count is 0/i });
-
-    await userEvent.click(button);
-    expect(screen.getByRole("button", { name: /Count is 1/i })).toBeInTheDocument();
-
-    await userEvent.click(button);
-    expect(screen.getByRole("button", { name: /Count is 2/i })).toBeInTheDocument();
+    const buttons = screen.getAllByRole('button');
+    expect(buttons.length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: /Default Button/i })).toBeInTheDocument();
   });
 });

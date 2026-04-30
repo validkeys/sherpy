@@ -4,11 +4,11 @@
  */
 
 export enum ErrorType {
-  Network = "NETWORK_ERROR",
-  Api = "API_ERROR",
-  Validation = "VALIDATION_ERROR",
-  Authentication = "AUTH_ERROR",
-  Unknown = "UNKNOWN_ERROR",
+  Network = 'NETWORK_ERROR',
+  Api = 'API_ERROR',
+  Validation = 'VALIDATION_ERROR',
+  Authentication = 'AUTH_ERROR',
+  Unknown = 'UNKNOWN_ERROR',
 }
 
 export interface ClassifiedError {
@@ -28,28 +28,28 @@ export function generateErrorId(): string {
 export function classifyError(error: unknown): ClassifiedError {
   const errorId = generateErrorId();
 
-  if (error instanceof TypeError && error.message.includes("fetch")) {
+  if (error instanceof TypeError && error.message.includes('fetch')) {
     return {
       type: ErrorType.Network,
-      message: "Network connection failed",
+      message: 'Network connection failed',
       originalError: error,
       errorId,
-      userMessage: "Unable to connect to the server. Please check your internet connection.",
+      userMessage: 'Unable to connect to the server. Please check your internet connection.',
       isRecoverable: true,
       retryable: true,
     };
   }
 
-  if (error && typeof error === "object" && "status" in error && typeof error.status === "number") {
+  if (error && typeof error === 'object' && 'status' in error && typeof error.status === 'number') {
     const status = error.status;
 
     if (status === 401 || status === 403) {
       return {
         type: ErrorType.Authentication,
-        message: "Authentication failed",
+        message: 'Authentication failed',
         originalError: error,
         errorId,
-        userMessage: "Your session has expired. Please sign in again.",
+        userMessage: 'Your session has expired. Please sign in again.',
         isRecoverable: true,
         retryable: false,
       };
@@ -58,10 +58,10 @@ export function classifyError(error: unknown): ClassifiedError {
     if (status >= 400 && status < 500) {
       return {
         type: ErrorType.Validation,
-        message: "Invalid request",
+        message: 'Invalid request',
         originalError: error,
         errorId,
-        userMessage: "The request could not be completed. Please check your input.",
+        userMessage: 'The request could not be completed. Please check your input.',
         isRecoverable: true,
         retryable: false,
       };
@@ -70,10 +70,10 @@ export function classifyError(error: unknown): ClassifiedError {
     if (status >= 500) {
       return {
         type: ErrorType.Api,
-        message: "Server error",
+        message: 'Server error',
         originalError: error,
         errorId,
-        userMessage: "A server error occurred. Please try again later.",
+        userMessage: 'A server error occurred. Please try again later.',
         isRecoverable: true,
         retryable: true,
       };
@@ -86,7 +86,7 @@ export function classifyError(error: unknown): ClassifiedError {
       message: error.message,
       originalError: error,
       errorId,
-      userMessage: "An unexpected error occurred. Please try again.",
+      userMessage: 'An unexpected error occurred. Please try again.',
       isRecoverable: true,
       retryable: true,
     };
@@ -94,10 +94,10 @@ export function classifyError(error: unknown): ClassifiedError {
 
   return {
     type: ErrorType.Unknown,
-    message: "Unknown error",
+    message: 'Unknown error',
     originalError: error,
     errorId,
-    userMessage: "An unexpected error occurred. Please try again.",
+    userMessage: 'An unexpected error occurred. Please try again.',
     isRecoverable: true,
     retryable: true,
   };
@@ -109,11 +109,11 @@ export function logError(error: ClassifiedError, context?: Record<string, unknow
   if (isDev) {
     // eslint-disable-next-line no-console
     console.group(`🔴 Error [${error.type}] - ${error.errorId}`);
-    console.error("Message:", error.message);
-    console.error("User Message:", error.userMessage);
-    console.error("Original Error:", error.originalError);
+    console.error('Message:', error.message);
+    console.error('User Message:', error.userMessage);
+    console.error('Original Error:', error.originalError);
     if (context) {
-      console.error("Context:", context);
+      console.error('Context:', context);
     }
     // eslint-disable-next-line no-console
     console.groupEnd();

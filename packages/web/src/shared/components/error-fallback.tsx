@@ -1,5 +1,5 @@
-import { type ClassifiedError, ErrorType } from "@/lib/error-utils";
-import { Button } from "@/shared/components/ui/button";
+import { type ClassifiedError, ErrorType } from '@/lib/error-utils';
+import { Button } from '@/shared/components/ui/button';
 
 interface ErrorFallbackProps {
   error: ClassifiedError;
@@ -14,37 +14,37 @@ export function ErrorFallback({ error, onReset, onGoHome }: ErrorFallbackProps) 
     if (onGoHome) {
       onGoHome();
     } else {
-      window.location.href = "/";
+      window.location.href = '/';
     }
   };
 
   const getErrorTitle = () => {
     switch (error.type) {
       case ErrorType.Network:
-        return "Connection Problem";
+        return 'Connection Problem';
       case ErrorType.Authentication:
-        return "Authentication Required";
+        return 'Authentication Required';
       case ErrorType.Api:
-        return "Server Error";
+        return 'Server Error';
       case ErrorType.Validation:
-        return "Invalid Request";
+        return 'Invalid Request';
       default:
-        return "Something Went Wrong";
+        return 'Something Went Wrong';
     }
   };
 
   const getErrorIcon = () => {
     switch (error.type) {
       case ErrorType.Network:
-        return "🌐";
+        return '🌐';
       case ErrorType.Authentication:
-        return "🔐";
+        return '🔐';
       case ErrorType.Api:
-        return "🔧";
+        return '🔧';
       case ErrorType.Validation:
-        return "⚠️";
+        return '⚠️';
       default:
-        return "❌";
+        return '❌';
     }
   };
 

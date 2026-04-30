@@ -1,5 +1,5 @@
-import { Sidebar } from "@/features/sidebar";
-import { Button } from "@/shared/components/ui/button";
+import { Sidebar } from '@/features/sidebar';
+import { Button } from '@/shared/components/ui/button';
 
 function App() {
   return (

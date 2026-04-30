@@ -5,8 +5,6 @@
  * HTTP client methods.
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 /**
  * Standard API error response structure
  */
@@ -25,10 +23,10 @@ export class ApiError extends Error {
     message: string,
     public status: number,
     public response?: ApiErrorResponse,
-    public cause?: Error,
+    public cause?: Error
   ) {
     super(message);
-    this.name = "ApiError";
+    this.name = 'ApiError';
     Object.setPrototypeOf(this, ApiError.prototype);
   }
 }
@@ -39,10 +37,10 @@ export class ApiError extends Error {
 export class NetworkError extends Error {
   constructor(
     message: string,
-    public cause?: Error,
+    public cause?: Error
   ) {
     super(message);
-    this.name = "NetworkError";
+    this.name = 'NetworkError';
     Object.setPrototypeOf(this, NetworkError.prototype);
   }
 }
@@ -50,7 +48,7 @@ export class NetworkError extends Error {
 /**
  * HTTP methods supported by the API client
  */
-export type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE" | "PUT";
+export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE' | 'PUT';
 
 /**
  * Request configuration options

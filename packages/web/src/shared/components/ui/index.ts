@@ -5,5 +5,7 @@
  * Components are installed to this directory via the shadcn CLI.
  */
 
-export { Button, buttonVariants } from "./button";
-export type { ButtonProps } from "./button";
+export { Button, buttonVariants } from './button';
+export type { ButtonProps } from './button';
+
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';

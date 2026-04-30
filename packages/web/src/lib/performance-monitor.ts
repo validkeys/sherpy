@@ -22,8 +22,8 @@
 
 /* eslint-disable no-console */
 
-import type { QueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import type { QueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 
 /** Performance budget thresholds */
 export const PERFORMANCE_BUDGETS = {
@@ -99,7 +99,7 @@ export function getCacheStats(queryClient: QueryClient): CacheStats | null {
   queries.forEach((query) => {
     const state = query.state;
 
-    if (state.fetchStatus === "fetching") {
+    if (state.fetchStatus === 'fetching') {
       stats.activeQueries++;
     }
 
@@ -137,7 +137,7 @@ export function checkCacheBudget(queryClient: QueryClient): boolean {
   if (totalQueries >= max) {
     console.error(
       `[Performance] Cache entries exceed maximum budget: ${totalQueries} >= ${max}\n` +
-        `Consider increasing gcTime or reducing staleTime for some queries.`,
+        `Consider increasing gcTime or reducing staleTime for some queries.`
     );
     return true;
   }
@@ -145,7 +145,7 @@ export function checkCacheBudget(queryClient: QueryClient): boolean {
   if (totalQueries >= warn) {
     console.warn(
       `[Performance] Cache entries approaching budget: ${totalQueries} / ${max}\n` +
-        `Active: ${stats.activeQueries}, Stale: ${stats.staleQueries}, Inactive: ${stats.inactiveQueries}`,
+        `Active: ${stats.activeQueries}, Stale: ${stats.staleQueries}, Inactive: ${stats.inactiveQueries}`
     );
     return true;
   }
@@ -168,7 +168,7 @@ export function logCacheStats(queryClient: QueryClient): void {
     return;
   }
 
-  console.log("[Performance] React Query Cache Stats:", {
+  console.log('[Performance] React Query Cache Stats:', {
     total: stats.totalQueries,
     active: stats.activeQueries,
     stale: stats.staleQueries,
@@ -204,7 +204,7 @@ export function performanceMark(name: string, metadata?: Record<string, unknown>
       console.log(`[Performance Mark] ${name}`, markData);
     }
   } catch (error) {
-    console.warn("[Performance] Failed to create mark:", error);
+    console.warn('[Performance] Failed to create mark:', error);
   }
 }
 
@@ -222,7 +222,7 @@ export function performanceMark(name: string, metadata?: Record<string, unknown>
 export function performanceMeasure(
   measureName: string,
   startMark: string,
-  endMark?: string,
+  endMark?: string
 ): number | null {
   if (!isDev) {
     return null;
@@ -231,7 +231,7 @@ export function performanceMeasure(
   try {
     if (!endMark) {
       // Measure from mark to now
-      const startEntry = performance.getEntriesByName(startMark, "mark")[0];
+      const startEntry = performance.getEntriesByName(startMark, 'mark')[0];
       if (!startEntry) {
         console.warn(`[Performance] Start mark not found: ${startMark}`);
         return null;
@@ -244,7 +244,7 @@ export function performanceMeasure(
 
     // Measure between two marks
     performance.measure(measureName, startMark, endMark);
-    const measure = performance.getEntriesByName(measureName, "measure")[0];
+    const measure = performance.getEntriesByName(measureName, 'measure')[0];
 
     if (measure) {
       console.log(`[Performance Measure] ${measureName}: ${measure.duration.toFixed(2)}ms`);
@@ -253,7 +253,7 @@ export function performanceMeasure(
 
     return null;
   } catch (error) {
-    console.warn("[Performance] Failed to measure:", error);
+    console.warn('[Performance] Failed to measure:', error);
     return null;
   }
 }
@@ -271,9 +271,9 @@ export function clearPerformanceMarks(): void {
   try {
     performance.clearMarks();
     performance.clearMeasures();
-    console.log("[Performance] Cleared all marks and measures");
+    console.log('[Performance] Cleared all marks and measures');
   } catch (error) {
-    console.warn("[Performance] Failed to clear marks:", error);
+    console.warn('[Performance] Failed to clear marks:', error);
   }
 }
 
@@ -291,7 +291,7 @@ export function getBundleSizeInfo(): string | null {
     return null;
   }
 
-  return "Run `pnpm run build` to see bundle sizes. Run `pnpm run analyze` for visualization.";
+  return 'Run `pnpm run build` to see bundle sizes. Run `pnpm run analyze` for visualization.';
 }
 
 /**
@@ -318,7 +318,7 @@ export function usePerformanceMonitor(
   options: {
     interval?: number;
     logStats?: boolean;
-  } = {},
+  } = {}
 ): void {
   const { interval = 30000, logStats = false } = options;
 
@@ -328,7 +328,7 @@ export function usePerformanceMonitor(
     }
 
     // Initial check
-    console.log("[Performance Monitor] Starting cache monitoring...");
+    console.log('[Performance Monitor] Starting cache monitoring...');
     checkCacheBudget(queryClient);
 
     // Periodic monitoring
@@ -343,7 +343,7 @@ export function usePerformanceMonitor(
     // Cleanup
     return () => {
       clearInterval(intervalId);
-      console.log("[Performance Monitor] Stopped cache monitoring");
+      console.log('[Performance Monitor] Stopped cache monitoring');
     };
   }, [queryClient, interval, logStats]);
 }
@@ -367,7 +367,7 @@ export function checkFileTreeBudget(nodeCount: number): boolean {
   if (nodeCount >= max) {
     console.error(
       `[Performance] File tree nodes exceed maximum: ${nodeCount} >= ${max}\n` +
-        `Enable virtualization to improve rendering performance.`,
+        `Enable virtualization to improve rendering performance.`
     );
     return true;
   }
@@ -375,7 +375,7 @@ export function checkFileTreeBudget(nodeCount: number): boolean {
   if (nodeCount >= warn) {
     console.warn(
       `[Performance] File tree nodes approaching limit: ${nodeCount} / ${max}\n` +
-        `Consider enabling virtualization soon.`,
+        `Consider enabling virtualization soon.`
     );
     return true;
   }
@@ -402,7 +402,7 @@ export function checkWebSocketQueueBudget(queueDepth: number): boolean {
   if (queueDepth >= max) {
     console.error(
       `[Performance] WebSocket queue depth exceeds maximum: ${queueDepth} >= ${max}\n` +
-        `Messages may be dropped. Consider throttling or batching.`,
+        `Messages may be dropped. Consider throttling or batching.`
     );
     return true;
   }
@@ -410,7 +410,7 @@ export function checkWebSocketQueueBudget(queueDepth: number): boolean {
   if (queueDepth >= warn) {
     console.warn(
       `[Performance] WebSocket queue depth approaching limit: ${queueDepth} / ${max}\n` +
-        `Processing may be falling behind.`,
+        `Processing may be falling behind.`
     );
     return true;
   }
@@ -436,7 +436,7 @@ export function logPerformanceTiming(label: string, duration: number, threshold?
 
   if (threshold && duration > threshold) {
     console.warn(
-      `[Performance] ${label}: ${formattedDuration}ms (exceeds ${threshold}ms threshold)`,
+      `[Performance] ${label}: ${formattedDuration}ms (exceeds ${threshold}ms threshold)`
     );
   } else {
     console.log(`[Performance] ${label}: ${formattedDuration}ms`);

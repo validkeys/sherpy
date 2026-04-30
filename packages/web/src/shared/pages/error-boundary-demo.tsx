@@ -1,5 +1,5 @@
-import { FeatureErrorBoundary } from "@/shared/components/common";
-import { useState } from "react";
+import { FeatureErrorBoundary } from '@/shared/components/common';
+import { useState } from 'react';
 
 /**
  * Error Boundary Demo Page
@@ -110,7 +110,7 @@ export default function ErrorBoundaryDemo() {
             <div>
               <h3 className="mb-1 font-medium text-gray-900">Feature Error Boundary</h3>
               <p>
-                Located in{" "}
+                Located in{' '}
                 <code className="text-xs">
                   src/shared/components/common/feature-error-boundary.tsx
                 </code>

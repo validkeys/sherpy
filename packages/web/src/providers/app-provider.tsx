@@ -1,11 +1,11 @@
-import { ErrorBoundary } from "@/lib/error-boundary";
-import { classifyError, logError } from "@/lib/error-utils";
-import { queryClient } from "@/lib/query-client";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { Provider as JotaiProvider } from "jotai";
-import type { ReactNode } from "react";
-import { useEffect } from "react";
+import { ErrorBoundary } from '@/lib/error-boundary';
+import { classifyError, logError } from '@/lib/error-utils';
+import { queryClient } from '@/lib/query-client';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { Provider as JotaiProvider } from 'jotai';
+import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 
 /**
  * App Provider
@@ -29,7 +29,7 @@ function GlobalErrorHandler({ children }: { children: ReactNode }) {
       event.preventDefault();
       const classifiedError = classifyError(event.reason);
       logError(classifiedError, {
-        type: "unhandledRejection",
+        type: 'unhandledRejection',
         promise: event.promise,
       });
     };
@@ -37,19 +37,19 @@ function GlobalErrorHandler({ children }: { children: ReactNode }) {
     const handleError = (event: ErrorEvent) => {
       const classifiedError = classifyError(event.error);
       logError(classifiedError, {
-        type: "uncaughtError",
+        type: 'uncaughtError',
         filename: event.filename,
         lineno: event.lineno,
         colno: event.colno,
       });
     };
 
-    window.addEventListener("unhandledrejection", handleUnhandledRejection);
-    window.addEventListener("error", handleError);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    window.addEventListener('error', handleError);
 
     return () => {
-      window.removeEventListener("unhandledrejection", handleUnhandledRejection);
-      window.removeEventListener("error", handleError);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener('error', handleError);
     };
   }, []);
 

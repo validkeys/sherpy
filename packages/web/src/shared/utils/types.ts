@@ -8,14 +8,14 @@
  * Type guard: check if value is a string
  */
 export function isString(value: unknown): value is string {
-  return typeof value === "string";
+  return typeof value === 'string';
 }
 
 /**
  * Type guard: check if value is a number
  */
 export function isNumber(value: unknown): value is number {
-  return typeof value === "number" && !Number.isNaN(value);
+  return typeof value === 'number' && !Number.isNaN(value);
 }
 
 /**
@@ -29,7 +29,7 @@ export function isDefined<T>(value: T | null | undefined): value is T {
  * Type guard: check if value is an object (not null, not array)
  */
 export function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**

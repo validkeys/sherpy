@@ -1,14 +1,12 @@
-import { type ClassifiedError, classifyError, logError } from "@/lib/error-utils";
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { type ClassifiedError, classifyError, logError } from '@/lib/error-utils';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 interface ErrorBoundaryProps {
   children: ReactNode;
   fallback?: (error: ClassifiedError, reset: () => void) => ReactNode;
   onError?: (error: ClassifiedError, errorInfo: ErrorInfo) => void;
   onReset?: () => void;
 }
-/* eslint-enable @typescript-eslint/no-unused-vars */
 
 interface ErrorBoundaryState {
   error: ClassifiedError | null;
@@ -35,7 +33,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
     logError(classifiedError, {
       componentStack: errorInfo.componentStack,
-      ...(errorInfo as { digest?: string }).digest && { digest: (errorInfo as { digest?: string }).digest },
+      ...((errorInfo as { digest?: string }).digest && {
+        digest: (errorInfo as { digest?: string }).digest,
+      }),
     });
 
     this.setState({

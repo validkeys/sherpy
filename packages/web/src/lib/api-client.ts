@@ -5,16 +5,16 @@
  * Provides the foundation for React Query integration.
  */
 
-import { env } from "@/config/env";
+import { env } from '@/config/env';
 import {
   type ApiClient,
   ApiError,
   type HttpMethod,
   NetworkError,
   type RequestConfig,
-} from "@/shared/types/api";
+} from '@/shared/types/api';
 
-const TOKEN_KEY = "auth_token";
+const TOKEN_KEY = 'auth_token';
 const DEFAULT_TIMEOUT = 30000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000;
@@ -37,7 +37,7 @@ export function setAuthToken(token: string): void {
   try {
     localStorage.setItem(TOKEN_KEY, token);
   } catch (error) {
-    console.error("Failed to store auth token:", error);
+    console.error('Failed to store auth token:', error);
   }
 }
 
@@ -48,7 +48,7 @@ export function clearAuthToken(): void {
   try {
     localStorage.removeItem(TOKEN_KEY);
   } catch (error) {
-    console.error("Failed to clear auth token:", error);
+    console.error('Failed to clear auth token:', error);
   }
 }
 
@@ -57,7 +57,7 @@ export function clearAuthToken(): void {
  * Note: If path is an absolute URL (e.g., http://external-api.com/...),
  * it overrides baseUrl, allowing calls to external APIs when needed.
  */
-function buildUrl(baseUrl: string, path: string, params?: RequestConfig["params"]): string {
+function buildUrl(baseUrl: string, path: string, params?: RequestConfig['params']): string {
   const url = new URL(path, baseUrl);
 
   if (params) {
@@ -81,12 +81,12 @@ function createHeaders(config?: RequestConfig, hasBody = false): Headers {
 
   const token = getAuthToken();
   if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   // Only set Content-Type for requests with a body (POST, PUT, PATCH)
-  if (hasBody && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
+  if (hasBody && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
   }
 
   return headers;
@@ -96,13 +96,13 @@ function createHeaders(config?: RequestConfig, hasBody = false): Headers {
  * Parses response based on content type
  */
 async function parseResponse<T>(response: Response): Promise<T> {
-  const contentType = response.headers.get("Content-Type") || "";
+  const contentType = response.headers.get('Content-Type') || '';
 
-  if (contentType.includes("application/json")) {
+  if (contentType.includes('application/json')) {
     return response.json();
   }
 
-  if (contentType.includes("text/")) {
+  if (contentType.includes('text/')) {
     const text = await response.text();
     return text as unknown as T;
   }
@@ -162,7 +162,7 @@ function mergeAbortSignals(...signals: (AbortSignal | undefined)[]): AbortSignal
       return controller.signal;
     }
 
-    signal.addEventListener("abort", () => controller.abort(), { once: true });
+    signal.addEventListener('abort', () => controller.abort(), { once: true });
   }
 
   return controller.signal;
@@ -176,7 +176,7 @@ async function request<T>(
   path: string,
   config?: RequestConfig,
   body?: unknown,
-  retryCount = 0,
+  retryCount = 0
 ): Promise<T> {
   const url = buildUrl(env.apiUrl, path, config?.params);
   const headers = createHeaders(config, !!body);
@@ -203,7 +203,7 @@ async function request<T>(
     if (!response.ok) {
       if (response.status === 401) {
         clearAuthToken();
-        window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
       }
       await handleErrorResponse(response);
     }
@@ -212,12 +212,12 @@ async function request<T>(
   } catch (error) {
     clearTimeout(timeoutId);
 
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw new NetworkError("Request timeout", error as Error);
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new NetworkError('Request timeout', error as Error);
     }
 
-    if (error instanceof TypeError && error.message.includes("fetch")) {
-      const networkError = new NetworkError("Network request failed", error);
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      const networkError = new NetworkError('Network request failed', error);
 
       if (retryCount < MAX_RETRIES && isRetryableError(networkError)) {
         await delay(RETRY_DELAY * (retryCount + 1));
@@ -243,22 +243,22 @@ async function request<T>(
  */
 export const api: ApiClient = {
   get<T>(url: string, config?: RequestConfig): Promise<T> {
-    return request<T>("GET", url, config);
+    return request<T>('GET', url, config);
   },
 
   post<T>(url: string, data?: unknown, config?: RequestConfig): Promise<T> {
-    return request<T>("POST", url, config, data);
+    return request<T>('POST', url, config, data);
   },
 
   put<T>(url: string, data?: unknown, config?: RequestConfig): Promise<T> {
-    return request<T>("PUT", url, config, data);
+    return request<T>('PUT', url, config, data);
   },
 
   patch<T>(url: string, data?: unknown, config?: RequestConfig): Promise<T> {
-    return request<T>("PATCH", url, config, data);
+    return request<T>('PATCH', url, config, data);
   },
 
   delete<T>(url: string, config?: RequestConfig): Promise<T> {
-    return request<T>("DELETE", url, config);
+    return request<T>('DELETE', url, config);
   },
 };

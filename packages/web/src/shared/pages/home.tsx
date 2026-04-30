@@ -1,4 +1,4 @@
-import { Sidebar } from "@/features/sidebar";
+import { Sidebar } from '@/features/sidebar';
 
 /**
  * Home page component
