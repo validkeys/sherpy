@@ -53,17 +53,24 @@ function parseBoolean(value: string): boolean {
  * This runs at module initialization, ensuring env vars are validated at app startup.
  */
 function createEnv(): Env {
-  const apiUrl = getRequiredEnv('VITE_API_URL');
+  // API URL: if empty, use current origin (for Vite proxy in dev, or same-origin in prod)
+  const apiUrlEnv = import.meta.env.VITE_API_URL;
+  const apiUrl = apiUrlEnv && apiUrlEnv.trim() !== ''
+    ? apiUrlEnv
+    : (typeof window !== 'undefined' ? window.location.origin : '');
+
   const wsUrl = getRequiredEnv('VITE_WS_URL');
   const devMode = parseBoolean(getOptionalEnv('VITE_DEV_MODE', String(import.meta.env.DEV)));
 
-  // Validate URL formats
-  try {
-    new URL(apiUrl);
-  } catch {
-    throw new Error(
-      `Invalid VITE_API_URL: "${apiUrl}". Must be a valid URL (e.g., http://localhost:3000)`
-    );
+  // Validate URL formats (skip if using relative URL for Vite proxy)
+  if (apiUrl && !apiUrl.startsWith('/')) {
+    try {
+      new URL(apiUrl);
+    } catch {
+      throw new Error(
+        `Invalid VITE_API_URL: "${apiUrl}". Must be a valid URL (e.g., http://localhost:3000) or empty to use Vite proxy`
+      );
+    }
   }
 
   // Validate WebSocket URL format
