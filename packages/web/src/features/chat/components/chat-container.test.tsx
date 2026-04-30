@@ -6,15 +6,33 @@ import { createMockWebSocketRuntime } from '@/test/mocks/websocket-mock';
 
 // Mock @assistant-ui/react
 vi.mock('@assistant-ui/react', () => ({
-  Thread: vi.fn(({ runtime }: { runtime: any }) => (
+  Thread: vi.fn(({ runtime, components }: { runtime: any; components?: any }) => (
     <div data-testid="mock-thread">
-      Thread component (runtime provided: {runtime ? 'yes' : 'no'})
+      Thread component (runtime provided: {runtime ? 'yes' : 'no'}, custom composer:{' '}
+      {components?.Composer ? 'yes' : 'no'})
     </div>
   )),
-  AssistantRuntimeProvider: vi.fn(({ children, runtime }: { children: React.ReactNode; runtime: any }) => (
-    <div data-testid="mock-runtime-provider">{children}</div>
-  )),
+  AssistantRuntimeProvider: vi.fn(
+    ({ children, runtime }: { children: React.ReactNode; runtime: any }) => (
+      <div data-testid="mock-runtime-provider">{children}</div>
+    )
+  ),
   useAssistantTransportRuntime: vi.fn(),
+  Composer: {
+    Root: vi.fn(({ children, className }: any) => (
+      <div data-testid="composer-root" className={className}>
+        {children}
+      </div>
+    )),
+    Input: vi.fn(({ placeholder, className }: any) => (
+      <input data-testid="composer-input" placeholder={placeholder} className={className} />
+    )),
+    Send: vi.fn(({ children, className }: any) => (
+      <button data-testid="composer-send" className={className}>
+        {children}
+      </button>
+    )),
+  },
 }));
 
 // Mock WebSocket utilities
@@ -50,10 +68,13 @@ describe('ChatContainer', () => {
     expect(screen.getByTestId('mock-thread')).toBeInTheDocument();
   });
 
-  it('displays welcome message', () => {
+  it('displays welcome message with hybrid mode explanation', () => {
     render(<ChatContainer projectId={mockProjectId} />);
     expect(screen.getByText(/Let's start the sherpy workflow/i)).toBeInTheDocument();
     expect(screen.getByText(/I'll guide you through each step/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/You can follow the guided questions or ask your own questions anytime/i)
+    ).toBeInTheDocument();
   });
 
   it('renders Thread component with runtime', () => {
@@ -149,5 +170,22 @@ describe('ChatContainer', () => {
     mockRuntime.isRunning = false;
     render(<ChatContainer projectId={mockProjectId} />);
     expect(screen.queryByText(/AI is thinking/i)).not.toBeInTheDocument();
+  });
+
+  it('provides custom composer to Thread component', () => {
+    render(<ChatContainer projectId={mockProjectId} />);
+    const threadElement = screen.getByTestId('mock-thread');
+    expect(threadElement.textContent).toContain('custom composer: yes');
+  });
+
+  it('Thread component receives custom composer configuration', () => {
+    render(<ChatContainer projectId={mockProjectId} />);
+
+    // Verify the mock Thread was called with custom composer
+    const threadElement = screen.getByTestId('mock-thread');
+    expect(threadElement.textContent).toContain('custom composer: yes');
+
+    // This verifies that CustomComposer is properly integrated
+    expect(threadElement).toBeInTheDocument();
   });
 });
