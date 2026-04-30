@@ -1,6 +1,7 @@
 import { useAtom } from 'jotai';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 import { ChatContainer } from '@/features/chat';
+import { FilesContainer } from '@/features/files';
 import { activeTabAtom } from '../stores/tab-atoms';
 
 interface MainTabsProps {
@@ -24,7 +25,7 @@ export function MainTabs({ projectId }: MainTabsProps) {
         <ChatContainer projectId={projectId} />
       </TabsContent>
       <TabsContent value="files" className="flex-1 overflow-hidden">
-        <div className="p-4 text-muted-foreground">Files content (placeholder)</div>
+        <FilesContainer projectId={projectId} />
       </TabsContent>
     </Tabs>
   );

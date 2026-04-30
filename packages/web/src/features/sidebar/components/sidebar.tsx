@@ -54,7 +54,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-1/3 h-screen bg-white border-r border-gray-200 flex flex-col">
+    <aside className="w-1/3 h-screen bg-white border-r border-gray-200 flex flex-col" aria-label="Sherpy workflow navigation">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-lg font-bold text-gray-900">Workflow Steps</h2>

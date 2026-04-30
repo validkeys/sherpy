@@ -7,12 +7,15 @@ import { MainTabs } from '@/features/tabs';
  *
  * Main application view with sidebar navigation (1/3 width) and tabbed content area (2/3 width).
  * Gets projectId from route params and passes to MainTabs for chat and file management.
+ *
+ * If no projectId is provided in route params, defaults to 'default-project' for development.
+ * In production, routing should always provide a valid projectId.
  */
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
 
-  // Default projectId for development if not in route params
-  const effectiveProjectId = projectId || 'default-project';
+  // Fallback to 'default-project' when no route param provided (development/testing)
+  const effectiveProjectId = projectId ?? 'default-project';
 
   return (
     <div className="flex h-screen">

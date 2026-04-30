@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, screen } from '@/test/utils';
-import * as React from 'react';
 import { describe, expect, it } from 'vitest';
 import { Button } from './button';
 

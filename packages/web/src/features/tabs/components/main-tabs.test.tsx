@@ -63,14 +63,15 @@ describe('MainTabs', () => {
       expect(chatContainer).toHaveAttribute('data-project-id', 'test-project-123');
     });
 
-    it('renders files placeholder when files tab is active', async () => {
+    it('renders files container when files tab is active', async () => {
       const user = userEvent.setup();
       render(<MainTabs {...defaultProps} />, { wrapper: TestWrapper });
 
       const filesTab = screen.getByRole('tab', { name: /files/i });
       await user.click(filesTab);
 
-      expect(screen.getByText(/files content \(placeholder\)/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /project files/i })).toBeInTheDocument();
+      expect(screen.getByText(/file explorer coming soon/i)).toBeInTheDocument();
     });
   });
 

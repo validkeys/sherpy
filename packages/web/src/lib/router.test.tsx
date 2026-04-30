@@ -4,13 +4,19 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { router } from './router';
 
-// Mock chat actions to avoid AuiProvider requirement
+// Mock chat feature to avoid AuiProvider requirement
 vi.mock('@/features/chat', () => ({
+  ChatContainer: () => <div data-testid="chat-container">Chat Container</div>,
   useChatActions: () => ({
     sendMessage: vi.fn(),
     sendSystemMessage: vi.fn(),
     clearThread: vi.fn(),
   }),
+}));
+
+// Mock files feature
+vi.mock('@/features/files', () => ({
+  FilesContainer: () => <div data-testid="files-container">Files Container</div>,
 }));
 
 // Mock localStorage
@@ -39,9 +45,12 @@ describe('Router', () => {
   beforeEach(() => {
     localStorageMock.clear();
   });
-  it('renders home page at root path', () => {
+  it('renders project page at root path', () => {
     render(<RouterProvider router={router} />);
-    expect(screen.getByRole('heading', { name: /Sherpy Planning Pipeline/i })).toBeInTheDocument();
+    // ProjectPage renders sidebar and tabs
+    expect(screen.getByRole('complementary', { name: /sherpy workflow/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /workflow steps/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /chat/i })).toBeInTheDocument();
   });
 
   it('renders 404 page for unknown routes', async () => {

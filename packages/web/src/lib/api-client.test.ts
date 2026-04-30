@@ -277,15 +277,13 @@ describe('api-client', () => {
         })
       );
 
-      const promise = api.get('/api/projects');
+      const resultPromise = api.get('/api/projects');
+      const errorPromise = resultPromise.catch((error) => error);
+
       await vi.runAllTimersAsync();
 
-      try {
-        await promise;
-        expect.fail('Expected promise to reject');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiError);
-      }
+      const error = await errorPromise;
+      expect(error).toBeInstanceOf(ApiError);
 
       expect(localStorageMock['auth_token']).toBeUndefined();
       expect(eventListener).toHaveBeenCalled();
@@ -303,17 +301,15 @@ describe('api-client', () => {
         })
       );
 
-      const promise = api.get('/api/projects/999');
+      const resultPromise = api.get('/api/projects/999');
+      const errorPromise = resultPromise.catch((error) => error);
+
       await vi.runAllTimersAsync();
 
-      try {
-        await promise;
-        expect.fail('Expected promise to reject');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiError);
-        expect((error as ApiError).status).toBe(404);
-        expect(error).toHaveProperty('message', 'Not found');
-      }
+      const error = await errorPromise;
+      expect(error).toBeInstanceOf(ApiError);
+      expect((error as ApiError).status).toBe(404);
+      expect(error).toHaveProperty('message', 'Not found');
     });
 
     it('throws ApiError on 5xx response', async () => {
@@ -324,16 +320,14 @@ describe('api-client', () => {
         })
       );
 
-      const promise = api.get('/api/projects');
+      const resultPromise = api.get('/api/projects');
+      const errorPromise = resultPromise.catch((error) => error);
+
       await vi.runAllTimersAsync();
 
-      try {
-        await promise;
-        expect.fail('Expected promise to reject');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiError);
-        expect((error as ApiError).status).toBe(500);
-      }
+      const error = await errorPromise;
+      expect(error).toBeInstanceOf(ApiError);
+      expect((error as ApiError).status).toBe(500);
     });
 
     it('handles error response without JSON body', async () => {
@@ -343,29 +337,25 @@ describe('api-client', () => {
         })
       );
 
-      const promise = api.get('/api/projects');
+      const resultPromise = api.get('/api/projects');
+      const errorPromise = resultPromise.catch((error) => error);
+
       await vi.runAllTimersAsync();
 
-      try {
-        await promise;
-        expect.fail('Expected promise to reject');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiError);
-      }
+      const error = await errorPromise;
+      expect(error).toBeInstanceOf(ApiError);
     });
 
     it('throws NetworkError on fetch failure', async () => {
       vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'));
 
-      const promise = api.get('/api/projects');
+      const resultPromise = api.get('/api/projects');
+      const errorPromise = resultPromise.catch((error) => error);
+
       await vi.runAllTimersAsync();
 
-      try {
-        await promise;
-        expect.fail('Expected promise to reject');
-      } catch (error) {
-        expect(error).toBeInstanceOf(NetworkError);
-      }
+      const error = await errorPromise;
+      expect(error).toBeInstanceOf(NetworkError);
     });
   });
 
@@ -435,9 +425,13 @@ describe('api-client', () => {
           })
         );
 
-      const promise = api.get('/api/projects');
+      const resultPromise = api.get('/api/projects');
+
+      // Fast-forward through all timers to allow retries
       await vi.runAllTimersAsync();
-      const result = await promise;
+
+      // Now await the result
+      const result = await resultPromise;
 
       expect(result).toEqual({ id: 1 });
       expect(fetch).toHaveBeenCalledTimes(2);
@@ -453,9 +447,13 @@ describe('api-client', () => {
           })
         );
 
-      const promise = api.get('/api/projects');
+      const resultPromise = api.get('/api/projects');
+
+      // Fast-forward through all timers to allow retries
       await vi.runAllTimersAsync();
-      const result = await promise;
+
+      // Now await the result
+      const result = await resultPromise;
 
       expect(result).toEqual({ id: 1 });
       expect(fetch).toHaveBeenCalledTimes(2);
@@ -469,15 +467,15 @@ describe('api-client', () => {
         })
       );
 
-      const promise = api.get('/api/projects');
+      const resultPromise = api.get('/api/projects');
+
+      // Attach error handler immediately to prevent unhandled rejection
+      const errorPromise = resultPromise.catch((error) => error);
+
       await vi.runAllTimersAsync();
 
-      try {
-        await promise;
-        expect.fail('Expected promise to reject');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiError);
-      }
+      const error = await errorPromise;
+      expect(error).toBeInstanceOf(ApiError);
       expect(fetch).toHaveBeenCalledTimes(1);
     });
 
@@ -489,15 +487,15 @@ describe('api-client', () => {
         })
       );
 
-      const promise = api.get('/api/projects');
+      const resultPromise = api.get('/api/projects');
+
+      // Attach error handler immediately to prevent unhandled rejection
+      const errorPromise = resultPromise.catch((error) => error);
+
       await vi.runAllTimersAsync();
 
-      try {
-        await promise;
-        expect.fail('Expected promise to reject');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiError);
-      }
+      const error = await errorPromise;
+      expect(error).toBeInstanceOf(ApiError);
       expect(fetch).toHaveBeenCalledTimes(3);
     });
   });

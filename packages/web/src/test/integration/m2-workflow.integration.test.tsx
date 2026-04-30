@@ -291,7 +291,8 @@ describe('M2 Workflow Integration Tests', () => {
       const filesTab = screen.getByRole('tab', { name: /files/i });
       await user.click(filesTab);
 
-      expect(screen.getByText(/files content \(placeholder\)/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /project files/i })).toBeInTheDocument();
+      expect(screen.getByText(/file explorer coming soon/i)).toBeInTheDocument();
     });
 
     it('preserves chat state when switching tabs', async () => {
