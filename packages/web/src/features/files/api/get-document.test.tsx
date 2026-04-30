@@ -46,9 +46,7 @@ describe('getDocument', () => {
       documentType: DocumentType.BUSINESS_REQUIREMENTS,
     });
 
-    expect(api.get).toHaveBeenCalledWith(
-      '/api/projects/project-1/documents/business-requirements'
-    );
+    expect(api.get).toHaveBeenCalledWith('/api/projects/project-1/documents/business-requirements');
     expect(result).toEqual(mockDocument);
   });
 
@@ -122,9 +120,7 @@ describe('useDocument', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockDocument);
-    expect(api.get).toHaveBeenCalledWith(
-      '/api/projects/project-1/documents/business-requirements'
-    );
+    expect(api.get).toHaveBeenCalledWith('/api/projects/project-1/documents/business-requirements');
   });
 
   it('should handle error state', async () => {

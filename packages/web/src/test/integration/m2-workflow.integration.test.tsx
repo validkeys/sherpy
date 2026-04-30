@@ -51,6 +51,14 @@ vi.mock('@/features/chat', () => ({
   }),
 }));
 
+vi.mock('@/features/files', () => ({
+  FilesContainer: ({ projectId }: { projectId: string }) => (
+    <div data-testid="files-container" data-project-id={projectId}>
+      <div>Project Files</div>
+    </div>
+  ),
+}));
+
 vi.mock('@/shared/services/skill-service', () => ({
   getSkillMessageForStep: (stepId: string) => {
     const skillCommands: Record<string, string> = {
@@ -182,9 +190,7 @@ describe('M2 Workflow Integration Tests', () => {
       await user.click(businessReqStep);
 
       await waitFor(() => {
-        expect(mockSendMessage).toHaveBeenCalledWith(
-          'Continue Sherpy Flow: Business Requirements'
-        );
+        expect(mockSendMessage).toHaveBeenCalledWith('Continue Sherpy Flow: Business Requirements');
       });
     });
 
@@ -291,8 +297,9 @@ describe('M2 Workflow Integration Tests', () => {
       const filesTab = screen.getByRole('tab', { name: /files/i });
       await user.click(filesTab);
 
-      expect(screen.getByRole('heading', { name: /project files/i })).toBeInTheDocument();
-      expect(screen.getByText(/file explorer coming soon/i)).toBeInTheDocument();
+      // Files container should be rendered (mocked in this test)
+      expect(screen.getByTestId('files-container')).toBeInTheDocument();
+      expect(screen.getByText(/project files/i)).toBeInTheDocument();
     });
 
     it('preserves chat state when switching tabs', async () => {
@@ -473,9 +480,7 @@ describe('M2 Workflow Integration Tests', () => {
       await user.click(deliveryTimelineStep);
 
       await waitFor(() => {
-        expect(mockSendMessage).toHaveBeenCalledWith(
-          'Continue Sherpy Flow: Delivery Timeline'
-        );
+        expect(mockSendMessage).toHaveBeenCalledWith('Continue Sherpy Flow: Delivery Timeline');
       });
 
       // Verify message was successfully sent

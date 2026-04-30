@@ -16,6 +16,15 @@ vi.mock('@/features/chat', () => ({
   ),
 }));
 
+// Mock FilesContainer component
+vi.mock('@/features/files', () => ({
+  FilesContainer: ({ projectId }: { projectId: string }) => (
+    <div data-testid="files-container" data-project-id={projectId}>
+      Project Files
+    </div>
+  ),
+}));
+
 function TestWrapper({ children }: { children: ReactNode }) {
   // Create a fresh Jotai store for each test to ensure isolation
   const store = createStore();
@@ -70,8 +79,9 @@ describe('MainTabs', () => {
       const filesTab = screen.getByRole('tab', { name: /files/i });
       await user.click(filesTab);
 
-      expect(screen.getByRole('heading', { name: /project files/i })).toBeInTheDocument();
-      expect(screen.getByText(/file explorer coming soon/i)).toBeInTheDocument();
+      const filesContainer = screen.getByTestId('files-container');
+      expect(filesContainer).toBeInTheDocument();
+      expect(filesContainer).toHaveAttribute('data-project-id', 'test-project-123');
     });
   });
 

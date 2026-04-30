@@ -21,3 +21,8 @@ export {
 
 // Components
 export { FilesContainer } from './components/files-container';
+export { FileTree } from './components/file-tree';
+export { FileTreeFolder } from './components/file-tree-folder';
+export { FileTreeItem } from './components/file-tree-item';
+export { FilePreview } from './components/file-preview';
+export { FilesErrorBoundary } from './components/files-error-boundary';
