@@ -1,4 +1,4 @@
-import { useAssistantRuntime } from '@assistant-ui/react';
+import { useAui } from '@assistant-ui/react';
 
 /**
  * Custom hook for programmatic chat control.
@@ -23,7 +23,7 @@ import { useAssistantRuntime } from '@assistant-ui/react';
  * ```
  */
 export function useChatActions() {
-  const runtime = useAssistantRuntime();
+  const aui = useAui();
 
   /**
    * Send a user message to the chat.
@@ -31,7 +31,7 @@ export function useChatActions() {
    * @param content - The message content to send
    */
   const sendMessage = (content: string) => {
-    runtime.append({
+    aui.thread().append({
       role: 'user',
       content: [{ type: 'text', text: content }],
     });
@@ -46,7 +46,7 @@ export function useChatActions() {
    * @param content - The system message content
    */
   const sendSystemMessage = (content: string) => {
-    runtime.append({
+    aui.thread().append({
       role: 'system',
       content: [{ type: 'text', text: content }],
     });
@@ -58,7 +58,7 @@ export function useChatActions() {
    * This will remove all messages from the current chat thread.
    */
   const clearThread = () => {
-    runtime.switchToNewThread();
+    aui.threads().switchToNewThread();
   };
 
   return {

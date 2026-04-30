@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { AssistantRuntimeProvider, useAui, AuiProvider } from '@assistant-ui/react';
+import { AssistantRuntimeProvider } from '@assistant-ui/react';
 import { Sidebar } from '@/features/sidebar';
 import { MainTabs } from '@/features/tabs';
 import { useChatRuntime } from '@/features/chat/hooks/use-chat-runtime';
@@ -14,18 +14,22 @@ import { useMockRuntime } from '@/features/chat/hooks/use-mock-runtime';
  * If no projectId is provided in route params, defaults to 'default-project' for development.
  * In production, routing should always provide a valid projectId.
  *
- * Wraps the entire page in AssistantRuntimeProvider and AuiProvider so that both Sidebar
+ * Wraps the entire page in AssistantRuntimeProvider so that both Sidebar
  * (which uses useChatActions) and MainTabs (which contains ChatContainer) can access the runtime.
  *
  * Runtime selection:
  * - If VITE_BACKEND_URL is not set: uses mock runtime (client-side, no backend needed)
  * - If VITE_BACKEND_URL is set: uses real runtime (connects to backend API)
  */
-function ProjectContent({ projectId }: { projectId: string }) {
-  const aui = useAui();
+function ProjectContentWithRuntime({ projectId }: { projectId: string }) {
+  // Create runtime
+  const useMock = !import.meta.env.VITE_BACKEND_URL;
+  const { runtime } = useMock
+    ? useMockRuntime(projectId)
+    : useChatRuntime(projectId);
 
   return (
-    <AuiProvider value={aui}>
+    <AssistantRuntimeProvider runtime={runtime}>
       <div className="flex h-screen">
         <div className="w-1/3 border-r">
           <Sidebar />
@@ -34,7 +38,7 @@ function ProjectContent({ projectId }: { projectId: string }) {
           <MainTabs projectId={projectId} />
         </main>
       </div>
-    </AuiProvider>
+    </AssistantRuntimeProvider>
   );
 }
 
@@ -44,17 +48,5 @@ export function ProjectPage() {
   // Fallback to 'default-project' when no route param provided (development/testing)
   const effectiveProjectId = projectId ?? 'default-project';
 
-  // Use mock runtime when no backend URL is configured
-  // This allows development and testing without backend dependency
-  const useMock = !import.meta.env.VITE_BACKEND_URL;
-
-  const { runtime } = useMock
-    ? useMockRuntime(effectiveProjectId)
-    : useChatRuntime(effectiveProjectId);
-
-  return (
-    <AssistantRuntimeProvider runtime={runtime}>
-      <ProjectContent projectId={effectiveProjectId} />
-    </AssistantRuntimeProvider>
-  );
+  return <ProjectContentWithRuntime projectId={effectiveProjectId} />;
 }
