@@ -31,7 +31,7 @@ export class CreateProjectRequest extends Schema.Class<CreateProjectRequest>(
 export class CreateProjectResponse extends Schema.Class<CreateProjectResponse>(
   "CreateProjectResponse",
 )({
-  project: Schema.typeSchema(Project),
+  project: Project,
 }) {}
 
 // GET /api/projects - List projects
@@ -48,7 +48,7 @@ export class ListProjectsQueryParams extends Schema.Class<ListProjectsQueryParam
 export class ListProjectsResponse extends Schema.Class<ListProjectsResponse>(
   "ListProjectsResponse",
 )({
-  projects: Schema.Array(Schema.typeSchema(Project)),
+  projects: Schema.Array(Project),
 }) {}
 
 // GET /api/projects/:projectId - Get project
@@ -57,7 +57,7 @@ export class GetProjectParams extends Schema.Class<GetProjectParams>("GetProject
 }) {}
 
 export class GetProjectResponse extends Schema.Class<GetProjectResponse>("GetProjectResponse")({
-  project: Schema.typeSchema(Project),
+  project: Project,
 }) {}
 
 // PATCH /api/projects/:projectId - Update project
@@ -78,7 +78,7 @@ export class UpdateProjectRequest extends Schema.Class<UpdateProjectRequest>(
 export class UpdateProjectResponse extends Schema.Class<UpdateProjectResponse>(
   "UpdateProjectResponse",
 )({
-  project: Schema.typeSchema(Project),
+  project: Project,
 }) {}
 
 /**

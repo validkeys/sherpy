@@ -27,7 +27,7 @@ export class CreateChatSessionRequest extends Schema.Class<CreateChatSessionRequ
 export class CreateChatSessionResponse extends Schema.Class<CreateChatSessionResponse>(
   "CreateChatSessionResponse",
 )({
-  session: Schema.typeSchema(ChatSession),
+  session: ChatSession,
 }) {}
 
 // GET /api/projects/:projectId/chat/sessions - List chat sessions
@@ -40,7 +40,7 @@ export class ListChatSessionsParams extends Schema.Class<ListChatSessionsParams>
 export class ListChatSessionsResponse extends Schema.Class<ListChatSessionsResponse>(
   "ListChatSessionsResponse",
 )({
-  sessions: Schema.Array(Schema.typeSchema(ChatSession)),
+  sessions: Schema.Array(ChatSession),
 }) {}
 
 // GET /api/chat/sessions/:sessionId - Get chat history
@@ -53,7 +53,7 @@ export class GetChatHistoryParams extends Schema.Class<GetChatHistoryParams>(
 export class GetChatHistoryResponse extends Schema.Class<GetChatHistoryResponse>(
   "GetChatHistoryResponse",
 )({
-  session: Schema.typeSchema(ChatSession),
+  session: ChatSession,
 }) {}
 
 // POST /api/chat/sessions/:sessionId/messages - Send message
@@ -67,7 +67,7 @@ export class SendMessageRequest extends Schema.Class<SendMessageRequest>("SendMe
 }) {}
 
 export class SendMessageResponse extends Schema.Class<SendMessageResponse>("SendMessageResponse")({
-  session: Schema.typeSchema(ChatSession),
+  session: ChatSession,
 }) {}
 
 // DELETE /api/chat/sessions/:sessionId - Delete chat session

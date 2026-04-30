@@ -25,12 +25,12 @@ export class CreateSkillRequest extends Schema.Class<CreateSkillRequest>("Create
 }) {}
 
 export class CreateSkillResponse extends Schema.Class<CreateSkillResponse>("CreateSkillResponse")({
-  skill: Schema.typeSchema(Skill),
+  skill: Skill,
 }) {}
 
 // GET /api/skills - List skills
 export class ListSkillsResponse extends Schema.Class<ListSkillsResponse>("ListSkillsResponse")({
-  skills: Schema.Array(Schema.typeSchema(Skill)),
+  skills: Schema.Array(Skill),
 }) {}
 
 // GET /api/skills/:skillId - Get skill
@@ -39,7 +39,7 @@ export class GetSkillParams extends Schema.Class<GetSkillParams>("GetSkillParams
 }) {}
 
 export class GetSkillResponse extends Schema.Class<GetSkillResponse>("GetSkillResponse")({
-  skill: Schema.typeSchema(Skill),
+  skill: Skill,
 }) {}
 
 // PUT /api/skills/:skillId - Update skill
@@ -53,7 +53,7 @@ export class UpdateSkillRequest extends Schema.Class<UpdateSkillRequest>("Update
 }) {}
 
 export class UpdateSkillResponse extends Schema.Class<UpdateSkillResponse>("UpdateSkillResponse")({
-  skill: Schema.typeSchema(Skill),
+  skill: Skill,
 }) {}
 
 // DELETE /api/skills/:skillId - Remove skill
@@ -86,7 +86,7 @@ export class AddPersonSkillRequest extends Schema.Class<AddPersonSkillRequest>(
 export class AddPersonSkillResponse extends Schema.Class<AddPersonSkillResponse>(
   "AddPersonSkillResponse",
 )({
-  personSkill: Schema.typeSchema(PersonSkill),
+  personSkill: PersonSkill,
 }) {}
 
 // DELETE /api/people/:personId/skills/:skillId - Remove skill from person
@@ -113,7 +113,7 @@ export class ListPersonSkillsParams extends Schema.Class<ListPersonSkillsParams>
 export class ListPersonSkillsResponse extends Schema.Class<ListPersonSkillsResponse>(
   "ListPersonSkillsResponse",
 )({
-  skills: Schema.Array(Schema.typeSchema(PersonSkill)),
+  skills: Schema.Array(PersonSkill),
 }) {}
 
 /**

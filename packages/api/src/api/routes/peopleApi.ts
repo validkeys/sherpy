@@ -26,12 +26,12 @@ export class CreatePersonRequest extends Schema.Class<CreatePersonRequest>("Crea
 export class CreatePersonResponse extends Schema.Class<CreatePersonResponse>(
   "CreatePersonResponse",
 )({
-  person: Schema.typeSchema(Person),
+  person: Person,
 }) {}
 
 // GET /api/people - List people
 export class ListPeopleResponse extends Schema.Class<ListPeopleResponse>("ListPeopleResponse")({
-  people: Schema.Array(Schema.typeSchema(Person)),
+  people: Schema.Array(Person),
 }) {}
 
 // GET /api/people/:personId - Get person
@@ -40,7 +40,7 @@ export class GetPersonParams extends Schema.Class<GetPersonParams>("GetPersonPar
 }) {}
 
 export class GetPersonResponse extends Schema.Class<GetPersonResponse>("GetPersonResponse")({
-  person: Schema.typeSchema(Person),
+  person: Person,
 }) {}
 
 // PUT /api/people/:personId - Update person
@@ -60,7 +60,7 @@ export class UpdatePersonRequest extends Schema.Class<UpdatePersonRequest>("Upda
 export class UpdatePersonResponse extends Schema.Class<UpdatePersonResponse>(
   "UpdatePersonResponse",
 )({
-  person: Schema.typeSchema(Person),
+  person: Person,
 }) {}
 
 /**

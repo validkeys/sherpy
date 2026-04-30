@@ -35,7 +35,7 @@ export class CreateAvailabilityRequest extends Schema.Class<CreateAvailabilityRe
 export class CreateAvailabilityResponse extends Schema.Class<CreateAvailabilityResponse>(
   "CreateAvailabilityResponse",
 )({
-  availabilityWindow: Schema.typeSchema(AvailabilityWindow),
+  availabilityWindow: AvailabilityWindow,
 }) {}
 
 // PATCH /api/availability/:availabilityId - Update availability window
@@ -57,7 +57,7 @@ export class UpdateAvailabilityRequest extends Schema.Class<UpdateAvailabilityRe
 export class UpdateAvailabilityResponse extends Schema.Class<UpdateAvailabilityResponse>(
   "UpdateAvailabilityResponse",
 )({
-  availabilityWindow: Schema.typeSchema(AvailabilityWindow),
+  availabilityWindow: AvailabilityWindow,
 }) {}
 
 // DELETE /api/availability/:availabilityId - Remove availability window
@@ -83,7 +83,7 @@ export class ListAvailabilityByPersonParams extends Schema.Class<ListAvailabilit
 export class ListAvailabilityByPersonResponse extends Schema.Class<ListAvailabilityByPersonResponse>(
   "ListAvailabilityByPersonResponse",
 )({
-  availabilityWindows: Schema.Array(Schema.typeSchema(AvailabilityWindow)),
+  availabilityWindows: Schema.Array(AvailabilityWindow),
 }) {}
 
 // GET /api/people/:personId/availability/overlapping - List overlapping availability windows
@@ -103,7 +103,7 @@ export class ListOverlappingAvailabilityQueryParams extends Schema.Class<ListOve
 export class ListOverlappingAvailabilityResponse extends Schema.Class<ListOverlappingAvailabilityResponse>(
   "ListOverlappingAvailabilityResponse",
 )({
-  availabilityWindows: Schema.Array(Schema.typeSchema(AvailabilityWindow)),
+  availabilityWindows: Schema.Array(AvailabilityWindow),
 }) {}
 
 /**

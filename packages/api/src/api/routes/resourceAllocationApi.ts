@@ -20,14 +20,14 @@ import {
 export class AllocationByPersonResponse extends Schema.Class<AllocationByPersonResponse>(
   "AllocationByPersonResponse",
 )({
-  allocations: Schema.Array(Schema.typeSchema(PersonAllocation)),
+  allocations: Schema.Array(PersonAllocation),
 }) {}
 
 // GET /api/allocations/by-project - Get allocation by project
 export class AllocationByProjectResponse extends Schema.Class<AllocationByProjectResponse>(
   "AllocationByProjectResponse",
 )({
-  allocations: Schema.Array(Schema.typeSchema(ProjectAllocation)),
+  allocations: Schema.Array(ProjectAllocation),
 }) {}
 
 // GET /api/people/:personId/allocations/by-project - Get person's allocation breakdown by project
@@ -40,7 +40,7 @@ export class PersonAllocationByProjectParams extends Schema.Class<PersonAllocati
 export class PersonAllocationByProjectResponse extends Schema.Class<PersonAllocationByProjectResponse>(
   "PersonAllocationByProjectResponse",
 )({
-  allocations: Schema.Array(Schema.typeSchema(PersonProjectAllocation)),
+  allocations: Schema.Array(PersonProjectAllocation),
 }) {}
 
 /**

@@ -325,8 +325,17 @@ export class DocumentService extends Effect.Service<DocumentService>()("Document
       documentType: DocumentType,
     ): Effect.Effect<typeof Document.Type, NotFoundError | ValidationError> =>
       Effect.gen(function* () {
-        const result = yield* sql<typeof Document.Type>`
-            SELECT * FROM documents
+        const result = yield* sql`
+            SELECT
+              id,
+              project_id as "projectId",
+              document_type as "documentType",
+              format,
+              content,
+              version,
+              created_at as "createdAt",
+              updated_at as "updatedAt"
+            FROM documents
             WHERE project_id = ${projectId} AND document_type = ${documentType}
             ORDER BY version DESC
             LIMIT 1
@@ -342,7 +351,16 @@ export class DocumentService extends Effect.Service<DocumentService>()("Document
           );
         }
 
-        return result[0];
+        // Decode the row using the Document schema
+        return yield* Schema.decodeUnknown(Document)(result[0]).pipe(
+          Effect.catchTag("ParseError", (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: `Failed to parse document data: ${error.message}`,
+              }),
+            ),
+          ),
+        );
       }).pipe(
         Effect.catchTag("SqlError", (error) =>
           Effect.fail(
@@ -360,12 +378,34 @@ export class DocumentService extends Effect.Service<DocumentService>()("Document
       projectId: string,
     ): Effect.Effect<ReadonlyArray<typeof Document.Type>, ValidationError> =>
       Effect.gen(function* () {
-        const documents = yield* sql<typeof Document.Type>`
-            SELECT * FROM documents
+        const rows = yield* sql`
+            SELECT
+              id,
+              project_id as "projectId",
+              document_type as "documentType",
+              format,
+              content,
+              version,
+              created_at as "createdAt",
+              updated_at as "updatedAt"
+            FROM documents
             WHERE project_id = ${projectId}
             ORDER BY created_at DESC
           `;
-        return documents as ReadonlyArray<typeof Document.Type>;
+        // Decode each row using the Document schema
+        const documents = yield* Effect.all(
+          rows.map((row) => Schema.decodeUnknown(Document)(row)),
+          { concurrency: "unbounded" },
+        ).pipe(
+          Effect.catchTag("ParseError", (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: `Failed to parse document data: ${error.message}`,
+              }),
+            ),
+          ),
+        );
+        return documents;
       }).pipe(
         Effect.catchTag("SqlError", (error) =>
           Effect.fail(
@@ -385,8 +425,17 @@ export class DocumentService extends Effect.Service<DocumentService>()("Document
       version: number,
     ): Effect.Effect<typeof Document.Type, NotFoundError | ValidationError> =>
       Effect.gen(function* () {
-        const result = yield* sql<typeof Document.Type>`
-            SELECT * FROM documents
+        const result = yield* sql`
+            SELECT
+              id,
+              project_id as "projectId",
+              document_type as "documentType",
+              format,
+              content,
+              version,
+              created_at as "createdAt",
+              updated_at as "updatedAt"
+            FROM documents
             WHERE project_id = ${projectId}
               AND document_type = ${documentType}
               AND version = ${version}
@@ -403,7 +452,16 @@ export class DocumentService extends Effect.Service<DocumentService>()("Document
           );
         }
 
-        return result[0];
+        // Decode the row using the Document schema
+        return yield* Schema.decodeUnknown(Document)(result[0]).pipe(
+          Effect.catchTag("ParseError", (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: `Failed to parse document data: ${error.message}`,
+              }),
+            ),
+          ),
+        );
       }).pipe(
         Effect.catchTag("SqlError", (error) =>
           Effect.fail(

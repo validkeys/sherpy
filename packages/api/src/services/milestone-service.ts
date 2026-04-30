@@ -140,12 +140,36 @@ export class MilestoneService extends Effect.Service<MilestoneService>()("Milest
       projectId: string,
     ): Effect.Effect<Array<typeof Milestone.Type>, ValidationError> =>
       Effect.gen(function* () {
-        const milestones = yield* sql<typeof Milestone.Type>`
-            SELECT * FROM milestones
+        const rows = yield* sql`
+            SELECT
+              id,
+              project_id as "projectId",
+              name,
+              description,
+              status,
+              order_index as "orderIndex",
+              estimated_days as "estimatedDays",
+              acceptance_criteria as "acceptanceCriteria",
+              created_at as "createdAt",
+              updated_at as "updatedAt"
+            FROM milestones
             WHERE project_id = ${projectId}
             ORDER BY order_index ASC
           `;
-        return milestones as Array<typeof Milestone.Type>;
+        // Decode each row using the Milestone schema
+        const milestones = yield* Effect.all(
+          rows.map((row) => Schema.decodeUnknown(Milestone)(row)),
+          { concurrency: "unbounded" },
+        ).pipe(
+          Effect.catchTag("ParseError", (error) =>
+            Effect.fail(
+              new ValidationError({
+                message: `Failed to parse milestone data: ${error.message}`,
+              }),
+            ),
+          ),
+        );
+        return milestones;
       }).pipe(
         Effect.catchTag("SqlError", (error) =>
           Effect.fail(

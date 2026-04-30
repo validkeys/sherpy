@@ -28,7 +28,7 @@ export class GenerateDocumentRequest extends Schema.Class<GenerateDocumentReques
 export class GenerateDocumentResponse extends Schema.Class<GenerateDocumentResponse>(
   "GenerateDocumentResponse",
 )({
-  document: Schema.typeSchema(Document),
+  document: Document,
 }) {}
 
 // GET /api/projects/:projectId/documents - List documents
@@ -39,7 +39,7 @@ export class ListDocumentsParams extends Schema.Class<ListDocumentsParams>("List
 export class ListDocumentsResponse extends Schema.Class<ListDocumentsResponse>(
   "ListDocumentsResponse",
 )({
-  documents: Schema.Array(Schema.typeSchema(Document)),
+  documents: Schema.Array(Document),
 }) {}
 
 // GET /api/projects/:projectId/documents/:documentType - Get latest document
@@ -49,7 +49,7 @@ export class GetDocumentParams extends Schema.Class<GetDocumentParams>("GetDocum
 }) {}
 
 export class GetDocumentResponse extends Schema.Class<GetDocumentResponse>("GetDocumentResponse")({
-  document: Schema.typeSchema(Document),
+  document: Document,
 }) {}
 
 // GET /api/projects/:projectId/documents/:documentType/versions/:version - Get document version
@@ -64,7 +64,7 @@ export class GetDocumentVersionParams extends Schema.Class<GetDocumentVersionPar
 export class GetDocumentVersionResponse extends Schema.Class<GetDocumentVersionResponse>(
   "GetDocumentVersionResponse",
 )({
-  document: Schema.typeSchema(Document),
+  document: Document,
 }) {}
 
 /**

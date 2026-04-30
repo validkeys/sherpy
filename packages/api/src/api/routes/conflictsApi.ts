@@ -29,7 +29,7 @@ export class DetectConflictsQueryParams extends Schema.Class<DetectConflictsQuer
 export class DetectConflictsResponse extends Schema.Class<DetectConflictsResponse>(
   "DetectConflictsResponse",
 )({
-  conflicts: Schema.Array(Schema.typeSchema(Conflict)),
+  conflicts: Schema.Array(Conflict),
 }) {}
 
 /**

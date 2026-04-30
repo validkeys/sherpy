@@ -25,7 +25,7 @@ export class AssignRequest extends Schema.Class<AssignRequest>("AssignRequest")(
 }) {}
 
 export class AssignResponse extends Schema.Class<AssignResponse>("AssignResponse")({
-  assignment: Schema.typeSchema(Assignment),
+  assignment: Assignment,
 }) {}
 
 // DELETE /api/assignments/:assignmentId - Unassign person from task
@@ -59,7 +59,7 @@ export class UpdateAllocationRequest extends Schema.Class<UpdateAllocationReques
 export class UpdateAllocationResponse extends Schema.Class<UpdateAllocationResponse>(
   "UpdateAllocationResponse",
 )({
-  assignment: Schema.typeSchema(Assignment),
+  assignment: Assignment,
 }) {}
 
 // GET /api/people/:personId/assignments - List assignments for person
@@ -72,7 +72,7 @@ export class ListAssignmentsByPersonParams extends Schema.Class<ListAssignmentsB
 export class ListAssignmentsByPersonResponse extends Schema.Class<ListAssignmentsByPersonResponse>(
   "ListAssignmentsByPersonResponse",
 )({
-  assignments: Schema.Array(Schema.typeSchema(Assignment)),
+  assignments: Schema.Array(Assignment),
 }) {}
 
 // GET /api/tasks/:taskId/assignments - List assignments for task
@@ -85,7 +85,7 @@ export class ListAssignmentsByTaskParams extends Schema.Class<ListAssignmentsByT
 export class ListAssignmentsByTaskResponse extends Schema.Class<ListAssignmentsByTaskResponse>(
   "ListAssignmentsByTaskResponse",
 )({
-  assignments: Schema.Array(Schema.typeSchema(Assignment)),
+  assignments: Schema.Array(Assignment),
 }) {}
 
 // GET /api/projects/:projectId/assignments - List assignments for project
@@ -98,7 +98,7 @@ export class ListAssignmentsByProjectParams extends Schema.Class<ListAssignments
 export class ListAssignmentsByProjectResponse extends Schema.Class<ListAssignmentsByProjectResponse>(
   "ListAssignmentsByProjectResponse",
 )({
-  assignments: Schema.Array(Schema.typeSchema(Assignment)),
+  assignments: Schema.Array(Assignment),
 }) {}
 
 /**

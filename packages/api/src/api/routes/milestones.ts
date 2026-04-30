@@ -30,7 +30,7 @@ export class CreateMilestoneRequest extends Schema.Class<CreateMilestoneRequest>
 export class CreateMilestoneResponse extends Schema.Class<CreateMilestoneResponse>(
   "CreateMilestoneResponse",
 )({
-  milestone: Schema.typeSchema(Milestone),
+  milestone: Milestone,
 }) {}
 
 // GET /api/projects/:projectId/milestones - List milestones
@@ -43,7 +43,7 @@ export class ListMilestonesParams extends Schema.Class<ListMilestonesParams>(
 export class ListMilestonesResponse extends Schema.Class<ListMilestonesResponse>(
   "ListMilestonesResponse",
 )({
-  milestones: Schema.Array(Schema.typeSchema(Milestone)),
+  milestones: Schema.Array(Milestone),
 }) {}
 
 // GET /api/milestones/:milestoneId - Get milestone
@@ -54,7 +54,7 @@ export class GetMilestoneParams extends Schema.Class<GetMilestoneParams>("GetMil
 export class GetMilestoneResponse extends Schema.Class<GetMilestoneResponse>(
   "GetMilestoneResponse",
 )({
-  milestone: Schema.typeSchema(Milestone),
+  milestone: Milestone,
 }) {}
 
 // PATCH /api/milestones/:milestoneId - Update milestone
@@ -77,7 +77,7 @@ export class UpdateMilestoneRequest extends Schema.Class<UpdateMilestoneRequest>
 export class UpdateMilestoneResponse extends Schema.Class<UpdateMilestoneResponse>(
   "UpdateMilestoneResponse",
 )({
-  milestone: Schema.typeSchema(Milestone),
+  milestone: Milestone,
 }) {}
 
 // PUT /api/projects/:projectId/milestones/reorder - Reorder milestones

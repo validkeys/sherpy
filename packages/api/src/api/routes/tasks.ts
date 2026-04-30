@@ -25,7 +25,7 @@ export class CreateTaskRequest extends Schema.Class<CreateTaskRequest>("CreateTa
 }) {}
 
 export class CreateTaskResponse extends Schema.Class<CreateTaskResponse>("CreateTaskResponse")({
-  task: Schema.typeSchema(Task),
+  task: Task,
 }) {}
 
 // GET /api/milestones/:milestoneId/tasks - List tasks by milestone
@@ -38,7 +38,7 @@ export class ListTasksByMilestoneParams extends Schema.Class<ListTasksByMileston
 export class ListTasksByMilestoneResponse extends Schema.Class<ListTasksByMilestoneResponse>(
   "ListTasksByMilestoneResponse",
 )({
-  tasks: Schema.Array(Schema.typeSchema(Task)),
+  tasks: Schema.Array(Task),
 }) {}
 
 // GET /api/projects/:projectId/tasks - List tasks by project
@@ -58,7 +58,7 @@ export class ListTasksByProjectQueryParams extends Schema.Class<ListTasksByProje
 export class ListTasksByProjectResponse extends Schema.Class<ListTasksByProjectResponse>(
   "ListTasksByProjectResponse",
 )({
-  tasks: Schema.Array(Schema.typeSchema(Task)),
+  tasks: Schema.Array(Task),
 }) {}
 
 // GET /api/tasks/:taskId - Get task
@@ -67,7 +67,7 @@ export class GetTaskParams extends Schema.Class<GetTaskParams>("GetTaskParams")(
 }) {}
 
 export class GetTaskResponse extends Schema.Class<GetTaskResponse>("GetTaskResponse")({
-  task: Schema.typeSchema(Task),
+  task: Task,
 }) {}
 
 // PATCH /api/tasks/:taskId - Update task
@@ -84,7 +84,7 @@ export class UpdateTaskRequest extends Schema.Class<UpdateTaskRequest>("UpdateTa
 }) {}
 
 export class UpdateTaskResponse extends Schema.Class<UpdateTaskResponse>("UpdateTaskResponse")({
-  task: Schema.typeSchema(Task),
+  task: Task,
 }) {}
 
 // PATCH /api/tasks/:taskId/status - Update task status
@@ -103,7 +103,7 @@ export class UpdateTaskStatusRequest extends Schema.Class<UpdateTaskStatusReques
 export class UpdateTaskStatusResponse extends Schema.Class<UpdateTaskStatusResponse>(
   "UpdateTaskStatusResponse",
 )({
-  task: Schema.typeSchema(Task),
+  task: Task,
 }) {}
 
 // PUT /api/milestones/:milestoneId/tasks/reorder - Reorder tasks
@@ -132,7 +132,7 @@ export class BulkUpdateTaskStatusRequest extends Schema.Class<BulkUpdateTaskStat
 export class BulkUpdateTaskStatusResponse extends Schema.Class<BulkUpdateTaskStatusResponse>(
   "BulkUpdateTaskStatusResponse",
 )({
-  tasks: Schema.Array(Schema.typeSchema(Task)),
+  tasks: Schema.Array(Task),
 }) {}
 
 /**
