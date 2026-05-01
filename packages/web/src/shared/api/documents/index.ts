@@ -30,4 +30,4 @@ export {
 // Hooks
 export { useGenerateDocument, generateDocument } from './generate-document';
 export { useDocuments, getDocuments, getDocumentsQueryOptions } from './get-documents';
-// export { useDocument } from './get-document';
+export { useDocument, getDocument, getDocumentQueryOptions } from './get-document';
