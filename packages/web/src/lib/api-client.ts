@@ -191,6 +191,12 @@ async function request<T>(
     : timeoutController.signal;
 
   try {
+    // Log request in development mode
+    if (env.devMode) {
+      console.log(`[API] ${method} ${url}`, body ? { body } : '');
+    }
+
+    const startTime = performance.now();
     const response = await fetch(url, {
       method,
       headers,
@@ -198,7 +204,15 @@ async function request<T>(
       signal,
     });
 
+    const duration = performance.now() - startTime;
     clearTimeout(timeoutId);
+
+    // Log response in development mode
+    if (env.devMode) {
+      console.log(
+        `[API] ${method} ${url} - ${response.status} (${Math.round(duration)}ms)`
+      );
+    }
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -211,6 +225,11 @@ async function request<T>(
     return parseResponse<T>(response);
   } catch (error) {
     clearTimeout(timeoutId);
+
+    // Log errors in development mode
+    if (env.devMode) {
+      console.error(`[API] ${method} ${url} - Error:`, error);
+    }
 
     if (error instanceof DOMException && error.name === 'AbortError') {
       throw new NetworkError('Request timeout', error as Error);
