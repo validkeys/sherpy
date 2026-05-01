@@ -5,6 +5,11 @@
 
 import { Model } from "@effect/sql";
 import { Schema } from "effect";
+import {
+  DateTimeInsertWithOpenApi,
+  DateTimeUpdateWithOpenApi,
+  GeneratedUuidWithOpenApi,
+} from "./openapi-helpers.js";
 
 /**
  * Pipeline status enum - tracks project progression through Sherpy workflow
@@ -39,7 +44,7 @@ export type Priority = typeof Priority.Type;
  * Project entity - represents a planning/development project in Sherpy PM
  */
 export class Project extends Model.Class<Project>("Project")({
-  id: Model.Generated(Schema.String),
+  id: GeneratedUuidWithOpenApi,
   slug: Schema.String.pipe(
     Schema.pattern(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     Schema.minLength(1),
@@ -51,6 +56,6 @@ export class Project extends Model.Class<Project>("Project")({
   assignedPeople: Model.JsonFromString(Schema.Array(Schema.String)),
   tags: Model.JsonFromString(Schema.Array(Schema.String)),
   priority: Priority,
-  createdAt: Model.DateTimeInsert,
-  updatedAt: Model.DateTimeUpdate,
+  createdAt: DateTimeInsertWithOpenApi,
+  updatedAt: DateTimeUpdateWithOpenApi,
 }) {}

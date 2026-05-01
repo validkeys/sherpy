@@ -5,6 +5,7 @@
 
 import { Model } from "@effect/sql";
 import { Schema } from "effect";
+import { DateTimeInsertWithOpenApi, DateTimeUpdateWithOpenApi, GeneratedUuidWithOpenApi } from "./openapi-helpers.js";
 
 /**
  * Document format enum
@@ -34,12 +35,12 @@ export type DocumentType = typeof DocumentType.Type;
  * UNIQUE constraint on (projectId, documentType, version)
  */
 export class Document extends Model.Class<Document>("Document")({
-  id: Model.Generated(Schema.String),
+  id: GeneratedUuidWithOpenApi,
   projectId: Schema.String,
   documentType: DocumentType,
   format: DocumentFormat,
   content: Schema.String, // Raw text content (YAML, markdown, or JSON)
   version: Schema.Number.pipe(Schema.int(), Schema.positive()),
-  createdAt: Model.DateTimeInsert,
-  updatedAt: Model.DateTimeUpdate,
+  createdAt: DateTimeInsertWithOpenApi,
+  updatedAt: DateTimeUpdateWithOpenApi,
 }) {}

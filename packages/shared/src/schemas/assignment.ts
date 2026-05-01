@@ -5,6 +5,7 @@
 
 import { Model } from "@effect/sql";
 import { Schema } from "effect";
+import { DateTimeInsertWithOpenApi, DateTimeUpdateWithOpenApi, GeneratedUuidWithOpenApi } from "./openapi-helpers.js";
 
 /**
  * Assignment status enum
@@ -17,7 +18,7 @@ export type AssignmentStatus = typeof AssignmentStatus.Type;
  * Assignment entity - links people to tasks with time allocation
  */
 export class Assignment extends Model.Class<Assignment>("Assignment")({
-  id: Model.Generated(Schema.String),
+  id: GeneratedUuidWithOpenApi,
   taskId: Schema.String,
   personId: Schema.String,
   allocationPercentage: Schema.Number.pipe(
@@ -28,6 +29,6 @@ export class Assignment extends Model.Class<Assignment>("Assignment")({
   startDate: Schema.optional(Schema.String),
   endDate: Schema.optional(Schema.String),
   status: AssignmentStatus,
-  createdAt: Model.DateTimeInsert,
-  updatedAt: Model.DateTimeUpdate,
+  createdAt: DateTimeInsertWithOpenApi,
+  updatedAt: DateTimeUpdateWithOpenApi,
 }) {}

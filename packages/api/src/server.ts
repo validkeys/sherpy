@@ -15,6 +15,7 @@ import {
   HttpApiMiddleware,
   HttpApiSchema,
   HttpApiSecurity,
+  // HttpApiSwagger, // TODO: Re-enable once DateTime JSON Schema annotations are added
   HttpMiddleware,
   HttpServer,
 } from "@effect/platform";
@@ -1166,6 +1167,8 @@ const WebSocketServerLive = Layer.scopedDiscard(
 
 /**
  * HTTP server layer with configuration
+ * Includes OpenAPI/Swagger documentation at /docs and /openapi.json
+ *
  * TODO: Integrate static file serving when web package is ready
  *
  * To add static serving:
@@ -1180,6 +1183,8 @@ const WebSocketServerLive = Layer.scopedDiscard(
  */
 const HttpLive = HttpApiBuilder.serve(HttpMiddleware.logger).pipe(
   HttpServer.withLogAddress,
+  // TODO: Enable OpenAPI/Swagger once DateTime fields have JSON Schema annotations
+  // Layer.provide(HttpApiSwagger.layer({ path: "/docs" })),
   Layer.provide(SherryApiLive),
   Layer.provide(FetchHttpClient.layer),
   Layer.provide(NodeFileSystem.layer),

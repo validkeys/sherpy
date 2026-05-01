@@ -5,6 +5,7 @@
 
 import { Model } from "@effect/sql";
 import { Schema } from "effect";
+import { DateTimeInsertWithOpenApi, DateTimeUpdateWithOpenApi, GeneratedUuidWithOpenApi } from "./openapi-helpers.js";
 
 /**
  * Task status enum
@@ -17,7 +18,7 @@ export type TaskStatus = typeof TaskStatus.Type;
  * Task entity - represents a discrete unit of work within a milestone
  */
 export class Task extends Model.Class<Task>("Task")({
-  id: Model.Generated(Schema.String),
+  id: GeneratedUuidWithOpenApi,
   milestoneId: Schema.String,
   projectId: Schema.String,
   name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(255)),
@@ -54,6 +55,6 @@ export class Task extends Model.Class<Task>("Task")({
     ),
   ),
   orderIndex: Schema.Number.pipe(Schema.int(), Schema.greaterThanOrEqualTo(0)),
-  createdAt: Model.DateTimeInsert,
-  updatedAt: Model.DateTimeUpdate,
+  createdAt: DateTimeInsertWithOpenApi,
+  updatedAt: DateTimeUpdateWithOpenApi,
 }) {}

@@ -5,6 +5,7 @@
 
 import { Model } from "@effect/sql";
 import { Schema } from "effect";
+import { DateTimeInsertWithOpenApi, DateTimeUpdateWithOpenApi, GeneratedUuidWithOpenApi } from "./openapi-helpers.js";
 
 /**
  * Milestone status enum
@@ -17,7 +18,7 @@ export type MilestoneStatus = typeof MilestoneStatus.Type;
  * Milestone entity - represents a major deliverable phase in a project
  */
 export class Milestone extends Model.Class<Milestone>("Milestone")({
-  id: Model.Generated(Schema.String),
+  id: GeneratedUuidWithOpenApi,
   projectId: Schema.String,
   name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(255)),
   description: Schema.optional(Schema.String),
@@ -41,6 +42,6 @@ export class Milestone extends Model.Class<Milestone>("Milestone")({
       }),
     ),
   ),
-  createdAt: Model.DateTimeInsert,
-  updatedAt: Model.DateTimeUpdate,
+  createdAt: DateTimeInsertWithOpenApi,
+  updatedAt: DateTimeUpdateWithOpenApi,
 }) {}

@@ -5,6 +5,7 @@
 
 import { Model } from "@effect/sql";
 import { Schema } from "effect";
+import { DateTimeInsertWithOpenApi, GeneratedUuidWithOpenApi } from "./openapi-helpers.js";
 
 /**
  * Schedule snapshot type enum
@@ -17,7 +18,7 @@ export type ScheduleSnapshotType = typeof ScheduleSnapshotType.Type;
  * ScheduleSnapshot entity - stores AI scheduling results
  */
 export class ScheduleSnapshot extends Model.Class<ScheduleSnapshot>("ScheduleSnapshot")({
-  id: Model.Generated(Schema.String),
+  id: GeneratedUuidWithOpenApi,
   projectId: Schema.String,
   name: Schema.String.pipe(Schema.minLength(1), Schema.maxLength(255)),
   type: ScheduleSnapshotType,
@@ -34,5 +35,5 @@ export class ScheduleSnapshot extends Model.Class<ScheduleSnapshot>("ScheduleSna
     }),
   ),
   reasoning: Schema.optional(Schema.String), // AI-generated explanation
-  createdAt: Model.DateTimeInsert,
+  createdAt: DateTimeInsertWithOpenApi,
 }) {}

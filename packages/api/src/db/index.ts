@@ -26,9 +26,14 @@ export const SqliteLive = Layer.unwrapEffect(
       catch: () => new Error("Failed to create .sherpy directory"),
     }).pipe(Effect.catchAll(() => Effect.void));
 
-    // Create LibSQL client layer
+    // Create LibSQL client layer with field name transformations
+    // transformQueryNames: camelCase -> snake_case for SQL queries
+    // transformResultNames: snake_case -> camelCase for query results
     return LibsqlClient.layer({
       url: `file:${dbPath}`,
+      transformQueryNames: (_str: string) => _str.replace(/([A-Z])/g, "_$1").toLowerCase(),
+      transformResultNames: (_str: string) =>
+        _str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase()),
     });
   }),
 );

@@ -5,6 +5,7 @@
 
 import { Model } from "@effect/sql";
 import { Schema } from "effect";
+import { DateTimeInsertWithOpenApi, DateTimeUpdateWithOpenApi, GeneratedUuidWithOpenApi } from "./openapi-helpers.js";
 
 /**
  * Chat message structure (stored as JSON array)
@@ -28,10 +29,10 @@ export type ChatContextType = typeof ChatContextType.Type;
  * ChatSession entity - stores AI conversation history per project
  */
 export class ChatSession extends Model.Class<ChatSession>("ChatSession")({
-  id: Model.Generated(Schema.String),
+  id: GeneratedUuidWithOpenApi,
   projectId: Schema.String,
   messages: Model.JsonFromString(Schema.Array(ChatMessage)),
   contextType: ChatContextType,
-  createdAt: Model.DateTimeInsert,
-  updatedAt: Model.DateTimeUpdate,
+  createdAt: DateTimeInsertWithOpenApi,
+  updatedAt: DateTimeUpdateWithOpenApi,
 }) {}

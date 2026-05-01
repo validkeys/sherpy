@@ -15,3 +15,4 @@ export * from "./chat-message.js";
 export * from "./tag.js";
 export * from "./schedule-snapshot.js";
 export * from "./api/index.js";
+export * from "./openapi-helpers.js";
