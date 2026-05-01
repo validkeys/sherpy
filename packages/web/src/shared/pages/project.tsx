@@ -6,7 +6,9 @@ import { Sidebar } from '@/features/sidebar';
 import { MainTabs } from '@/features/tabs';
 import { useChatRuntime } from '@/features/chat/hooks/use-chat-runtime';
 import { useMockRuntime } from '@/features/chat/hooks/use-mock-runtime';
-import { currentProjectIdAtom } from '@/shared/state';
+import { useProjectLoader } from '@/shared/hooks/use-project-loader';
+import { currentStepAtom } from '@/features/sidebar/state/workflow-atoms';
+import type { WorkflowStep } from '@/features/sidebar/types';
 
 /**
  * Project page component
@@ -45,15 +47,45 @@ function ProjectContentWithRuntime({ projectId }: { projectId: string }) {
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
-  const setCurrentProjectId = useSetAtom(currentProjectIdAtom);
+  const setCurrentStep = useSetAtom(currentStepAtom);
 
   // Fallback to 'default-project' when no route param provided (development/testing)
   const effectiveProjectId = projectId ?? 'default-project';
 
-  // Update current project ID atom when route changes
+  // Load project and sync state
+  const { project, isLoading, error } = useProjectLoader({
+    projectId: effectiveProjectId,
+  });
+
+  // Sync sidebar currentStep to project.pipelineStatus when project loads
   useEffect(() => {
-    setCurrentProjectId(effectiveProjectId);
-  }, [effectiveProjectId, setCurrentProjectId]);
+    if (project?.project?.pipelineStatus) {
+      setCurrentStep(project.project.pipelineStatus as WorkflowStep);
+    }
+  }, [project, setCurrentStep]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg text-muted-foreground">Loading project...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg font-semibold text-destructive">Error loading project</div>
+          <div className="text-sm text-muted-foreground mt-2">{error.message}</div>
+        </div>
+      </div>
+    );
+  }
 
   return <ProjectContentWithRuntime projectId={effectiveProjectId} />;
 }

@@ -3,6 +3,29 @@ import { render, screen } from '@testing-library/react';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { router } from './router';
+import { AppProvider } from '@/providers';
+
+// Mock project loader hook
+vi.mock('@/shared/hooks/use-project-loader', () => ({
+  useProjectLoader: () => ({
+    project: null,
+    isLoading: false,
+    error: null,
+    currentProjectId: 'default-project',
+    loadProject: vi.fn(),
+    retry: vi.fn(),
+    clearProject: vi.fn(),
+  }),
+}));
+
+// Mock chat messages API
+vi.mock('@/shared/api/chat/get-messages', () => ({
+  useMessages: () => ({
+    data: { messages: [], hasMore: false },
+    isLoading: false,
+    error: null,
+  }),
+}));
 
 // Mock chat feature to avoid AuiProvider requirement
 vi.mock('@/features/chat', () => ({
@@ -46,7 +69,11 @@ describe('Router', () => {
     localStorageMock.clear();
   });
   it('renders project page at root path', () => {
-    render(<RouterProvider router={router} />);
+    render(
+      <AppProvider>
+        <RouterProvider router={router} />
+      </AppProvider>
+    );
     // ProjectPage renders sidebar and tabs
     expect(screen.getByRole('complementary', { name: /sherpy workflow/i })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /workflow steps/i })).toBeInTheDocument();
@@ -58,7 +85,11 @@ describe('Router', () => {
       initialEntries: ['/this-route-does-not-exist'],
     });
 
-    render(<RouterProvider router={testRouter} />);
+    render(
+      <AppProvider>
+        <RouterProvider router={testRouter} />
+      </AppProvider>
+    );
     expect(screen.getByText(/404/i)).toBeInTheDocument();
     expect(screen.getByText(/Page Not Found/i)).toBeInTheDocument();
   });

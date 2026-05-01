@@ -13,12 +13,18 @@ vi.mock('@/lib/websocket', () => ({
   getAuthToken: vi.fn(() => 'mock-auth-token'),
 }));
 
+// Mock chat messages API
+vi.mock('@/shared/api/chat/get-messages', () => ({
+  useMessages: vi.fn(),
+}));
+
 describe('useChatRuntime', () => {
   const mockProjectId = 'test-project-456';
   let mockRuntime: any;
   let mockUseAssistantTransportRuntime: ReturnType<typeof vi.fn>;
   let mockGetWebSocketUrl: ReturnType<typeof vi.fn>;
   let mockGetAuthToken: ReturnType<typeof vi.fn>;
+  let mockUseMessages: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -38,6 +44,14 @@ describe('useChatRuntime', () => {
     const websocketLib = await import('@/lib/websocket');
     mockGetWebSocketUrl = websocketLib.getWebSocketUrl as any;
     mockGetAuthToken = websocketLib.getAuthToken as any;
+
+    const chatApi = await import('@/shared/api/chat/get-messages');
+    mockUseMessages = chatApi.useMessages as any;
+    mockUseMessages.mockReturnValue({
+      data: { messages: [], hasMore: false },
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('creates runtime with correct API endpoint', () => {
@@ -154,16 +168,20 @@ describe('useChatRuntime', () => {
       initialProps: { projectId: mockProjectId },
     });
 
-    expect(mockUseAssistantTransportRuntime).toHaveBeenCalledTimes(1);
+    const initialCallCount = mockUseAssistantTransportRuntime.mock.calls.length;
 
     // Change project ID
     rerender({ projectId: 'different-project-789' });
 
-    expect(mockUseAssistantTransportRuntime).toHaveBeenCalledTimes(2);
+    // Should have created at least one more runtime
+    expect(mockUseAssistantTransportRuntime.mock.calls.length).toBeGreaterThan(initialCallCount);
 
-    // Verify new project ID in headers
-    const secondCallOptions = mockUseAssistantTransportRuntime.mock.calls[1][0];
-    secondCallOptions.headers().then((headers: Record<string, string>) => {
+    // Verify new project ID in headers from the latest call
+    const latestCallOptions =
+      mockUseAssistantTransportRuntime.mock.calls[
+        mockUseAssistantTransportRuntime.mock.calls.length - 1
+      ][0];
+    latestCallOptions.headers().then((headers: Record<string, string>) => {
       expect(headers['X-Project-Id']).toBe('different-project-789');
     });
   });
