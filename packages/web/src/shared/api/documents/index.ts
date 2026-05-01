@@ -27,7 +27,7 @@ export {
   documentResponseSchema,
 } from './schemas';
 
-// Hooks (to be added in subsequent tasks)
-// export { useGenerateDocument } from './generate-document';
+// Hooks
+export { useGenerateDocument, generateDocument } from './generate-document';
 // export { useDocuments } from './get-documents';
 // export { useDocument } from './get-document';
