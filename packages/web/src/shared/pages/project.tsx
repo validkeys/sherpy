@@ -7,6 +7,7 @@ import { MainTabs } from '@/features/tabs';
 import { useChatRuntime } from '@/features/chat/hooks/use-chat-runtime';
 import { useMockRuntime } from '@/features/chat/hooks/use-mock-runtime';
 import { useProjectLoader } from '@/shared/hooks/use-project-loader';
+import { useMessages } from '@/shared/api/chat/get-messages';
 import { currentStepAtom } from '@/features/sidebar/state/workflow-atoms';
 import type { WorkflowStep } from '@/features/sidebar/types';
 
@@ -26,10 +27,21 @@ import type { WorkflowStep } from '@/features/sidebar/types';
  * - If VITE_BACKEND_URL is not set: uses mock runtime (client-side, no backend needed)
  * - If VITE_BACKEND_URL is set: uses real runtime (connects to backend API)
  */
-function ProjectContentWithRuntime({ projectId }: { projectId: string }) {
-  // Create runtime
+function ProjectContentWithRuntime({
+  projectId,
+  messagesReady,
+}: {
+  projectId: string;
+  messagesReady: boolean;
+}) {
+  // Create runtime (always call both hooks to satisfy rules of hooks)
+  // messagesReady ensures messages are loaded before runtime initialization
   const useMock = !import.meta.env.VITE_BACKEND_URL;
-  const { runtime } = useMock ? useMockRuntime(projectId) : useChatRuntime(projectId);
+  const mockResult = useMockRuntime(projectId);
+  const realResult = useChatRuntime(projectId);
+
+  // Select which runtime to use
+  const { runtime } = useMock ? mockResult : realResult;
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -57,6 +69,16 @@ export function ProjectPage() {
     projectId: effectiveProjectId,
   });
 
+  // Pre-load chat messages (for real backend only)
+  const useMock = !import.meta.env.VITE_BACKEND_URL;
+  const { isLoading: isLoadingMessages } = useMessages({
+    projectId: effectiveProjectId,
+    queryConfig: {
+      enabled: !!effectiveProjectId && !useMock,
+      staleTime: Infinity,
+    },
+  });
+
   // Sync sidebar currentStep to project.pipelineStatus when project loads
   useEffect(() => {
     if (project?.project?.pipelineStatus) {
@@ -64,12 +86,14 @@ export function ProjectPage() {
     }
   }, [project, setCurrentStep]);
 
-  // Show loading state
-  if (isLoading) {
+  // Show loading state (project or messages)
+  if (isLoading || (!useMock && isLoadingMessages)) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="text-center">
-          <div className="text-lg text-muted-foreground">Loading project...</div>
+          <div className="text-lg text-muted-foreground">
+            {isLoading ? 'Loading project...' : 'Loading chat history...'}
+          </div>
         </div>
       </div>
     );
@@ -87,5 +111,5 @@ export function ProjectPage() {
     );
   }
 
-  return <ProjectContentWithRuntime projectId={effectiveProjectId} />;
+  return <ProjectContentWithRuntime projectId={effectiveProjectId} messagesReady={true} />;
 }

@@ -48,5 +48,6 @@ export function useMockRuntime(projectId: string) {
 
   return {
     runtime,
+    isLoadingHistory: false, // Mock runtime has no async loading
   };
 }
