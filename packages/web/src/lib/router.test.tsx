@@ -27,6 +27,16 @@ vi.mock('@/shared/api/chat/get-messages', () => ({
   }),
 }));
 
+// Mock projects API for ProjectSelector
+vi.mock('@/shared/api/projects/get-projects', () => ({
+  useProjects: () => ({
+    data: { projects: [] },
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+}));
+
 // Mock chat feature to avoid AuiProvider requirement
 vi.mock('@/features/chat', () => ({
   ChatContainer: () => <div data-testid="chat-container">Chat Container</div>,
@@ -68,16 +78,16 @@ describe('Router', () => {
   beforeEach(() => {
     localStorageMock.clear();
   });
-  it('renders project page at root path', () => {
+  it('renders project selector at root path', () => {
     render(
       <AppProvider>
         <RouterProvider router={router} />
       </AppProvider>
     );
-    // ProjectPage renders sidebar and tabs
-    expect(screen.getByRole('complementary', { name: /sherpy workflow/i })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /workflow steps/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /chat/i })).toBeInTheDocument();
+    // ProjectSelector renders project selection UI
+    expect(screen.getByRole('heading', { name: /select a project/i })).toBeInTheDocument();
+    expect(screen.getByText(/create new project/i)).toBeInTheDocument();
+    expect(screen.getByText(/choose an existing project or create a new one/i)).toBeInTheDocument();
   });
 
   it('renders 404 page for unknown routes', async () => {

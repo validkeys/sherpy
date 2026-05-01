@@ -3,6 +3,7 @@ import { ErrorBoundaryDemoPage } from '@/shared/pages';
 import { HomePage } from '@/shared/pages/home';
 import { NotFoundPage } from '@/shared/pages/not-found';
 import { ProjectPage } from '@/shared/pages/project';
+import { ProjectSelector } from '@/features/projects/components/project-selector';
 import { createBrowserRouter } from 'react-router-dom';
 
 /**
@@ -25,10 +26,10 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <ProjectPage />,
+        element: <ProjectSelector />,
       },
       {
-        path: 'project/:projectId',
+        path: 'projects/:projectId',
         element: <ProjectPage />,
       },
       {
