@@ -29,5 +29,5 @@ export {
 
 // Hooks
 export { useGenerateDocument, generateDocument } from './generate-document';
-// export { useDocuments } from './get-documents';
+export { useDocuments, getDocuments, getDocumentsQueryOptions } from './get-documents';
 // export { useDocument } from './get-document';
