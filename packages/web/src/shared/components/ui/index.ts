@@ -9,3 +9,5 @@ export { Button, buttonVariants } from './button';
 export type { ButtonProps } from './button';
 
 export { Tabs, TabsList, TabsTrigger, TabsContent } from './tabs';
+
+export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from './card';
