@@ -9,7 +9,6 @@
 
 import { atom } from 'jotai';
 import type { Document, FileTreeNode } from '../types';
-import { DocumentType } from '../types';
 
 /**
  * Atom: Set of folder IDs that are currently expanded
@@ -23,30 +22,39 @@ export const selectedFileAtom = atom<string | null>(null);
 
 /**
  * Folder mapping: Maps document types to their folder paths
+ * Uses string keys to match backend DocumentType schema values
  */
-const DOCUMENT_FOLDER_MAP: Record<DocumentType, string> = {
-  [DocumentType.BUSINESS_REQUIREMENTS]: 'requirements',
-  [DocumentType.TECHNICAL_REQUIREMENTS]: 'requirements',
-  [DocumentType.GAP_ANALYSIS]: 'requirements',
-  [DocumentType.MILESTONES]: 'implementation',
-  [DocumentType.MILESTONE_TASKS]: 'implementation',
-  [DocumentType.STYLE_ANCHORS]: 'implementation',
-  [DocumentType.DELIVERY_TIMELINE]: 'delivery',
-  [DocumentType.ARCHITECTURE_DECISION_RECORDS]: 'architecture',
-  [DocumentType.EXECUTIVE_SUMMARY]: 'summaries',
-  [DocumentType.DEVELOPER_SUMMARY]: 'summaries',
-  [DocumentType.QA_TEST_PLAN]: 'delivery',
+const DOCUMENT_FOLDER_MAP: Record<string, string> = {
+  // Requirements
+  'business-requirements': 'requirements',
+  'technical-requirements': 'requirements',
+
+  // Implementation
+  'implementation-plan': 'implementation',
+
+  // Delivery
+  'delivery-timeline': 'delivery',
+  'qa-test-plan': 'delivery',
+
+  // Architecture
+  'architecture-decision-record': 'architecture',
+
+  // Summaries
+  'executive-summary': 'summaries',
+  'developer-summary': 'summaries',
 };
 
 /**
  * Builds file tree structure from flat document list
  * Organizes documents into folders based on their type
+ * Unknown document types are placed in an 'other' folder
  */
 export function buildFileTree(documents: Document[]): FileTreeNode[] {
   const folderMap = new Map<string, FileTreeNode>();
 
   documents.forEach((doc) => {
-    const folderName = DOCUMENT_FOLDER_MAP[doc.documentType];
+    // Use fallback 'other' folder for unknown document types
+    const folderName = DOCUMENT_FOLDER_MAP[doc.documentType] ?? 'other';
 
     if (!folderMap.has(folderName)) {
       folderMap.set(folderName, {

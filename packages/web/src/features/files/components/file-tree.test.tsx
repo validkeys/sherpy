@@ -10,7 +10,7 @@ import { Provider, createStore } from 'jotai';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FileTree } from './file-tree';
-import { Document, DocumentType } from '../types';
+import type { Document } from '../types';
 import * as getDocumentsApi from '../api/get-documents';
 
 // Mock documents
@@ -18,7 +18,7 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-1',
     projectId: 'test-project',
-    documentType: DocumentType.BUSINESS_REQUIREMENTS,
+    documentType: 'business-requirements',
     format: 'yaml',
     content: 'test content',
     version: 1,
@@ -28,7 +28,7 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-2',
     projectId: 'test-project',
-    documentType: DocumentType.TECHNICAL_REQUIREMENTS,
+    documentType: 'technical-requirements',
     format: 'yaml',
     content: 'test content',
     version: 1,
@@ -38,7 +38,7 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-3',
     projectId: 'test-project',
-    documentType: DocumentType.MILESTONES,
+    documentType: 'implementation-plan',
     format: 'yaml',
     content: 'test content',
     version: 1,
@@ -48,8 +48,8 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-4',
     projectId: 'test-project',
-    documentType: DocumentType.EXECUTIVE_SUMMARY,
-    format: 'md',
+    documentType: 'executive-summary',
+    format: 'markdown',
     content: '# Summary',
     version: 1,
     createdAt: '2024-01-01T00:00:00Z',
@@ -189,14 +189,14 @@ describe('FileTree', () => {
     await user.click(screen.getByText('implementation'));
 
     await waitFor(() => {
-      expect(screen.getByText(/milestones\.yaml/i)).toBeInTheDocument();
+      expect(screen.getByText(/implementation-plan\.yaml/i)).toBeInTheDocument();
     });
 
     // Expand summaries folder
     await user.click(screen.getByText('summaries'));
 
     await waitFor(() => {
-      expect(screen.getByText(/executive-summary\.md/i)).toBeInTheDocument();
+      expect(screen.getByText(/executive-summary\.markdown/i)).toBeInTheDocument();
     });
   });
 });

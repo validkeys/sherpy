@@ -9,7 +9,7 @@ import { Provider, createStore } from 'jotai';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FilePreview } from './file-preview';
-import { Document, DocumentType } from '../types';
+import type { Document } from '../types';
 import { selectedFileAtom } from '../state/file-tree-atoms';
 import * as getDocumentsApi from '../api/get-documents';
 
@@ -17,7 +17,7 @@ import * as getDocumentsApi from '../api/get-documents';
 const mockYamlDocument: Document = {
   id: 'doc-yaml',
   projectId: 'test-project',
-  documentType: DocumentType.BUSINESS_REQUIREMENTS,
+  documentType: 'business-requirements',
   format: 'yaml',
   content: 'name: Test Project\nversion: 1.0',
   version: 1,
@@ -28,8 +28,8 @@ const mockYamlDocument: Document = {
 const mockMarkdownDocument: Document = {
   id: 'doc-md',
   projectId: 'test-project',
-  documentType: DocumentType.EXECUTIVE_SUMMARY,
-  format: 'md',
+  documentType: 'executive-summary',
+  format: 'markdown',
   content: '# Executive Summary\n\nThis is a **test** summary.',
   version: 1,
   createdAt: '2024-01-01T00:00:00Z',

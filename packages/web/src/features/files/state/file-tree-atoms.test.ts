@@ -5,7 +5,6 @@
 import { createStore } from 'jotai';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Document } from '../types';
-import { DocumentType } from '../types';
 import {
   buildFileTree,
   expandedFoldersAtom,
@@ -17,7 +16,7 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-1',
     projectId: 'project-1',
-    documentType: DocumentType.BUSINESS_REQUIREMENTS,
+    documentType: 'business-requirements',
     format: 'yaml',
     content: 'content',
     version: 1,
@@ -27,7 +26,7 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-2',
     projectId: 'project-1',
-    documentType: DocumentType.TECHNICAL_REQUIREMENTS,
+    documentType: 'technical-requirements',
     format: 'yaml',
     content: 'content',
     version: 1,
@@ -37,7 +36,7 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-3',
     projectId: 'project-1',
-    documentType: DocumentType.MILESTONES,
+    documentType: 'implementation-plan',
     format: 'yaml',
     content: 'content',
     version: 1,
@@ -47,8 +46,8 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-4',
     projectId: 'project-1',
-    documentType: DocumentType.EXECUTIVE_SUMMARY,
-    format: 'md',
+    documentType: 'executive-summary',
+    format: 'markdown',
     content: 'content',
     version: 1,
     createdAt: '2026-04-30T00:00:00Z',
@@ -71,7 +70,7 @@ describe('buildFileTree', () => {
     expect(implementationFolder).toBeDefined();
     expect(implementationFolder!.type).toBe('folder');
     expect(implementationFolder!.children).toHaveLength(1);
-    expect(implementationFolder!.children![0].name).toBe('milestones.yaml');
+    expect(implementationFolder!.children![0].name).toBe('implementation-plan.yaml');
 
     const requirementsFolder = tree.find((node) => node.name === 'requirements');
     expect(requirementsFolder).toBeDefined();
@@ -82,7 +81,7 @@ describe('buildFileTree', () => {
     expect(summariesFolder).toBeDefined();
     expect(summariesFolder!.type).toBe('folder');
     expect(summariesFolder!.children).toHaveLength(1);
-    expect(summariesFolder!.children![0].name).toBe('executive-summary.md');
+    expect(summariesFolder!.children![0].name).toBe('executive-summary.markdown');
   });
 
   it('should sort files alphabetically within folders', () => {
@@ -108,26 +107,23 @@ describe('buildFileTree', () => {
 
     expect(businessReqFile.document).toBeDefined();
     expect(businessReqFile.document!.id).toBe('doc-1');
-    expect(businessReqFile.document!.documentType).toBe(DocumentType.BUSINESS_REQUIREMENTS);
+    expect(businessReqFile.document!.documentType).toBe('business-requirements');
   });
 
   it('should handle all document types correctly', () => {
     const allTypeDocs: Document[] = [
-      DocumentType.BUSINESS_REQUIREMENTS,
-      DocumentType.TECHNICAL_REQUIREMENTS,
-      DocumentType.GAP_ANALYSIS,
-      DocumentType.MILESTONES,
-      DocumentType.MILESTONE_TASKS,
-      DocumentType.STYLE_ANCHORS,
-      DocumentType.DELIVERY_TIMELINE,
-      DocumentType.ARCHITECTURE_DECISION_RECORDS,
-      DocumentType.EXECUTIVE_SUMMARY,
-      DocumentType.DEVELOPER_SUMMARY,
-      DocumentType.QA_TEST_PLAN,
+      'business-requirements',
+      'technical-requirements',
+      'implementation-plan',
+      'delivery-timeline',
+      'architecture-decision-record',
+      'executive-summary',
+      'developer-summary',
+      'qa-test-plan',
     ].map((type, index) => ({
       id: `doc-${index}`,
       projectId: 'project-1',
-      documentType: type,
+      documentType: type as any,
       format: 'yaml' as const,
       content: 'content',
       version: 1,
@@ -142,6 +138,39 @@ describe('buildFileTree', () => {
     expect(tree.find((node) => node.name === 'delivery')).toBeDefined();
     expect(tree.find((node) => node.name === 'architecture')).toBeDefined();
     expect(tree.find((node) => node.name === 'summaries')).toBeDefined();
+  });
+
+  it('should place unknown document types in "other" folder', () => {
+    const docsWithUnknown: Document[] = [
+      {
+        id: 'doc-1',
+        projectId: 'project-1',
+        documentType: 'business-requirements',
+        format: 'yaml',
+        content: 'content',
+        version: 1,
+        createdAt: '2026-04-30T00:00:00Z',
+        updatedAt: '2026-04-30T00:00:00Z',
+      },
+      {
+        id: 'doc-2',
+        projectId: 'project-1',
+        documentType: 'unknown-future-type' as any,
+        format: 'yaml',
+        content: 'content',
+        version: 1,
+        createdAt: '2026-04-30T00:00:00Z',
+        updatedAt: '2026-04-30T00:00:00Z',
+      },
+    ];
+
+    const tree = buildFileTree(docsWithUnknown);
+
+    expect(tree.find((node) => node.name === 'requirements')).toBeDefined();
+    const otherFolder = tree.find((node) => node.name === 'other');
+    expect(otherFolder).toBeDefined();
+    expect(otherFolder!.children).toHaveLength(1);
+    expect(otherFolder!.children![0].document!.documentType).toBe('unknown-future-type');
   });
 });
 

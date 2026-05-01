@@ -9,7 +9,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Document } from '../types';
-import { DocumentType } from '../types';
 import { getDocument, getDocumentQueryOptions, useDocument } from './get-document';
 
 vi.mock('@/lib/api-client', () => ({
@@ -25,7 +24,7 @@ vi.mock('@/lib/api-client', () => ({
 const mockDocument: Document = {
   id: 'doc-1',
   projectId: 'project-1',
-  documentType: DocumentType.BUSINESS_REQUIREMENTS,
+  documentType: 'business-requirements',
   format: 'yaml',
   content: 'key: value\nrequirements:\n  - item1\n  - item2',
   version: 1,
@@ -43,7 +42,7 @@ describe('getDocument', () => {
 
     const result = await getDocument({
       projectId: 'project-1',
-      documentType: DocumentType.BUSINESS_REQUIREMENTS,
+      documentType: 'business-requirements',
     });
 
     expect(api.get).toHaveBeenCalledWith('/api/projects/project-1/documents/business-requirements');
@@ -57,7 +56,7 @@ describe('getDocument', () => {
     await expect(
       getDocument({
         projectId: 'project-1',
-        documentType: DocumentType.BUSINESS_REQUIREMENTS,
+        documentType: 'business-requirements',
       })
     ).rejects.toThrow('API Error');
   });
@@ -69,7 +68,7 @@ describe('getDocument', () => {
     await expect(
       getDocument({
         projectId: 'project-1',
-        documentType: DocumentType.MILESTONES,
+        documentType: 'implementation-plan',
       })
     ).rejects.toThrow('Document not found');
   });
@@ -77,7 +76,7 @@ describe('getDocument', () => {
 
 describe('getDocumentQueryOptions', () => {
   it('should create query options with correct query key', () => {
-    const options = getDocumentQueryOptions('project-1', DocumentType.TECHNICAL_REQUIREMENTS);
+    const options = getDocumentQueryOptions('project-1', 'technical-requirements');
 
     expect(options.queryKey).toEqual([
       'projects',
@@ -108,7 +107,7 @@ describe('useDocument', () => {
       () =>
         useDocument({
           projectId: 'project-1',
-          documentType: DocumentType.BUSINESS_REQUIREMENTS,
+          documentType: 'business-requirements',
         }),
       {
         wrapper: createWrapper(),
@@ -131,7 +130,7 @@ describe('useDocument', () => {
       () =>
         useDocument({
           projectId: 'project-1',
-          documentType: DocumentType.BUSINESS_REQUIREMENTS,
+          documentType: 'business-requirements',
         }),
       {
         wrapper: createWrapper(),
@@ -151,7 +150,7 @@ describe('useDocument', () => {
       () =>
         useDocument({
           projectId: 'project-1',
-          documentType: DocumentType.DELIVERY_TIMELINE,
+          documentType: 'delivery-timeline',
         }),
       {
         wrapper: createWrapper(),
@@ -170,7 +169,7 @@ describe('useDocument', () => {
       () =>
         useDocument({
           projectId: 'project-1',
-          documentType: DocumentType.BUSINESS_REQUIREMENTS,
+          documentType: 'business-requirements',
           queryConfig: { enabled: false },
         }),
       {

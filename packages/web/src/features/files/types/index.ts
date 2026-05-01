@@ -1,24 +1,9 @@
 /**
- * Document types supported by the Sherpy planning workflow
+ * Import DocumentType and DocumentFormat from shared package (single source of truth)
  */
-export enum DocumentType {
-  BUSINESS_REQUIREMENTS = 'business-requirements',
-  TECHNICAL_REQUIREMENTS = 'technical-requirements',
-  MILESTONES = 'milestones',
-  MILESTONE_TASKS = 'milestone-tasks',
-  STYLE_ANCHORS = 'style-anchors',
-  DELIVERY_TIMELINE = 'delivery-timeline',
-  ARCHITECTURE_DECISION_RECORDS = 'architecture-decision-records',
-  EXECUTIVE_SUMMARY = 'executive-summary',
-  DEVELOPER_SUMMARY = 'developer-summary',
-  QA_TEST_PLAN = 'qa-test-plan',
-  GAP_ANALYSIS = 'gap-analysis',
-}
+import type { DocumentType, DocumentFormat } from '@sherpy/shared';
 
-/**
- * Document format (file extension)
- */
-export type DocumentFormat = 'yaml' | 'md';
+export type { DocumentType, DocumentFormat };
 
 /**
  * Document entity returned from API

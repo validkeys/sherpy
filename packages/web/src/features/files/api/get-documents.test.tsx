@@ -8,7 +8,6 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Document } from '../types';
-import { DocumentType } from '../types';
 import { getDocuments, getDocumentsQueryOptions, useDocuments } from './get-documents';
 
 vi.mock('@/lib/api-client', () => ({
@@ -25,7 +24,7 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-1',
     projectId: 'project-1',
-    documentType: DocumentType.BUSINESS_REQUIREMENTS,
+    documentType: 'business-requirements',
     format: 'yaml',
     content: 'key: value',
     version: 1,
@@ -35,7 +34,7 @@ const mockDocuments: Document[] = [
   {
     id: 'doc-2',
     projectId: 'project-1',
-    documentType: DocumentType.TECHNICAL_REQUIREMENTS,
+    documentType: 'technical-requirements',
     format: 'yaml',
     content: 'requirement: spec',
     version: 1,
