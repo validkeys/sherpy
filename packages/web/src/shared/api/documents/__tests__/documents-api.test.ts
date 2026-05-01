@@ -12,7 +12,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createElement, type ReactNode } from 'react';
+import { type ReactNode, createElement } from 'react';
 import { generateDocument, useGenerateDocument } from '../generate-document';
 import { getDocuments, getDocumentsQueryOptions, useDocuments } from '../get-documents';
 import { getDocument, getDocumentQueryOptions, useDocument } from '../get-document';
@@ -381,12 +381,9 @@ describe('Documents API Integration Tests', () => {
       mockApiGet.mockResolvedValue(listResponse);
 
       // First, set up the list query
-      const { result: listResult } = renderHook(
-        () => useDocuments({ projectId: 'proj_abc' }),
-        {
-          wrapper: createWrapper(),
-        }
-      );
+      const { result: listResult } = renderHook(() => useDocuments({ projectId: 'proj_abc' }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(listResult.current.isSuccess).toBe(true);
@@ -429,24 +426,18 @@ describe('Documents API Integration Tests', () => {
       mockApiGet.mockResolvedValueOnce(mockResponse1).mockResolvedValueOnce(mockResponse2);
 
       // First project
-      const { result: result1 } = renderHook(
-        () => useDocuments({ projectId: 'proj_abc' }),
-        {
-          wrapper: createWrapper(),
-        }
-      );
+      const { result: result1 } = renderHook(() => useDocuments({ projectId: 'proj_abc' }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result1.current.isSuccess).toBe(true);
       });
 
       // Second project
-      const { result: result2 } = renderHook(
-        () => useDocuments({ projectId: 'proj_xyz' }),
-        {
-          wrapper: createWrapper(),
-        }
-      );
+      const { result: result2 } = renderHook(() => useDocuments({ projectId: 'proj_xyz' }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result2.current.isSuccess).toBe(true);

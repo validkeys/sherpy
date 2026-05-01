@@ -29,7 +29,9 @@ export async function getDocument({
   projectId: string;
   documentType: DocumentType;
 }): Promise<Document> {
-  const response = await api.get<GetDocumentResponse>(`/api/projects/${projectId}/documents/${documentType}`);
+  const response = await api.get<GetDocumentResponse>(
+    `/api/projects/${projectId}/documents/${documentType}`
+  );
   return response.document;
 }
 

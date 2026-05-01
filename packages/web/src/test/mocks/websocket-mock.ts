@@ -101,8 +101,7 @@ export const simulateConnectionError = (
   onError: (error: Error) => void,
   errorMessage: string = 'WebSocket connection failed'
 ): void => {
-  const error = new Error(errorMessage);
-  onError(error);
+  onError(new Error(errorMessage));
 };
 
 /**
@@ -163,9 +162,7 @@ export const simulateMessageSequence = (
  * const assistantMessage = createMockMessage({ role: 'assistant' });
  * ```
  */
-export const createMockMessage = (
-  overrides: Partial<MockMessage> = {}
-): MockMessage => {
+export const createMockMessage = (overrides: Partial<MockMessage> = {}): MockMessage => {
   return {
     id: `msg-${Math.random().toString(36).substring(7)}`,
     role: 'user',

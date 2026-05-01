@@ -71,7 +71,6 @@ export function Sidebar() {
       const dbStep = projectData.project.pipelineStatus as WorkflowStep;
       setCurrentStep(dbStep);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectData, setCurrentStep]);
 
   const handleStepClick = async (stepId: string) => {

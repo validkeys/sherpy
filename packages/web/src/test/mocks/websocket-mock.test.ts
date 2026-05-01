@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  type MockWebSocketRuntime,
   createMockMessage,
   createMockWebSocketRuntime,
   resetRuntime,
@@ -7,7 +8,6 @@ import {
   simulateIncomingMessage,
   simulateMessageSequence,
   simulateStreamingResponse,
-  type MockWebSocketRuntime,
 } from './websocket-mock';
 
 describe('WebSocket Mock Utilities', () => {
@@ -258,9 +258,7 @@ describe('WebSocket Mock Utilities', () => {
 
       expect(runtime.isRunning).toBe(false);
       expect(runtime.messages).toHaveLength(2);
-      expect(runtime.messages[1].content).toBe(
-        'TypeScript is a typed superset of JavaScript'
-      );
+      expect(runtime.messages[1].content).toBe('TypeScript is a typed superset of JavaScript');
       vi.useRealTimers();
     });
 

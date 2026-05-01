@@ -13,7 +13,14 @@
  */
 
 import { useNavigate } from 'react-router-dom';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui';
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/shared/components/ui';
 import { useProjects } from '@/shared/api/projects/get-projects';
 import type { Project } from '@/shared/api/projects/types';
 
@@ -30,9 +37,7 @@ function ProjectCard({ project, onClick }: ProjectCardProps) {
     >
       <CardHeader>
         <CardTitle>{project.name}</CardTitle>
-        <CardDescription>
-          {project.description || 'No description'}
-        </CardDescription>
+        <CardDescription>{project.description || 'No description'}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-2 text-sm">
@@ -95,12 +100,7 @@ function CreateNewProjectCard({ onClick }: { onClick: () => void }) {
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4v16m8-8H4"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
         </div>
         <p className="text-lg font-semibold">Create New Project</p>

@@ -13,7 +13,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createElement, type ReactNode } from 'react';
+import { type ReactNode, createElement } from 'react';
 import { createProject, useCreateProject } from '../create-project';
 import { getProjects, getProjectsQueryOptions, useProjects } from '../get-projects';
 import { getProject, getProjectQueryOptions, useProject } from '../get-project';
@@ -365,7 +365,9 @@ describe('Projects API Integration Tests', () => {
 
       const result = await updateProject(variables);
 
-      expect(mockApiPatch).toHaveBeenCalledWith('/api/projects/proj_123', { name: 'Updated Project' });
+      expect(mockApiPatch).toHaveBeenCalledWith('/api/projects/proj_123', {
+        name: 'Updated Project',
+      });
       expect(result).toEqual(mockResponse);
     });
 

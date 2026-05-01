@@ -28,9 +28,7 @@ describe('M4-019 State Hydration - Implementation Verification', () => {
   });
 
   it('useChatRuntime hook uses useMessages for history', async () => {
-    const chatRuntimeModule = await import(
-      '@/features/chat/hooks/use-chat-runtime'
-    );
+    const chatRuntimeModule = await import('@/features/chat/hooks/use-chat-runtime');
     expect(chatRuntimeModule.useChatRuntime).toBeDefined();
 
     // Verify the hook function exists
@@ -38,9 +36,7 @@ describe('M4-019 State Hydration - Implementation Verification', () => {
   });
 
   it('workflow atoms are exported for sidebar sync', async () => {
-    const workflowAtomsModule = await import(
-      '@/features/sidebar/state/workflow-atoms'
-    );
+    const workflowAtomsModule = await import('@/features/sidebar/state/workflow-atoms');
     expect(workflowAtomsModule.currentStepAtom).toBeDefined();
   });
 
@@ -61,16 +57,12 @@ describe('M4-019 State Hydration - Implementation Verification', () => {
 
 describe('M4-019 State Hydration - Integration Points', () => {
   it('FileTree component uses useDocuments with projectId', async () => {
-    const fileTreeModule = await import(
-      '@/features/files/components/file-tree'
-    );
+    const fileTreeModule = await import('@/features/files/components/file-tree');
     expect(fileTreeModule.FileTree).toBeDefined();
   });
 
   it('useDocuments hook is reactive to projectId changes', async () => {
-    const documentsApiModule = await import(
-      '@/features/files/api/get-documents'
-    );
+    const documentsApiModule = await import('@/features/files/api/get-documents');
     expect(documentsApiModule.useDocuments).toBeDefined();
     expect(documentsApiModule.getDocumentsQueryOptions).toBeDefined();
   });

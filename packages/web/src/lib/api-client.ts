@@ -209,9 +209,7 @@ async function request<T>(
 
     // Log response in development mode
     if (env.devMode) {
-      console.log(
-        `[API] ${method} ${url} - ${response.status} (${Math.round(duration)}ms)`
-      );
+      console.log(`[API] ${method} ${url} - ${response.status} (${Math.round(duration)}ms)`);
     }
 
     if (!response.ok) {

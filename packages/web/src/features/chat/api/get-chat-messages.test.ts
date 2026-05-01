@@ -90,17 +90,25 @@ describe('getChatMessagesQueryOptions', () => {
     const options = getChatMessagesQueryOptions({
       projectId: mockProjectId,
       cursor: 'cursor-123',
-      limit: 20
+      limit: 20,
     });
 
-    expect(options.queryKey).toEqual(['chat-messages', mockProjectId, { cursor: 'cursor-123', limit: 20 }]);
+    expect(options.queryKey).toEqual([
+      'chat-messages',
+      mockProjectId,
+      { cursor: 'cursor-123', limit: 20 },
+    ]);
     expect(options.queryFn).toBeDefined();
   });
 
   it('returns query options with correct query key (without cursor)', () => {
     const options = getChatMessagesQueryOptions({ projectId: mockProjectId });
 
-    expect(options.queryKey).toEqual(['chat-messages', mockProjectId, { cursor: undefined, limit: undefined }]);
+    expect(options.queryKey).toEqual([
+      'chat-messages',
+      mockProjectId,
+      { cursor: undefined, limit: undefined },
+    ]);
     expect(options.queryFn).toBeDefined();
   });
 

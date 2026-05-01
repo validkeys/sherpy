@@ -1,7 +1,7 @@
 /**
  * Import DocumentType and DocumentFormat from shared package (single source of truth)
  */
-import type { DocumentType, DocumentFormat } from '@sherpy/shared';
+import type { DocumentFormat, DocumentType } from '@sherpy/shared';
 
 export type { DocumentType, DocumentFormat };
 

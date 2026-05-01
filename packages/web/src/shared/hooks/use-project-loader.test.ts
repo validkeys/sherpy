@@ -10,7 +10,7 @@
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useProjectLoader } from './use-project-loader';
 import type { Project } from '@/shared/api/projects/types';
 
@@ -65,9 +65,7 @@ describe('useProjectLoader', () => {
       refetch: mockRefetch,
     } as any);
 
-    const { result } = renderHook(() =>
-      useProjectLoader({ projectId: 'project-1' })
-    );
+    const { result } = renderHook(() => useProjectLoader({ projectId: 'project-1' }));
 
     expect(result.current.project).toEqual({ project: mockProject });
     expect(result.current.isLoading).toBe(false);
@@ -96,9 +94,7 @@ describe('useProjectLoader', () => {
       refetch: mockRefetch,
     } as any);
 
-    const { result } = renderHook(() =>
-      useProjectLoader({ projectId: 'project-1' })
-    );
+    const { result } = renderHook(() => useProjectLoader({ projectId: 'project-1' }));
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.project).toBeUndefined();
@@ -113,9 +109,7 @@ describe('useProjectLoader', () => {
       refetch: mockRefetch,
     } as any);
 
-    const { result } = renderHook(() =>
-      useProjectLoader({ projectId: 'project-1' })
-    );
+    const { result } = renderHook(() => useProjectLoader({ projectId: 'project-1' }));
 
     expect(result.current.error).toEqual(error);
     expect(result.current.project).toBeUndefined();
@@ -131,9 +125,7 @@ describe('useProjectLoader', () => {
       refetch: mockRefetch,
     } as any);
 
-    const { result } = renderHook(() =>
-      useProjectLoader({ enableUrlParams: true })
-    );
+    const { result } = renderHook(() => useProjectLoader({ enableUrlParams: true }));
 
     expect(result.current.currentProjectId).toBe('url-project-123');
     expect(mockSetCurrentProjectId).toHaveBeenCalledWith('url-project-123');
@@ -149,9 +141,7 @@ describe('useProjectLoader', () => {
       refetch: mockRefetch,
     } as any);
 
-    const { result } = renderHook(() =>
-      useProjectLoader({ enableUrlParams: false })
-    );
+    const { result } = renderHook(() => useProjectLoader({ enableUrlParams: false }));
 
     expect(result.current.currentProjectId).toBe(null);
   });
@@ -245,9 +235,7 @@ describe('useProjectLoader', () => {
       refetch: mockRefetch,
     } as any);
 
-    const { result } = renderHook(() =>
-      useProjectLoader({ projectId: 'project-1' })
-    );
+    const { result } = renderHook(() => useProjectLoader({ projectId: 'project-1' }));
 
     result.current.retry();
 
@@ -262,9 +250,7 @@ describe('useProjectLoader', () => {
       refetch: mockRefetch,
     } as any);
 
-    const { result } = renderHook(() =>
-      useProjectLoader({ projectId: 'project-1' })
-    );
+    const { result } = renderHook(() => useProjectLoader({ projectId: 'project-1' }));
 
     result.current.clearProject();
 
@@ -316,10 +302,9 @@ describe('useProjectLoader', () => {
       refetch: mockRefetch,
     } as any);
 
-    const { rerender } = renderHook(
-      ({ projectId }) => useProjectLoader({ projectId }),
-      { initialProps: { projectId: 'project-1' } }
-    );
+    const { rerender } = renderHook(({ projectId }) => useProjectLoader({ projectId }), {
+      initialProps: { projectId: 'project-1' },
+    });
 
     expect(mockSetCurrentProjectId).toHaveBeenCalledWith('project-1');
 

@@ -153,7 +153,9 @@ describe('ProjectSelector', () => {
 
     render(<ProjectSelector onCreateNew={onCreateNew} />);
 
-    const createCard = screen.getByText('Create New Project').closest('.cursor-pointer') as HTMLElement;
+    const createCard = screen
+      .getByText('Create New Project')
+      .closest('.cursor-pointer') as HTMLElement;
     await user.click(createCard);
 
     expect(onCreateNew).toHaveBeenCalled();
@@ -171,7 +173,9 @@ describe('ProjectSelector', () => {
 
     render(<ProjectSelector />);
 
-    const createCard = screen.getByText('Create New Project').closest('.cursor-pointer') as HTMLElement;
+    const createCard = screen
+      .getByText('Create New Project')
+      .closest('.cursor-pointer') as HTMLElement;
     await user.click(createCard);
 
     expect(mockNavigate).toHaveBeenCalledWith('/projects/new');

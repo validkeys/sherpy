@@ -10,7 +10,7 @@ import { api } from '@/lib/api-client';
 import type { MutationConfig } from '@/lib/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { DocumentResponse } from './types';
-import { generateDocumentInputSchema, type GenerateDocumentInput } from './schemas';
+import { type GenerateDocumentInput, generateDocumentInputSchema } from './schemas';
 
 /**
  * Fetcher function for generating a document
@@ -33,10 +33,7 @@ export async function generateDocument({
   const validatedData = generateDocumentInputSchema.parse(data);
 
   // Make API request
-  return api.post<DocumentResponse>(
-    `/api/projects/${projectId}/documents/generate`,
-    validatedData
-  );
+  return api.post<DocumentResponse>(`/api/projects/${projectId}/documents/generate`, validatedData);
 }
 
 /**
@@ -74,9 +71,7 @@ export async function generateDocument({
  * });
  * ```
  */
-export function useGenerateDocument(
-  mutationConfig?: MutationConfig<typeof generateDocument>
-) {
+export function useGenerateDocument(mutationConfig?: MutationConfig<typeof generateDocument>) {
   const queryClient = useQueryClient();
 
   return useMutation({

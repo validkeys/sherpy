@@ -123,10 +123,13 @@ describe('useCreateProject hook', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockResponse);
-    expect(api.post).toHaveBeenCalledWith('/api/projects', expect.objectContaining({
-      name: 'Test Project',
-      priority: 'medium',
-    }));
+    expect(api.post).toHaveBeenCalledWith(
+      '/api/projects',
+      expect.objectContaining({
+        name: 'Test Project',
+        priority: 'medium',
+      })
+    );
   });
 
   it('should invalidate projects cache on success', async () => {
@@ -181,10 +184,9 @@ describe('useCreateProject hook', () => {
 
     const onSuccess = vi.fn();
 
-    const { result } = renderHook(
-      () => useCreateProject({ onSuccess }),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useCreateProject({ onSuccess }), {
+      wrapper: createWrapper(),
+    });
 
     result.current.mutate({
       name: 'Test Project',
@@ -192,11 +194,7 @@ describe('useCreateProject hook', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(onSuccess).toHaveBeenCalledWith(
-      mockResponse,
-      { name: 'Test Project' },
-      undefined
-    );
+    expect(onSuccess).toHaveBeenCalledWith(mockResponse, { name: 'Test Project' }, undefined);
   });
 
   it('should handle API errors', async () => {

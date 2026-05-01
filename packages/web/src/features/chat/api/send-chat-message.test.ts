@@ -312,7 +312,9 @@ describe('useSendChatMessage', () => {
       createdAt: '2024-01-01T00:01:00Z',
     };
 
-    mockApiPost.mockResolvedValueOnce({ message: mockMessage1 }).mockResolvedValueOnce({ message: mockMessage2 });
+    mockApiPost
+      .mockResolvedValueOnce({ message: mockMessage1 })
+      .mockResolvedValueOnce({ message: mockMessage2 });
 
     const { result } = renderHook(() => useSendChatMessage(), { wrapper });
 

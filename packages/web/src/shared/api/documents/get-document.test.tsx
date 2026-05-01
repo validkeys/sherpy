@@ -48,9 +48,7 @@ describe('getDocument', () => {
 
     const result = await getDocument({ projectId, documentType });
 
-    expect(mockApiGet).toHaveBeenCalledWith(
-      `/api/projects/${projectId}/documents/${documentType}`
-    );
+    expect(mockApiGet).toHaveBeenCalledWith(`/api/projects/${projectId}/documents/${documentType}`);
     expect(result).toEqual(mockResponse);
     expect(result.document.documentType).toBe(documentType);
   });
@@ -94,9 +92,7 @@ describe('getDocument', () => {
 
     mockApiGet.mockRejectedValueOnce(mockError);
 
-    await expect(getDocument({ projectId, documentType })).rejects.toThrow(
-      'Document not found'
-    );
+    await expect(getDocument({ projectId, documentType })).rejects.toThrow('Document not found');
   });
 
   it('should propagate API errors', async () => {
@@ -208,9 +204,7 @@ describe('useDocument', () => {
     // Verify data
     expect(result.current.data).toEqual(mockResponse);
     expect(result.current.data?.document.content).toContain('business_goals');
-    expect(mockApiGet).toHaveBeenCalledWith(
-      `/api/projects/${projectId}/documents/${documentType}`
-    );
+    expect(mockApiGet).toHaveBeenCalledWith(`/api/projects/${projectId}/documents/${documentType}`);
   });
 
   it('should handle 404 errors gracefully', async () => {

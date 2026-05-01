@@ -11,7 +11,16 @@
  */
 
 // Types
-export type { Project, PipelineStatus, Priority, ProjectListResponse, ProjectResponse, CreateProjectInput, UpdateProjectInput, ListProjectsParams } from './types';
+export type {
+  Project,
+  PipelineStatus,
+  Priority,
+  ProjectListResponse,
+  ProjectResponse,
+  CreateProjectInput,
+  UpdateProjectInput,
+  ListProjectsParams,
+} from './types';
 
 // Schemas
 export {

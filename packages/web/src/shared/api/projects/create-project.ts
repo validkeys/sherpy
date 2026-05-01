@@ -10,7 +10,7 @@ import { api } from '@/lib/api-client';
 import type { MutationConfig } from '@/lib/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ProjectResponse } from './types';
-import { createProjectInputSchema, type CreateProjectInput } from './schemas';
+import { type CreateProjectInput, createProjectInputSchema } from './schemas';
 
 /**
  * Fetcher function for creating a project

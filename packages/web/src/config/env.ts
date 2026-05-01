@@ -55,9 +55,12 @@ function parseBoolean(value: string): boolean {
 function createEnv(): Env {
   // API URL: if empty, use current origin (for Vite proxy in dev, or same-origin in prod)
   const apiUrlEnv = import.meta.env.VITE_API_URL;
-  const apiUrl = apiUrlEnv && apiUrlEnv.trim() !== ''
-    ? apiUrlEnv
-    : (typeof window !== 'undefined' ? window.location.origin : '');
+  const apiUrl =
+    apiUrlEnv && apiUrlEnv.trim() !== ''
+      ? apiUrlEnv
+      : typeof window !== 'undefined'
+        ? window.location.origin
+        : '';
 
   const wsUrl = getRequiredEnv('VITE_WS_URL');
   const devMode = parseBoolean(getOptionalEnv('VITE_DEV_MODE', String(import.meta.env.DEV)));

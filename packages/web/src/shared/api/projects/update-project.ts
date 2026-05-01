@@ -10,7 +10,7 @@ import { api } from '@/lib/api-client';
 import type { MutationConfig } from '@/lib/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ProjectResponse } from './types';
-import { updateProjectInputSchema, type UpdateProjectInput } from './schemas';
+import { type UpdateProjectInput, updateProjectInputSchema } from './schemas';
 
 /**
  * Input for update project mutation

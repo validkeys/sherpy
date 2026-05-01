@@ -21,11 +21,7 @@ export type {
 } from './types';
 
 // Schemas
-export {
-  messageRoleSchema,
-  sendMessageInputSchema,
-  getMessagesParamsSchema,
-} from './schemas';
+export { messageRoleSchema, sendMessageInputSchema, getMessagesParamsSchema } from './schemas';
 
 // Send Message
 export { sendMessage, useSendMessage, type SendMessageVariables } from './send-message';

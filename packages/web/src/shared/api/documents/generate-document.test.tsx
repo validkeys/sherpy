@@ -52,10 +52,7 @@ describe('generateDocument', () => {
 
     const result = await generateDocument({ projectId, data });
 
-    expect(mockApiPost).toHaveBeenCalledWith(
-      `/api/projects/${projectId}/documents/generate`,
-      data
-    );
+    expect(mockApiPost).toHaveBeenCalledWith(`/api/projects/${projectId}/documents/generate`, data);
     expect(result).toEqual(mockResponse);
   });
 
@@ -176,10 +173,7 @@ describe('useGenerateDocument', () => {
     });
 
     // Verify API was called
-    expect(mockApiPost).toHaveBeenCalledWith(
-      `/api/projects/${projectId}/documents/generate`,
-      data
-    );
+    expect(mockApiPost).toHaveBeenCalledWith(`/api/projects/${projectId}/documents/generate`, data);
 
     // Verify cache was invalidated
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({

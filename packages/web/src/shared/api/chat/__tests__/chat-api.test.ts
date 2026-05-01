@@ -11,7 +11,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createElement, type ReactNode } from 'react';
+import { type ReactNode, createElement } from 'react';
 import { sendMessage, useSendMessage } from '../send-message';
 import { getMessages, getMessagesQueryOptions, useMessages } from '../get-messages';
 import type { ChatMessage } from '../types';
@@ -265,8 +265,7 @@ describe('Chat Messages API Integration Tests', () => {
 
       // Second query with cursor
       const { result: result2 } = renderHook(
-        () =>
-          useMessages({ projectId: 'proj_abc', params: { limit: 10, cursor: 'cursor_page2' } }),
+        () => useMessages({ projectId: 'proj_abc', params: { limit: 10, cursor: 'cursor_page2' } }),
         {
           wrapper: createWrapper(),
         }
@@ -403,12 +402,9 @@ describe('Chat Messages API Integration Tests', () => {
       mockApiGet.mockResolvedValue(messagesResponse);
 
       // First, set up the messages query
-      const { result: messagesResult } = renderHook(
-        () => useMessages({ projectId: 'proj_abc' }),
-        {
-          wrapper: createWrapper(),
-        }
-      );
+      const { result: messagesResult } = renderHook(() => useMessages({ projectId: 'proj_abc' }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(messagesResult.current.isSuccess).toBe(true);
@@ -452,24 +448,18 @@ describe('Chat Messages API Integration Tests', () => {
       mockApiGet.mockResolvedValueOnce(mockResponse1).mockResolvedValueOnce(mockResponse2);
 
       // First project
-      const { result: result1 } = renderHook(
-        () => useMessages({ projectId: 'proj_abc' }),
-        {
-          wrapper: createWrapper(),
-        }
-      );
+      const { result: result1 } = renderHook(() => useMessages({ projectId: 'proj_abc' }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result1.current.isSuccess).toBe(true);
       });
 
       // Second project
-      const { result: result2 } = renderHook(
-        () => useMessages({ projectId: 'proj_xyz' }),
-        {
-          wrapper: createWrapper(),
-        }
-      );
+      const { result: result2 } = renderHook(() => useMessages({ projectId: 'proj_xyz' }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result2.current.isSuccess).toBe(true);

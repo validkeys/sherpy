@@ -10,7 +10,7 @@ import { api } from '@/lib/api-client';
 import type { MutationConfig } from '@/lib/react-query';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { SendMessageResponse } from './types';
-import { sendMessageInputSchema, type SendMessageInput } from './schemas';
+import { type SendMessageInput, sendMessageInputSchema } from './schemas';
 
 /**
  * Input for send message mutation
@@ -46,10 +46,7 @@ export async function sendMessage({
   const validatedData = sendMessageInputSchema.parse(data);
 
   // Make API request
-  return api.post<SendMessageResponse>(
-    `/api/projects/${projectId}/chat/messages`,
-    validatedData
-  );
+  return api.post<SendMessageResponse>(`/api/projects/${projectId}/chat/messages`, validatedData);
 }
 
 /**

@@ -17,10 +17,7 @@
  *   ) { ... }
  */
 
-import type {
-  UseMutationOptions,
-  UndefinedInitialDataOptions,
-} from '@tanstack/react-query';
+import type { UndefinedInitialDataOptions, UseMutationOptions } from '@tanstack/react-query';
 
 /**
  * Extract configuration options that can be overridden by consumers
@@ -70,9 +67,7 @@ export type QueryConfig<T extends (...args: any[]) => any> = Omit<
  * }
  * ```
  */
-export type MutationConfig<
-  MutationFn extends (...args: any[]) => Promise<any>,
-> = Omit<
+export type MutationConfig<MutationFn extends (...args: any[]) => Promise<any>> = Omit<
   UseMutationOptions<
     Awaited<ReturnType<MutationFn>>, // TData
     Error, // TError

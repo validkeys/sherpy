@@ -31,7 +31,11 @@ interface SendChatMessageResponse {
  * Mutation function
  * Sends a chat message to the API
  */
-export const sendChatMessage = async ({ data }: { data: SendChatMessageInput }): Promise<ChatMessage> => {
+export const sendChatMessage = async ({
+  data,
+}: {
+  data: SendChatMessageInput;
+}): Promise<ChatMessage> => {
   const { projectId, ...payload } = data;
   const response = await api.post<SendChatMessageResponse>(
     `/api/projects/${projectId}/chat/messages`,
