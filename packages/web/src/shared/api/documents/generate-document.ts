@@ -76,14 +76,14 @@ export function useGenerateDocument(mutationConfig?: MutationConfig<typeof gener
 
   return useMutation({
     mutationFn: generateDocument,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, context, meta) => {
       // Invalidate documents list for this project to refetch with new document
       queryClient.invalidateQueries({
         queryKey: ['documents', variables.projectId],
       });
 
       // Call consumer's onSuccess if provided
-      mutationConfig?.onSuccess?.(data, variables, context);
+      mutationConfig?.onSuccess?.(data, variables, context, meta);
     },
     ...mutationConfig,
   });

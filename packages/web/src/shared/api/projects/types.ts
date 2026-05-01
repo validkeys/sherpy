@@ -55,7 +55,7 @@ export interface UpdateProjectInput {
 /**
  * Query parameters for listing projects
  */
-export interface ListProjectsParams {
+export interface ListProjectsParams extends Record<string, string | number | boolean | undefined | string[]> {
   pipelineStatus?: PipelineStatus[];
   priority?: Priority[];
   search?: string;

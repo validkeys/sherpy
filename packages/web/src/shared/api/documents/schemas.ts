@@ -39,7 +39,7 @@ export const documentFormatSchema = z.enum([
 export const generateDocumentInputSchema = z.object({
   documentType: documentTypeSchema,
   format: documentFormatSchema.optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

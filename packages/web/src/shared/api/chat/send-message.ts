@@ -86,14 +86,14 @@ export function useSendMessage(mutationConfig?: MutationConfig<typeof sendMessag
 
   return useMutation({
     mutationFn: sendMessage,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, context, meta) => {
       // Invalidate chat messages for this project to refetch with new message
       queryClient.invalidateQueries({
         queryKey: ['chat', variables.projectId, 'messages'],
       });
 
       // Call consumer's onSuccess if provided
-      mutationConfig?.onSuccess?.(data, variables, context);
+      mutationConfig?.onSuccess?.(data, variables, context, meta);
     },
     ...mutationConfig,
   });

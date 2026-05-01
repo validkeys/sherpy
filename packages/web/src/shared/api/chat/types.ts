@@ -50,7 +50,7 @@ export interface GetMessagesResponse {
 /**
  * Query parameters for fetching messages
  */
-export interface GetMessagesParams {
+export interface GetMessagesParams extends Record<string, string | number | boolean | undefined> {
   limit?: number;
   cursor?: string;
 }

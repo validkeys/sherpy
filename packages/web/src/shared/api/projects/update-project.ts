@@ -88,7 +88,7 @@ export function useUpdateProject(mutationConfig?: MutationConfig<typeof updatePr
 
   return useMutation({
     mutationFn: updateProject,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, context, meta) => {
       // Invalidate projects list to reflect updates
       queryClient.invalidateQueries({ queryKey: ['projects'] });
 
@@ -96,7 +96,7 @@ export function useUpdateProject(mutationConfig?: MutationConfig<typeof updatePr
       queryClient.invalidateQueries({ queryKey: ['projects', variables.projectId] });
 
       // Call consumer's onSuccess if provided
-      mutationConfig?.onSuccess?.(data, variables, context);
+      mutationConfig?.onSuccess?.(data, variables, context, meta);
     },
     ...mutationConfig,
   });

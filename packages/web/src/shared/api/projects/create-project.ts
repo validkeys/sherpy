@@ -63,12 +63,12 @@ export function useCreateProject(mutationConfig?: MutationConfig<typeof createPr
 
   return useMutation({
     mutationFn: createProject,
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, context, meta) => {
       // Invalidate projects list to refetch with new project
       queryClient.invalidateQueries({ queryKey: ['projects'] });
 
       // Call consumer's onSuccess if provided
-      mutationConfig?.onSuccess?.(data, variables, context);
+      mutationConfig?.onSuccess?.(data, variables, context, meta);
     },
     ...mutationConfig,
   });
