@@ -1,9 +1,12 @@
 import { useParams } from 'react-router-dom';
 import { AssistantRuntimeProvider } from '@assistant-ui/react';
+import { useSetAtom } from 'jotai';
+import { useEffect } from 'react';
 import { Sidebar } from '@/features/sidebar';
 import { MainTabs } from '@/features/tabs';
 import { useChatRuntime } from '@/features/chat/hooks/use-chat-runtime';
 import { useMockRuntime } from '@/features/chat/hooks/use-mock-runtime';
+import { currentProjectIdAtom } from '@/shared/state';
 
 /**
  * Project page component
@@ -42,9 +45,15 @@ function ProjectContentWithRuntime({ projectId }: { projectId: string }) {
 
 export function ProjectPage() {
   const { projectId } = useParams<{ projectId: string }>();
+  const setCurrentProjectId = useSetAtom(currentProjectIdAtom);
 
   // Fallback to 'default-project' when no route param provided (development/testing)
   const effectiveProjectId = projectId ?? 'default-project';
+
+  // Update current project ID atom when route changes
+  useEffect(() => {
+    setCurrentProjectId(effectiveProjectId);
+  }, [effectiveProjectId, setCurrentProjectId]);
 
   return <ProjectContentWithRuntime projectId={effectiveProjectId} />;
 }

@@ -3,11 +3,13 @@ import React from 'react';
  * Integration tests for Sidebar component
  */
 
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Provider, createStore } from 'jotai';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { completedStepsAtom, currentStepAtom } from '../state/workflow-atoms';
+import { currentProjectIdAtom } from '@/shared/state';
 import { Sidebar } from './sidebar';
 
 // Mock chat actions
@@ -17,6 +19,32 @@ vi.mock('@/features/chat', () => ({
     sendMessage: mockSendMessage,
     sendSystemMessage: vi.fn(),
     clearThread: vi.fn(),
+  }),
+}));
+
+// Mock Projects API
+const mockUpdateProject = vi.fn();
+const mockGetProjectData = vi.fn();
+const mockIsLoadingProject = vi.fn(() => false);
+vi.mock('@/shared/api/projects/update-project', () => ({
+  useUpdateProject: (config?: any) => ({
+    mutate: (variables: any) => {
+      mockUpdateProject(variables);
+      config?.onSuccess?.();
+    },
+    mutateAsync: vi.fn(),
+    isLoading: false,
+    isError: false,
+    error: null,
+  }),
+}));
+
+vi.mock('@/shared/api/projects/get-project', () => ({
+  useProject: () => ({
+    data: mockGetProjectData(),
+    isLoading: mockIsLoadingProject(),
+    isError: false,
+    error: null,
   }),
 }));
 
@@ -45,18 +73,40 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 describe('Sidebar', () => {
   let store: ReturnType<typeof createStore>;
+  let queryClient: QueryClient;
 
   beforeEach(() => {
     localStorageMock.clear();
     store = createStore();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
     mockSendMessage.mockClear();
+    mockUpdateProject.mockClear();
+    mockGetProjectData.mockClear();
+    mockIsLoadingProject.mockReturnValue(false);
+    // Set default project ID
+    store.set(currentProjectIdAtom, 'test-project-123');
+    // Set default project data
+    mockGetProjectData.mockReturnValue({
+      project: {
+        id: 'test-project-123',
+        name: 'Test Project',
+        pipelineStatus: 'intake',
+      },
+    });
   });
 
   const renderSidebar = () => {
     return render(
-      <Provider store={store}>
-        <Sidebar />
-      </Provider>
+      <QueryClientProvider client={queryClient}>
+        <Provider store={store}>
+          <Sidebar />
+        </Provider>
+      </QueryClientProvider>
     );
   };
 
@@ -178,7 +228,13 @@ describe('Sidebar', () => {
   describe('status updates', () => {
     it('marks completed steps correctly', () => {
       store.set(completedStepsAtom, ['intake', 'gap-analysis']);
-      store.set(currentStepAtom, 'business-requirements');
+      mockGetProjectData.mockReturnValue({
+        project: {
+          id: 'test-project-123',
+          name: 'Test Project',
+          pipelineStatus: 'business-requirements',
+        },
+      });
 
       const { container } = renderSidebar();
 
@@ -295,7 +351,13 @@ describe('Sidebar', () => {
 
   describe('state integration', () => {
     it('reads from currentStepAtom', () => {
-      store.set(currentStepAtom, 'architecture-decisions');
+      mockGetProjectData.mockReturnValue({
+        project: {
+          id: 'test-project-123',
+          name: 'Test Project',
+          pipelineStatus: 'architecture-decisions',
+        },
+      });
       renderSidebar();
 
       const architectureButton = screen.getByRole('button', {
@@ -325,7 +387,13 @@ describe('Sidebar', () => {
         'business-requirements',
         'technical-requirements',
       ]);
-      store.set(currentStepAtom, 'style-anchors');
+      mockGetProjectData.mockReturnValue({
+        project: {
+          id: 'test-project-123',
+          name: 'Test Project',
+          pipelineStatus: 'style-anchors',
+        },
+      });
 
       const { container } = renderSidebar();
 
@@ -340,6 +408,96 @@ describe('Sidebar', () => {
       // Should have 5 pending (gray) indicators
       const pendingIndicators = container.querySelectorAll('.bg-gray-300');
       expect(pendingIndicators.length).toBe(5);
+    });
+  });
+
+  describe('Projects API integration', () => {
+    it('loads initial workflow state from project on mount', async () => {
+      mockGetProjectData.mockReturnValue({
+        project: {
+          id: 'test-project-123',
+          name: 'Test Project',
+          pipelineStatus: 'business-requirements',
+        },
+      });
+
+      renderSidebar();
+
+      await waitFor(() => {
+        expect(store.get(currentStepAtom)).toBe('business-requirements');
+      });
+
+      const businessReqButton = screen.getByRole('button', {
+        name: 'Navigate to Business Requirements',
+      });
+      expect(businessReqButton).toHaveAttribute('aria-current', 'step');
+    });
+
+    it('persists workflow state to database on step click', async () => {
+      const user = userEvent.setup();
+      renderSidebar();
+
+      const technicalReqButton = screen.getByRole('button', {
+        name: 'Navigate to Technical Requirements',
+      });
+
+      await user.click(technicalReqButton);
+
+      await waitFor(() => {
+        expect(mockUpdateProject).toHaveBeenCalledWith({
+          projectId: 'test-project-123',
+          data: { pipelineStatus: 'technical-requirements' },
+        });
+      });
+
+      expect(store.get(currentStepAtom)).toBe('technical-requirements');
+    });
+
+    it('shows loading indicator when project is loading', () => {
+      mockIsLoadingProject.mockReturnValue(true);
+      mockGetProjectData.mockReturnValue(undefined);
+
+      renderSidebar();
+
+      expect(screen.getByText('Loading workflow state...')).toBeInTheDocument();
+    });
+
+    it('does not persist to database when projectId is null', async () => {
+      const user = userEvent.setup();
+      store.set(currentProjectIdAtom, null);
+
+      renderSidebar();
+
+      const gapAnalysisButton = screen.getByRole('button', {
+        name: 'Navigate to Gap Analysis',
+      });
+
+      await user.click(gapAnalysisButton);
+
+      // Local state should still update
+      await waitFor(() => {
+        expect(store.get(currentStepAtom)).toBe('gap-analysis');
+      });
+
+      // But database persistence should not happen
+      expect(mockUpdateProject).not.toHaveBeenCalled();
+    });
+
+    it('provides optimistic updates for immediate UI feedback', async () => {
+      const user = userEvent.setup();
+      renderSidebar();
+
+      const styleAnchorsButton = screen.getByRole('button', {
+        name: 'Navigate to Style Anchors',
+      });
+
+      await user.click(styleAnchorsButton);
+
+      // UI should update immediately (optimistic)
+      await waitFor(() => {
+        expect(store.get(currentStepAtom)).toBe('style-anchors');
+      });
+      expect(styleAnchorsButton).toHaveAttribute('aria-current', 'step');
     });
   });
 });
