@@ -12,17 +12,23 @@ import type { GetChatMessagesResponse } from '../types';
 
 /**
  * Part 1: Fetcher function
- * Fetches chat messages for a project with pagination
+ * Fetches chat messages for a project with cursor-based pagination
  */
 export const getChatMessages = ({
   projectId,
-  page = 1,
+  cursor,
+  limit,
 }: {
   projectId: string;
-  page?: number;
+  cursor?: string;
+  limit?: number;
 }): Promise<GetChatMessagesResponse> => {
-  return api.get<GetChatMessagesResponse>(`/chat/messages`, {
-    params: { projectId, page },
+  const params: Record<string, string> = {};
+  if (cursor) params.cursor = cursor;
+  if (limit) params.limit = String(limit);
+
+  return api.get<GetChatMessagesResponse>(`/api/projects/${projectId}/chat/messages`, {
+    params,
   });
 };
 
@@ -32,14 +38,16 @@ export const getChatMessages = ({
  */
 export const getChatMessagesQueryOptions = ({
   projectId,
-  page,
+  cursor,
+  limit,
 }: {
   projectId: string;
-  page?: number;
+  cursor?: string;
+  limit?: number;
 }) => {
   return queryOptions({
-    queryKey: page ? ['chat-messages', projectId, { page }] : ['chat-messages', projectId],
-    queryFn: () => getChatMessages({ projectId, page }),
+    queryKey: ['chat-messages', projectId, { cursor, limit }],
+    queryFn: () => getChatMessages({ projectId, cursor, limit }),
   });
 };
 
@@ -49,13 +57,14 @@ export const getChatMessagesQueryOptions = ({
  */
 export type UseChatMessagesOptions = {
   projectId: string;
-  page?: number;
+  cursor?: string;
+  limit?: number;
   queryConfig?: QueryConfig<typeof getChatMessagesQueryOptions>;
 };
 
-export const useChatMessages = ({ projectId, page, queryConfig }: UseChatMessagesOptions) => {
+export const useChatMessages = ({ projectId, cursor, limit, queryConfig }: UseChatMessagesOptions) => {
   return useQuery({
-    ...getChatMessagesQueryOptions({ projectId, page }),
+    ...getChatMessagesQueryOptions({ projectId, cursor, limit }),
     ...queryConfig,
   });
 };

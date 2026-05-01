@@ -23,7 +23,7 @@ describe('getChatMessages', () => {
 
   it('calls API with correct endpoint and params', async () => {
     const mockResponse = {
-      data: [
+      messages: [
         {
           id: 'msg-1',
           projectId: mockProjectId,
@@ -32,31 +32,46 @@ describe('getChatMessages', () => {
           createdAt: '2024-01-01T00:00:00Z',
         },
       ],
-      meta: { total: 1, page: 1, pageSize: 20, hasMore: false },
+      hasMore: false,
     };
 
     mockApiGet.mockResolvedValue(mockResponse);
 
-    const result = await getChatMessages({ projectId: mockProjectId, page: 1 });
+    const result = await getChatMessages({ projectId: mockProjectId, limit: 20 });
 
-    expect(mockApiGet).toHaveBeenCalledWith('/chat/messages', {
-      params: { projectId: mockProjectId, page: 1 },
+    expect(mockApiGet).toHaveBeenCalledWith(`/api/projects/${mockProjectId}/chat/messages`, {
+      params: { limit: '20' },
     });
     expect(result).toEqual(mockResponse);
   });
 
-  it('uses default page value when not provided', async () => {
+  it('includes cursor when provided', async () => {
     const mockResponse = {
-      data: [],
-      meta: { total: 0, page: 1, pageSize: 20, hasMore: false },
+      messages: [],
+      hasMore: false,
+    };
+
+    mockApiGet.mockResolvedValue(mockResponse);
+
+    await getChatMessages({ projectId: mockProjectId, cursor: 'cursor-123', limit: 10 });
+
+    expect(mockApiGet).toHaveBeenCalledWith(`/api/projects/${mockProjectId}/chat/messages`, {
+      params: { cursor: 'cursor-123', limit: '10' },
+    });
+  });
+
+  it('works without cursor or limit', async () => {
+    const mockResponse = {
+      messages: [],
+      hasMore: false,
     };
 
     mockApiGet.mockResolvedValue(mockResponse);
 
     await getChatMessages({ projectId: mockProjectId });
 
-    expect(mockApiGet).toHaveBeenCalledWith('/chat/messages', {
-      params: { projectId: mockProjectId, page: 1 },
+    expect(mockApiGet).toHaveBeenCalledWith(`/api/projects/${mockProjectId}/chat/messages`, {
+      params: {},
     });
   });
 
@@ -71,31 +86,35 @@ describe('getChatMessages', () => {
 describe('getChatMessagesQueryOptions', () => {
   const mockProjectId = 'project-456';
 
-  it('returns query options with correct query key (with page)', () => {
-    const options = getChatMessagesQueryOptions({ projectId: mockProjectId, page: 2 });
+  it('returns query options with correct query key (with cursor and limit)', () => {
+    const options = getChatMessagesQueryOptions({
+      projectId: mockProjectId,
+      cursor: 'cursor-123',
+      limit: 20
+    });
 
-    expect(options.queryKey).toEqual(['chat-messages', mockProjectId, { page: 2 }]);
+    expect(options.queryKey).toEqual(['chat-messages', mockProjectId, { cursor: 'cursor-123', limit: 20 }]);
     expect(options.queryFn).toBeDefined();
   });
 
-  it('returns query options with correct query key (without page)', () => {
+  it('returns query options with correct query key (without cursor)', () => {
     const options = getChatMessagesQueryOptions({ projectId: mockProjectId });
 
-    expect(options.queryKey).toEqual(['chat-messages', mockProjectId]);
+    expect(options.queryKey).toEqual(['chat-messages', mockProjectId, { cursor: undefined, limit: undefined }]);
     expect(options.queryFn).toBeDefined();
   });
 
   it('query function calls getChatMessages with correct params', async () => {
     const mockResponse = {
-      data: [],
-      meta: { total: 0, page: 1, pageSize: 20, hasMore: false },
+      messages: [],
+      hasMore: false,
     };
 
     const apiClient = await import('@/lib/api-client');
     const mockApiGet = apiClient.api.get as any;
     mockApiGet.mockResolvedValue(mockResponse);
 
-    const options = getChatMessagesQueryOptions({ projectId: mockProjectId, page: 3 });
+    const options = getChatMessagesQueryOptions({ projectId: mockProjectId, limit: 50 });
     const result = await options.queryFn();
 
     expect(result).toEqual(mockResponse);
@@ -127,7 +146,7 @@ describe('useChatMessages', () => {
 
   it('fetches chat messages successfully', async () => {
     const mockResponse = {
-      data: [
+      messages: [
         {
           id: 'msg-1',
           projectId: mockProjectId,
@@ -136,7 +155,7 @@ describe('useChatMessages', () => {
           createdAt: '2024-01-01T00:00:00Z',
         },
       ],
-      meta: { total: 1, page: 1, pageSize: 20, hasMore: false },
+      hasMore: false,
     };
 
     mockApiGet.mockResolvedValue(mockResponse);
@@ -148,27 +167,29 @@ describe('useChatMessages', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockResponse);
-    expect(mockApiGet).toHaveBeenCalledWith('/chat/messages', {
-      params: { projectId: mockProjectId, page: 1 },
+    expect(mockApiGet).toHaveBeenCalledWith(`/api/projects/${mockProjectId}/chat/messages`, {
+      params: {},
     });
   });
 
-  it('handles query with page parameter', async () => {
+  it('handles query with cursor and limit parameters', async () => {
     const mockResponse = {
-      data: [],
-      meta: { total: 0, page: 2, pageSize: 20, hasMore: false },
+      messages: [],
+      hasMore: true,
+      nextCursor: 'cursor-456',
     };
 
     mockApiGet.mockResolvedValue(mockResponse);
 
-    const { result } = renderHook(() => useChatMessages({ projectId: mockProjectId, page: 2 }), {
-      wrapper,
-    });
+    const { result } = renderHook(
+      () => useChatMessages({ projectId: mockProjectId, cursor: 'cursor-123', limit: 25 }),
+      { wrapper }
+    );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockApiGet).toHaveBeenCalledWith('/chat/messages', {
-      params: { projectId: mockProjectId, page: 2 },
+    expect(mockApiGet).toHaveBeenCalledWith(`/api/projects/${mockProjectId}/chat/messages`, {
+      params: { cursor: 'cursor-123', limit: '25' },
     });
   });
 
@@ -186,8 +207,8 @@ describe('useChatMessages', () => {
 
   it('respects custom query config', async () => {
     const mockResponse = {
-      data: [],
-      meta: { total: 0, page: 1, pageSize: 20, hasMore: false },
+      messages: [],
+      hasMore: false,
     };
 
     mockApiGet.mockResolvedValue(mockResponse);
@@ -209,7 +230,7 @@ describe('useChatMessages', () => {
 
   it('updates when projectId changes', async () => {
     const mockResponse1 = {
-      data: [
+      messages: [
         {
           id: 'msg-1',
           projectId: 'project-a',
@@ -218,11 +239,11 @@ describe('useChatMessages', () => {
           createdAt: '2024-01-01T00:00:00Z',
         },
       ],
-      meta: { total: 1, page: 1, pageSize: 20, hasMore: false },
+      hasMore: false,
     };
 
     const mockResponse2 = {
-      data: [
+      messages: [
         {
           id: 'msg-2',
           projectId: 'project-b',
@@ -231,7 +252,7 @@ describe('useChatMessages', () => {
           createdAt: '2024-01-02T00:00:00Z',
         },
       ],
-      meta: { total: 1, page: 1, pageSize: 20, hasMore: false },
+      hasMore: false,
     };
 
     mockApiGet.mockResolvedValueOnce(mockResponse1).mockResolvedValueOnce(mockResponse2);

@@ -17,15 +17,27 @@ import { getChatMessagesQueryOptions } from './get-chat-messages';
 export interface SendChatMessageInput {
   projectId: string;
   content: string;
-  role?: 'user' | 'system';
+  role?: 'user' | 'assistant';
+}
+
+/**
+ * Response from the API
+ */
+interface SendChatMessageResponse {
+  message: ChatMessage;
 }
 
 /**
  * Mutation function
  * Sends a chat message to the API
  */
-export const sendChatMessage = ({ data }: { data: SendChatMessageInput }): Promise<ChatMessage> => {
-  return api.post<ChatMessage>('/chat/messages', data);
+export const sendChatMessage = async ({ data }: { data: SendChatMessageInput }): Promise<ChatMessage> => {
+  const { projectId, ...payload } = data;
+  const response = await api.post<SendChatMessageResponse>(
+    `/api/projects/${projectId}/chat/messages`,
+    { ...payload, role: payload.role || 'user' }
+  );
+  return response.message;
 };
 
 /**

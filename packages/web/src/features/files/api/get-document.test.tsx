@@ -38,7 +38,7 @@ describe('getDocument', () => {
   });
 
   it('should call correct API endpoint with document type', async () => {
-    vi.mocked(api.get).mockResolvedValue(mockDocument);
+    vi.mocked(api.get).mockResolvedValue({ document: mockDocument });
 
     const result = await getDocument({
       projectId: 'project-1',
@@ -101,7 +101,7 @@ describe('useDocument', () => {
   });
 
   it('should fetch document successfully', async () => {
-    vi.mocked(api.get).mockResolvedValue(mockDocument);
+    vi.mocked(api.get).mockResolvedValue({ document: mockDocument });
 
     const { result } = renderHook(
       () =>

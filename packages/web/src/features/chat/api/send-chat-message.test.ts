@@ -28,7 +28,7 @@ describe('sendChatMessage', () => {
       role: 'user' as const,
     };
 
-    const mockResponse = {
+    const mockMessage = {
       id: 'msg-1',
       projectId: mockProjectId,
       role: 'user' as const,
@@ -36,35 +36,41 @@ describe('sendChatMessage', () => {
       createdAt: '2024-01-01T00:00:00Z',
     };
 
-    mockApiPost.mockResolvedValue(mockResponse);
+    mockApiPost.mockResolvedValue({ message: mockMessage });
 
     const result = await sendChatMessage({ data: mockInput });
 
-    expect(mockApiPost).toHaveBeenCalledWith('/chat/messages', mockInput);
-    expect(result).toEqual(mockResponse);
+    expect(mockApiPost).toHaveBeenCalledWith(`/api/projects/${mockProjectId}/chat/messages`, {
+      content: 'Hello, assistant!',
+      role: 'user',
+    });
+    expect(result).toEqual(mockMessage);
   });
 
-  it('handles system messages', async () => {
+  it('defaults to user role when not specified', async () => {
     const mockInput = {
       projectId: mockProjectId,
-      content: 'System notification',
-      role: 'system' as const,
+      content: 'Test message',
     };
 
-    const mockResponse = {
+    const mockMessage = {
       id: 'msg-2',
       projectId: mockProjectId,
-      role: 'system' as const,
-      content: 'System notification',
+      role: 'user' as const,
+      content: 'Test message',
       createdAt: '2024-01-01T00:00:00Z',
     };
 
-    mockApiPost.mockResolvedValue(mockResponse);
+    mockApiPost.mockResolvedValue({ message: mockMessage });
 
     const result = await sendChatMessage({ data: mockInput });
 
-    expect(result.role).toBe('system');
-    expect(result.content).toBe('System notification');
+    expect(mockApiPost).toHaveBeenCalledWith(`/api/projects/${mockProjectId}/chat/messages`, {
+      content: 'Test message',
+      role: 'user',
+    });
+    expect(result.role).toBe('user');
+    expect(result.content).toBe('Test message');
   });
 
   it('handles API errors', async () => {
@@ -103,7 +109,7 @@ describe('useSendChatMessage', () => {
   });
 
   it('sends message successfully', async () => {
-    const mockResponse = {
+    const mockMessage = {
       id: 'msg-1',
       projectId: mockProjectId,
       role: 'user' as const,
@@ -111,7 +117,7 @@ describe('useSendChatMessage', () => {
       createdAt: '2024-01-01T00:00:00Z',
     };
 
-    mockApiPost.mockResolvedValue(mockResponse);
+    mockApiPost.mockResolvedValue({ message: mockMessage });
 
     const { result } = renderHook(() => useSendChatMessage(), { wrapper });
 
@@ -124,15 +130,15 @@ describe('useSendChatMessage', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual(mockResponse);
-    expect(mockApiPost).toHaveBeenCalledWith('/chat/messages', {
-      projectId: mockProjectId,
+    expect(result.current.data).toEqual(mockMessage);
+    expect(mockApiPost).toHaveBeenCalledWith(`/api/projects/${mockProjectId}/chat/messages`, {
       content: 'Test message',
+      role: 'user',
     });
   });
 
   it('invalidates chat messages query on success', async () => {
-    const mockResponse = {
+    const mockMessage = {
       id: 'msg-1',
       projectId: mockProjectId,
       role: 'user' as const,
@@ -140,7 +146,7 @@ describe('useSendChatMessage', () => {
       createdAt: '2024-01-01T00:00:00Z',
     };
 
-    mockApiPost.mockResolvedValue(mockResponse);
+    mockApiPost.mockResolvedValue({ message: mockMessage });
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -157,12 +163,12 @@ describe('useSendChatMessage', () => {
 
     // Verify cache invalidation was called with correct query key
     expect(invalidateSpy).toHaveBeenCalledWith({
-      queryKey: ['chat-messages', mockProjectId],
+      queryKey: ['chat-messages', mockProjectId, { cursor: undefined, limit: undefined }],
     });
   });
 
   it('calls custom onSuccess callback', async () => {
-    const mockResponse = {
+    const mockMessage = {
       id: 'msg-1',
       projectId: mockProjectId,
       role: 'user' as const,
@@ -170,7 +176,7 @@ describe('useSendChatMessage', () => {
       createdAt: '2024-01-01T00:00:00Z',
     };
 
-    mockApiPost.mockResolvedValue(mockResponse);
+    mockApiPost.mockResolvedValue({ message: mockMessage });
 
     const onSuccessMock = vi.fn();
 
@@ -194,7 +200,7 @@ describe('useSendChatMessage', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(onSuccessMock).toHaveBeenCalledWith(
-      mockResponse,
+      mockMessage,
       { data: { projectId: mockProjectId, content: 'Test message' } },
       undefined
     );
@@ -250,7 +256,7 @@ describe('useSendChatMessage', () => {
   });
 
   it('calls custom onSettled callback', async () => {
-    const mockResponse = {
+    const mockMessage = {
       id: 'msg-1',
       projectId: mockProjectId,
       role: 'user' as const,
@@ -258,7 +264,7 @@ describe('useSendChatMessage', () => {
       createdAt: '2024-01-01T00:00:00Z',
     };
 
-    mockApiPost.mockResolvedValue(mockResponse);
+    mockApiPost.mockResolvedValue({ message: mockMessage });
 
     const onSettledMock = vi.fn();
 
@@ -283,14 +289,14 @@ describe('useSendChatMessage', () => {
 
     expect(onSettledMock).toHaveBeenCalledTimes(1);
     const [data, error, variables] = onSettledMock.mock.calls[0];
-    expect(data).toEqual(mockResponse);
+    expect(data).toEqual(mockMessage);
     expect(error).toBeNull();
     expect(variables.data.projectId).toBe(mockProjectId);
     expect(variables.data.content).toBe('Test message');
   });
 
   it('can send multiple messages sequentially', async () => {
-    const mockResponse1 = {
+    const mockMessage1 = {
       id: 'msg-1',
       projectId: mockProjectId,
       role: 'user' as const,
@@ -298,7 +304,7 @@ describe('useSendChatMessage', () => {
       createdAt: '2024-01-01T00:00:00Z',
     };
 
-    const mockResponse2 = {
+    const mockMessage2 = {
       id: 'msg-2',
       projectId: mockProjectId,
       role: 'user' as const,
@@ -306,7 +312,7 @@ describe('useSendChatMessage', () => {
       createdAt: '2024-01-01T00:01:00Z',
     };
 
-    mockApiPost.mockResolvedValueOnce(mockResponse1).mockResolvedValueOnce(mockResponse2);
+    mockApiPost.mockResolvedValueOnce({ message: mockMessage1 }).mockResolvedValueOnce({ message: mockMessage2 });
 
     const { result } = renderHook(() => useSendChatMessage(), { wrapper });
 
@@ -319,7 +325,7 @@ describe('useSendChatMessage', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(mockResponse1);
+    expect(result.current.data).toEqual(mockMessage1);
 
     // Send second message
     result.current.mutate({
@@ -329,7 +335,7 @@ describe('useSendChatMessage', () => {
       },
     });
 
-    await waitFor(() => expect(result.current.data).toEqual(mockResponse2));
+    await waitFor(() => expect(result.current.data).toEqual(mockMessage2));
 
     expect(mockApiPost).toHaveBeenCalledTimes(2);
   });

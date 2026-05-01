@@ -13,6 +13,13 @@ import { queryOptions, useQuery } from '@tanstack/react-query';
 import type { Document, DocumentType } from '../types';
 
 /**
+ * Response type from the API endpoint
+ */
+interface GetDocumentResponse {
+  document: Document;
+}
+
+/**
  * Fetcher: Fetches a specific document by type
  */
 export async function getDocument({
@@ -22,7 +29,8 @@ export async function getDocument({
   projectId: string;
   documentType: DocumentType;
 }): Promise<Document> {
-  return api.get<Document>(`/api/projects/${projectId}/documents/${documentType}`);
+  const response = await api.get<GetDocumentResponse>(`/api/projects/${projectId}/documents/${documentType}`);
+  return response.document;
 }
 
 /**
