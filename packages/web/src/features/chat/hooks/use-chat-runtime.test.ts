@@ -15,23 +15,10 @@ vi.mock('@/lib/websocket', () => ({
   getAuthToken: vi.fn(() => 'mock-auth-token'),
 }));
 
-// Mock chat messages API
-vi.mock('@/shared/api/chat/get-messages', () => ({
-  useMessages: vi.fn(),
-}));
-
-// Mock the send chat message API
-const mockMutate = vi.fn();
-const mockSendChatMessage = {
-  mutate: mockMutate,
-  isLoading: false,
-  isSuccess: false,
-  isError: false,
-};
-
-vi.mock('../api/send-chat-message', () => ({
-  useSendChatMessage: () => mockSendChatMessage,
-}));
+// Note: Message history hydration and persistence tests are skipped.
+// Chat history is now handled by a separate ChatHistory component (chat-history.tsx)
+// instead of being hydrated into the runtime. This avoids runtime initialization issues.
+// See M4-UI-007 for details on why runtime hydration was removed.
 
 describe('useChatRuntime', () => {
   const mockProjectId = 'test-project-456';
@@ -39,7 +26,6 @@ describe('useChatRuntime', () => {
   let mockUseAssistantTransportRuntime: ReturnType<typeof vi.fn>;
   let mockGetWebSocketUrl: ReturnType<typeof vi.fn>;
   let mockGetAuthToken: ReturnType<typeof vi.fn>;
-  let mockUseMessages: ReturnType<typeof vi.fn>;
   let queryClient: QueryClient;
 
   const wrapper = ({ children }: { children: ReactNode }) => {
@@ -48,7 +34,6 @@ describe('useChatRuntime', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    mockMutate.mockClear();
     queryClient = new QueryClient({
       defaultOptions: {
         mutations: {
@@ -75,14 +60,6 @@ describe('useChatRuntime', () => {
     const websocketLib = await import('@/lib/websocket');
     mockGetWebSocketUrl = websocketLib.getWebSocketUrl as any;
     mockGetAuthToken = websocketLib.getAuthToken as any;
-
-    const chatApi = await import('@/shared/api/chat/get-messages');
-    mockUseMessages = chatApi.useMessages as any;
-    mockUseMessages.mockReturnValue({
-      data: { messages: [], hasMore: false },
-      isLoading: false,
-      error: null,
-    });
   });
 
   it('creates runtime with correct API endpoint', () => {
@@ -255,7 +232,7 @@ describe('useChatRuntime', () => {
     vi.useRealTimers();
   });
 
-  describe('message history hydration', () => {
+  describe.skip('message history hydration', () => {
     it('loads existing messages from API on mount', () => {
       const mockMessages = [
         {
@@ -481,7 +458,7 @@ describe('useChatRuntime', () => {
     });
   });
 
-  describe('message persistence integration', () => {
+  describe.skip('message persistence integration', () => {
     it('configures prepareSendCommandsRequest callback', () => {
       renderHook(() => useChatRuntime(mockProjectId), { wrapper });
 

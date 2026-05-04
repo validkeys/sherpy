@@ -4,16 +4,22 @@ import { useConnectionState } from '../hooks/use-connection-state';
 import { StreamingIndicator } from './streaming-indicator';
 import { CustomComposer } from './custom-composer';
 import { ConnectionError } from './connection-error';
+import { ChatHistory } from './chat-history';
 
 interface ChatContainerProps {
   projectId: string;
 }
 
 /**
- * Main chat container component using @assistant-ui Thread component.
- * Displays the chat interface with loading and streaming indicators.
- * Supports hybrid mode with both guided questions and free-form messages.
- * Shows connection errors and provides reconnection UI when WebSocket disconnects.
+ * Main chat container component with historical and streaming messages.
+ *
+ * Architecture:
+ * - ChatHistory: Displays historical messages from database (React Query)
+ * - Thread: Displays new streaming messages from runtime (WebSocket)
+ *
+ * This separation avoids runtime initialization issues when hydrating with
+ * historical messages. Historical messages are loaded via REST API and displayed
+ * separately, while the runtime handles only new streaming messages.
  *
  * NOTE: Expects to be rendered inside AssistantRuntimeProvider and AuiProvider
  * (provided by ProjectPage). Uses runtime from provider context (no duplicate creation).
@@ -37,17 +43,23 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
         <ConnectionError onRetry={manualRetry} isReconnecting={connectionState.isReconnecting} />
       )}
 
-      <div className="flex-1 relative">
-        <Thread
-          composer={
-            connectionState.isConnected ? (
-              <>
-                <CustomComposer />
-                {isRunning && <StreamingIndicator />}
-              </>
-            ) : undefined
-          }
-        />
+      <div className="flex-1 relative overflow-y-auto">
+        <div className="p-4">
+          {/* Historical messages from database */}
+          <ChatHistory projectId={projectId} />
+
+          {/* New streaming messages from runtime */}
+          <Thread
+            composer={
+              connectionState.isConnected ? (
+                <>
+                  <CustomComposer />
+                  {isRunning && <StreamingIndicator />}
+                </>
+              ) : undefined
+            }
+          />
+        </div>
       </div>
     </div>
   );
