@@ -1,45 +1,44 @@
 import { useAssistantTransportRuntime } from '@assistant-ui/react';
+import { useMemo } from 'react';
+import type { SendCommandsRequestBody } from '@assistant-ui/react';
 import { getAuthToken, getWebSocketUrl } from '@/lib/websocket';
 import { useMessages } from '@/shared/api/chat/get-messages';
 import { useSendChatMessage } from '../api/send-chat-message';
+import { convertMessagesToThread } from '../utils/message-converter';
 
 /**
  * Custom hook to create and configure chat runtime with streaming connection.
- * Returns only the runtime - connection state monitoring is handled separately
- * by useConnectionState to avoid duplicate runtime instances.
- *
- * Loads message history from the API on mount and hydrates the runtime.
- * Automatically persists user messages sent through the UI to the database.
+ * Handles initial message history hydration from the database and persistence
+ * of new user messages.
  *
  * @param projectId - The project ID for the current session
- * @returns Configured assistant runtime with message history
+ * @returns Configured assistant runtime with loading state
  */
 export function useChatRuntime(projectId: string) {
-  const { mutate: persistMessage } = useSendChatMessage();
-
-  // Fetch message history for the project
-  // Wait for initial load to complete before creating runtime
-  const { data: messagesData, isLoading: isLoadingMessages } = useMessages({
+  // Fetch message history from database
+  const { data: messagesData, isLoading: isLoadingHistory } = useMessages({
     projectId,
     queryConfig: {
-      enabled: !!projectId,
+      enabled: true,
       staleTime: Infinity, // Only fetch once on mount
     },
   });
 
   // Convert API messages to runtime format
-  // Only compute this once messages are fully loaded
-  const initialMessages =
-    !isLoadingMessages && messagesData?.messages
-      ? messagesData.messages.map((msg) => ({
-          id: msg.id,
-          role: msg.role,
-          content: [{ type: 'text' as const, text: msg.content }],
-          createdAt: new Date(msg.createdAt),
-        }))
-      : [];
+  const initialMessages = useMemo(() => {
+    if (!messagesData?.messages) {
+      return [];
+    }
+    return convertMessagesToThread(messagesData.messages);
+  }, [messagesData?.messages]);
 
-  const runtime = useAssistantTransportRuntime({
+  // Hook for persisting user messages to database
+  const { mutate: persistMessage } = useSendChatMessage();
+
+  const runtime = useAssistantTransportRuntime<{
+    messages: never[];
+    isRunning: boolean;
+  }>({
     initialState: {
       messages: initialMessages,
       isRunning: false,
@@ -57,43 +56,43 @@ export function useChatRuntime(projectId: string) {
         'X-Project-Id': projectId,
       };
     },
-    prepareSendCommandsRequest: (body) => {
-      // Persist user messages to database via REST API
-      // This runs before the WebSocket streaming begins
-      try {
-        for (const command of body.commands) {
-          if (command.type === 'add-message' && command.message.role === 'user') {
-            // Extract text content from the message parts
-            const textContent = command.message.parts
-              .filter((part) => part.type === 'text')
-              .map((part) => part.text)
-              .join('');
+    onError: (error) => {
+      console.error('Chat transport error:', error);
+    },
+    prepareSendCommandsRequest: (body: SendCommandsRequestBody) => {
+      // Persist user messages to database before sending to WebSocket
+      body.commands.forEach((command) => {
+        if (command.type === 'add-message' && command.message.role === 'user') {
+          // Extract text content from message parts
+          const textParts = command.message.parts.filter(
+            (part): part is { type: 'text'; text: string } => part.type === 'text'
+          );
+          const content = textParts.map((part) => part.text).join('');
 
-            if (textContent) {
+          // Only persist if there's content
+          if (content) {
+            try {
               persistMessage({
                 data: {
                   projectId,
-                  content: textContent,
+                  content,
                   role: 'user',
                 },
               });
+            } catch (error) {
+              console.error('Failed to persist message:', error);
             }
           }
         }
-      } catch (error) {
-        // Don't block WebSocket streaming if persistence fails
-        console.error('Failed to persist message:', error);
-      }
+      });
 
+      // Return body unchanged for WebSocket streaming
       return body;
-    },
-    onError: (error) => {
-      console.error('Chat transport error:', error);
     },
   });
 
   return {
     runtime,
-    isLoadingHistory: isLoadingMessages,
+    isLoadingHistory,
   };
 }
