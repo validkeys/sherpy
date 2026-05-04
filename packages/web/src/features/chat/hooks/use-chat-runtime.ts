@@ -1,5 +1,5 @@
 import { useAssistantTransportRuntime } from '@assistant-ui/react';
-import { getAuthToken, getWebSocketUrl } from '@/lib/websocket';
+import { buildAuthenticatedWsUrl } from '@/lib/websocket';
 
 /**
  * Custom hook to create and configure chat runtime with streaming connection.
@@ -15,19 +15,11 @@ export function useChatRuntime(projectId: string) {
       messages: [],
       isRunning: false,
     },
-    api: `${getWebSocketUrl()}/chat`,
+    api: buildAuthenticatedWsUrl(projectId),
     converter: (state) => ({
       messages: state.messages || [],
       isRunning: state.isRunning || false,
     }),
-    headers: async () => {
-      const token = getAuthToken();
-      return {
-        'Content-Type': 'application/json',
-        Authorization: token ? `Bearer ${token}` : '',
-        'X-Project-Id': projectId,
-      };
-    },
     onError: (error) => {
       console.error('Chat transport error:', error);
     },

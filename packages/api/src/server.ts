@@ -1069,7 +1069,7 @@ export const SherryApiLive = HttpApiBuilder.api(SherryApi).pipe(
 
 /**
  * WebSocket server layer
- * Sets up WebSocket server with JWT authentication
+ * Sets up WebSocket server with JWT authentication and chat history delivery
  */
 const WebSocketServerLive = Layer.scopedDiscard(
   Effect.gen(function* () {
@@ -1077,6 +1077,7 @@ const WebSocketServerLive = Layer.scopedDiscard(
 
     const wsService = yield* WebSocketService;
     const broadcaster = yield* EventBroadcaster;
+    const chatService = yield* ChatService;
 
     // Create WebSocket server on port 3101 (separate from HTTP API)
     // In production, this would be proxied through a reverse proxy like Nginx
@@ -1093,6 +1094,10 @@ const WebSocketServerLive = Layer.scopedDiscard(
       const host = request.headers.host || "localhost";
       const url = new URL(requestUrl, `http://${host}`);
       const token = url.searchParams.get("token") || "";
+
+      // Extract project ID from query params or headers
+      const projectId = url.searchParams.get("projectId") ||
+                        (request.headers["x-project-id"] as string | undefined);
 
       // Validate JWT asynchronously
       Effect.runPromise(
@@ -1131,6 +1136,39 @@ const WebSocketServerLive = Layer.scopedDiscard(
 
           // Send acknowledgment
           ws.send(JSON.stringify({ type: "connected", connectionId: connId }));
+
+          // If projectId is provided, load and send chat history
+          if (projectId) {
+            yield* Effect.log(`Loading chat history for project ${projectId}`);
+
+            const historyResult = yield* Effect.either(
+              chatService.getMessages({
+                projectId,
+                limit: 50,
+              })
+            );
+
+            if (historyResult._tag === "Right") {
+              const { messages } = historyResult.right;
+
+              yield* Effect.log(`Sending ${messages.length} historical messages to ${connId}`);
+
+              // Send history as a single batch message
+              ws.send(JSON.stringify({
+                type: "history",
+                messages: messages.map((m) => ({
+                  id: m.id,
+                  role: m.role,
+                  content: m.content,
+                  createdAt: m.createdAt,
+                })),
+              }));
+            } else {
+              yield* Effect.logWarning(
+                `Failed to load chat history for ${projectId}: ${historyResult.left}`
+              );
+            }
+          }
 
           // Handle disconnect
           ws.on("close", () => {
@@ -1198,6 +1236,9 @@ const ServerLive = Layer.mergeAll(HttpLive, WebSocketServerLive).pipe(
   Layer.provide(EventBroadcaster.Default),
   Layer.provide(WebSocketService.Default),
   Layer.provide(AuthService.Live),
+  Layer.provide(ChatServiceLive),
+  Layer.provide(ProjectServiceLive),
+  Layer.provide(DatabaseLayer),
   Layer.provide(FetchHttpClient.layer),
 );
 

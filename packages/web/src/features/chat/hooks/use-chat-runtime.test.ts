@@ -13,6 +13,7 @@ vi.mock('@assistant-ui/react', () => ({
 vi.mock('@/lib/websocket', () => ({
   getWebSocketUrl: vi.fn(() => 'ws://localhost:8080'),
   getAuthToken: vi.fn(() => 'mock-auth-token'),
+  buildAuthenticatedWsUrl: vi.fn((projectId: string) => `ws://localhost:8080?projectId=${projectId}`),
 }));
 
 // Note: Message history hydration and persistence tests are skipped.
@@ -62,13 +63,16 @@ describe('useChatRuntime', () => {
     mockGetAuthToken = websocketLib.getAuthToken as any;
   });
 
-  it('creates runtime with correct API endpoint', () => {
+  it('creates runtime with correct API endpoint', async () => {
+    const mockBuildAuthenticatedWsUrl = vi.fn((projectId: string) => `ws://localhost:8080?projectId=${projectId}`);
+    vi.mocked(await import('@/lib/websocket')).buildAuthenticatedWsUrl = mockBuildAuthenticatedWsUrl;
+
     renderHook(() => useChatRuntime(mockProjectId), { wrapper });
 
-    expect(mockGetWebSocketUrl).toHaveBeenCalled();
+    expect(mockBuildAuthenticatedWsUrl).toHaveBeenCalledWith(mockProjectId);
     expect(mockUseAssistantTransportRuntime).toHaveBeenCalledWith(
       expect.objectContaining({
-        api: 'ws://localhost:8080/chat',
+        api: `ws://localhost:8080?projectId=${mockProjectId}`,
       })
     );
   });
@@ -86,29 +90,25 @@ describe('useChatRuntime', () => {
     );
   });
 
-  it('configures headers with authentication and project ID', async () => {
+  it('configures WebSocket URL with project ID', async () => {
+    const mockBuildAuthenticatedWsUrl = vi.fn((projectId: string) => `ws://localhost:8080?projectId=${projectId}`);
+    vi.mocked(await import('@/lib/websocket')).buildAuthenticatedWsUrl = mockBuildAuthenticatedWsUrl;
+
     renderHook(() => useChatRuntime(mockProjectId), { wrapper });
 
     const transportOptions = mockUseAssistantTransportRuntime.mock.calls[0][0];
-    const headers = await transportOptions.headers();
 
-    expect(mockGetAuthToken).toHaveBeenCalled();
-    expect(headers).toEqual({
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer mock-auth-token',
-      'X-Project-Id': mockProjectId,
-    });
+    expect(mockBuildAuthenticatedWsUrl).toHaveBeenCalledWith(mockProjectId);
+    expect(transportOptions.api).toBe(`ws://localhost:8080?projectId=${mockProjectId}`);
   });
 
-  it('handles missing auth token gracefully', async () => {
-    mockGetAuthToken.mockReturnValue(null);
+  it('uses buildAuthenticatedWsUrl for connection', async () => {
+    const mockBuildAuthenticatedWsUrl = vi.fn((projectId: string) => `ws://localhost:8080?projectId=${projectId}`);
+    vi.mocked(await import('@/lib/websocket')).buildAuthenticatedWsUrl = mockBuildAuthenticatedWsUrl;
 
     renderHook(() => useChatRuntime(mockProjectId), { wrapper });
 
-    const transportOptions = mockUseAssistantTransportRuntime.mock.calls[0][0];
-    const headers = await transportOptions.headers();
-
-    expect(headers['Authorization']).toBe('');
+    expect(mockBuildAuthenticatedWsUrl).toHaveBeenCalledWith(mockProjectId);
   });
 
   it('configures converter function to transform state', () => {
@@ -171,7 +171,10 @@ describe('useChatRuntime', () => {
     expect(result.current).not.toHaveProperty('manualRetry');
   });
 
-  it('creates new runtime when projectId changes', () => {
+  it('creates new runtime when projectId changes', async () => {
+    const mockBuildAuthenticatedWsUrl = vi.fn((projectId: string) => `ws://localhost:8080?projectId=${projectId}`);
+    vi.mocked(await import('@/lib/websocket')).buildAuthenticatedWsUrl = mockBuildAuthenticatedWsUrl;
+
     const { rerender } = renderHook(({ projectId }) => useChatRuntime(projectId), {
       initialProps: { projectId: mockProjectId },
     });
@@ -184,14 +187,8 @@ describe('useChatRuntime', () => {
     // Should have created at least one more runtime
     expect(mockUseAssistantTransportRuntime.mock.calls.length).toBeGreaterThan(initialCallCount);
 
-    // Verify new project ID in headers from the latest call
-    const latestCallOptions =
-      mockUseAssistantTransportRuntime.mock.calls[
-        mockUseAssistantTransportRuntime.mock.calls.length - 1
-      ][0];
-    latestCallOptions.headers().then((headers: Record<string, string>) => {
-      expect(headers['X-Project-Id']).toBe('different-project-789');
-    });
+    // Verify new project ID in API URL from the latest call
+    expect(mockBuildAuthenticatedWsUrl).toHaveBeenCalledWith('different-project-789');
   });
 
   it('logs error when error occurs', () => {
