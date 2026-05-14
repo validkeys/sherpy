@@ -1,4 +1,4 @@
-.PHONY: help build install test lint clean vet staticcheck generate
+.PHONY: help build install uninstall test lint clean vet staticcheck generate
 
 # Default target
 .DEFAULT_GOAL := help
@@ -30,6 +30,9 @@ build: generate ## Generate + build the binary
 
 install: build ## Install the binary to /usr/local/bin
 	sudo cp $(BINARY_NAME) $(INSTALL_PATH)/$(BINARY_NAME)
+
+uninstall: ## Remove the binary from /usr/local/bin
+	sudo rm -f $(INSTALL_PATH)/$(BINARY_NAME)
 
 test: generate ## Run all tests
 	$(GOTEST) ./... -v -count=1

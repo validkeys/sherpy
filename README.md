@@ -16,10 +16,39 @@ Sherpy CLI (`sherpy`) validates structured YAML documents against predefined sch
 
 ## Installation
 
-### From Source
+### Quick Install (Recommended)
+
+**macOS and Linux:**
 
 ```bash
-git clone https://github.com/kydavis/sherpy.git
+curl -fsSL https://raw.githubusercontent.com/validkeys/sherpy/main/install.sh | bash
+```
+
+Or download and inspect first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/validkeys/sherpy/main/install.sh -o install.sh
+chmod +x install.sh
+./install.sh
+```
+
+This script will:
+- Check for required dependencies (Go, Git, Make)
+- Clone the repository to a temporary directory
+- Build the binary from source
+- Install to `/usr/local/bin` (may prompt for sudo)
+- Verify the installation
+- Clean up temporary files
+
+**Requirements:**
+- Go 1.26 or later
+- Git
+- Make
+
+### From Source (Manual)
+
+```bash
+git clone https://github.com/validkeys/sherpy.git
 cd sherpy
 make build
 sudo make install
@@ -33,7 +62,22 @@ go install github.com/kydavis/sherpy@latest
 
 ### Pre-built Binaries
 
-Download pre-built binaries for macOS and Linux from the [releases page](https://github.com/kydavis/sherpy/releases).
+Download pre-built binaries for macOS and Linux from the [releases page](https://github.com/validkeys/sherpy/releases).
+
+## Uninstall
+
+To remove Sherpy from your system:
+
+```bash
+# Using the uninstall script
+curl -fsSL https://raw.githubusercontent.com/validkeys/sherpy/main/uninstall.sh | bash
+
+# Or manually
+sudo rm /usr/local/bin/sherpy
+
+# Or with make (if in the repo directory)
+make uninstall
+```
 
 ## Quick Start
 
