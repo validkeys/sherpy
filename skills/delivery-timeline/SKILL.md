@@ -327,3 +327,13 @@ If issues are found, ask:
 > 1. Fix these issues now
 > 2. Proceed with the timeline as-is
 > 3. Manually adjust the estimates before generating"
+
+## Validation
+
+After generating `timeline.yaml`, if `sherpy` is installed and available on the path, validate the generated document:
+
+```bash
+sherpy validate -t timeline -f {base_directory}/delivery/timeline.yaml
+```
+
+If validation errors are found, fix them before using the timeline for project planning.
