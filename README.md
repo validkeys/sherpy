@@ -465,9 +465,40 @@ sherpy/
 Sherpy CLI includes multiple security protections to ensure safe operation:
 
 ### Path Traversal Protection
-- **MaxDepth validation** - File paths are validated to prevent directory traversal attacks
-- **Path cleaning** - All paths are cleaned and validated before file operations
-- **Prevents**: `../../etc/passwd`, symlink attacks, malicious file access
+
+Sherpy validates file paths to prevent directory traversal attacks while allowing legitimate access to project files.
+
+**Path Policy:**
+- ✓ **Allowed:** Current directory and subdirectories
+- ✓ **Allowed:** One level of parent directory traversal (`../docs`)
+- ✗ **Blocked:** Two or more levels of parent traversal (`../../etc`)
+
+**Examples:**
+```bash
+# Allowed paths
+sherpy validate -f ./requirements.yaml -t business-requirements
+sherpy validate -f docs/business-requirements.yaml -t business-requirements
+sherpy validate -f ../docs/requirements.yaml -t business-requirements
+
+# Blocked paths
+sherpy validate -f ../../etc/passwd -t business-requirements
+# Error: path traversal detected: ../../etc/passwd
+```
+
+**Rationale:**
+
+The one-level traversal allowance enables legitimate use cases like:
+- Accessing sibling directories in multi-project workspaces
+- Running sherpy from a different directory than your documents
+- Shared tooling in monorepos
+
+Since sherpy only **reads** files (no writes or execution) and respects your filesystem permissions, the security risk is limited to reading files you already have access to.
+
+**Additional Protections:**
+- Paths are normalized using `filepath.Clean`
+- Absolute path validation prevents bypass attempts
+- Your OS filesystem permissions still apply
+- Combined with 10MB file size limit below
 
 ### File Size Limits
 - **10MB maximum** - Files larger than 10MB are rejected before processing
