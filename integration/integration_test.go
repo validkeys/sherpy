@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Test data paths
@@ -222,25 +223,63 @@ func TestPromptUnknownType(t *testing.T) {
 	}
 }
 
-// findBinary locates the sherpy binary to test
+// TestBinaryIsFresh verifies that findBinary always builds a fresh binary
+func TestBinaryIsFresh(t *testing.T) {
+	// Get initial binary
+	binary1 := findBinary(t)
+	info1, err := os.Stat(binary1)
+	if err != nil {
+		t.Fatalf("Failed to stat binary: %v", err)
+	}
+	modTime1 := info1.ModTime()
+
+	// Wait to ensure timestamp difference
+	time.Sleep(1 * time.Second)
+
+	// Simulate source change by touching a file
+	testFile := filepath.Join("..", "cmd", "root.go")
+	now := time.Now()
+	if err := os.Chtimes(testFile, now, now); err != nil {
+		t.Skipf("Cannot touch source file: %v", err)
+	}
+
+	// Build again
+	binary2 := findBinary(t)
+	info2, err := os.Stat(binary2)
+	if err != nil {
+		t.Fatalf("Failed to stat binary: %v", err)
+	}
+	modTime2 := info2.ModTime()
+
+	// Should be newer (always rebuilds)
+	if !modTime2.After(modTime1) {
+		t.Errorf("Binary not rebuilt: old=%v new=%v", modTime1, modTime2)
+	}
+}
+
+// findBinary builds and returns the sherpy binary for testing
 func findBinary(t *testing.T) string {
 	t.Helper()
 
-	// Try current directory
-	if _, err := os.Stat("./sherpy"); err == nil {
-		return "./sherpy"
+	// Determine binary path based on test location
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Failed to get working directory: %v", err)
 	}
 
-	// Try parent directory
-	if _, err := os.Stat("../sherpy"); err == nil {
-		return "../sherpy"
+	binary := filepath.Join(wd, "sherpy")
+
+	// Always build fresh to ensure latest code
+	buildDir := filepath.Join(wd, "..")
+	cmd := exec.Command("go", "build", "-o", binary, buildDir)
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("Failed to build sherpy binary: %v\n%s", err, string(output))
 	}
 
-	// Try building it
-	cmd := exec.Command("go", "build", "-o", "sherpy", "..")
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("Failed to build sherpy binary: %v", err)
+	// Verify binary exists and is executable
+	if _, err := os.Stat(binary); err != nil {
+		t.Fatalf("Binary not found after build: %v", err)
 	}
 
-	return "./sherpy"
+	return binary
 }
