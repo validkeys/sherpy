@@ -164,26 +164,19 @@ func ValidateTechnicalRequirements(data []byte, strict bool) (*ValidationResult,
 	validateTROpenQuestions(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
-		result.Warnings = nil
+		result.ApplyStrict()
 	}
 
 	return result, nil
 }
 
 func validateTRMetadata(doc TechnicalRequirements, r *ValidationResult) {
-	if strings.TrimSpace(doc.Project) == "" {
-		r.Errors = append(r.Errors, "project is required")
-	}
-	if strings.TrimSpace(doc.Version) == "" {
-		r.Errors = append(r.Errors, "version is required")
-	}
-	if strings.TrimSpace(doc.Generated) == "" {
-		r.Errors = append(r.Errors, "generated is required")
-	}
-	if strings.TrimSpace(doc.BusinessRequirementsRef) == "" {
-		r.Errors = append(r.Errors, "business_requirements_ref is required")
-	}
+	validateRequiredFields(r, map[string]string{
+		"project":                   doc.Project,
+		"version":                   doc.Version,
+		"generated":                 doc.Generated,
+		"business_requirements_ref": doc.BusinessRequirementsRef,
+	})
 }
 
 func validateTRArchitecture(doc TechnicalRequirements, r *ValidationResult) {
