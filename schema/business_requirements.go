@@ -10,29 +10,29 @@ import (
 )
 
 type BusinessRequirements struct {
-	Project                    string                              `yaml:"project"`
-	Version                    string                              `yaml:"version"`
-	Generated                  string                              `yaml:"generated"`
-	Overview                   BROverview                          `yaml:"overview"`
-	Personas                   []BRPersona                         `yaml:"personas"`
-	UseCases                   []BRUseCase                         `yaml:"use_cases"`
-	FunctionalRequirements     []BRFunctionalRequirement           `yaml:"functional_requirements"`
-	NonFunctionalRequirements  *BRNonFunctionalRequirements        `yaml:"non_functional_requirements,omitempty"`
-	SuccessCriteria            []BRSuccessCriterion                `yaml:"success_criteria"`
-	Constraints                *BRConstraints                      `yaml:"constraints,omitempty"`
-	Dependencies               *BRDependencies                     `yaml:"dependencies,omitempty"`
-	Timeline                   *BRTimeline                         `yaml:"timeline,omitempty"`
-	Assumptions                []string                            `yaml:"assumptions"`
-	Risks                      []BRRisk                            `yaml:"risks,omitempty"`
-	FutureEnhancements         []string                            `yaml:"future_enhancements,omitempty"`
-	DocumentationReferences    map[string]string                   `yaml:"documentation_references,omitempty"`
-	Notes                      string                              `yaml:"notes,omitempty"`
+	Project                   string                       `yaml:"project"`
+	Version                   string                       `yaml:"version"`
+	Generated                 string                       `yaml:"generated"`
+	Overview                  BROverview                   `yaml:"overview"`
+	Personas                  []BRPersona                  `yaml:"personas"`
+	UseCases                  []BRUseCase                  `yaml:"use_cases"`
+	FunctionalRequirements    []BRFunctionalRequirement    `yaml:"functional_requirements"`
+	NonFunctionalRequirements *BRNonFunctionalRequirements `yaml:"non_functional_requirements,omitempty"`
+	SuccessCriteria           []BRSuccessCriterion         `yaml:"success_criteria"`
+	Constraints               *BRConstraints               `yaml:"constraints,omitempty"`
+	Dependencies              *BRDependencies              `yaml:"dependencies,omitempty"`
+	Timeline                  *BRTimeline                  `yaml:"timeline,omitempty"`
+	Assumptions               []string                     `yaml:"assumptions"`
+	Risks                     []BRRisk                     `yaml:"risks,omitempty"`
+	FutureEnhancements        []string                     `yaml:"future_enhancements,omitempty"`
+	DocumentationReferences   map[string]string            `yaml:"documentation_references,omitempty"`
+	Notes                     string                       `yaml:"notes,omitempty"`
 }
 
 type BROverview struct {
-	Problem          string    `yaml:"problem"`
-	ValueProposition string    `yaml:"value_proposition"`
-	Scope            BRScope   `yaml:"scope"`
+	Problem          string  `yaml:"problem"`
+	ValueProposition string  `yaml:"value_proposition"`
+	Scope            BRScope `yaml:"scope"`
 }
 
 type BRScope struct {
@@ -91,9 +91,9 @@ type BRDependencies struct {
 }
 
 type BRTimeline struct {
-	Phase       string   `yaml:"phase"`
-	Duration    string   `yaml:"duration"`
-	Milestones  []string `yaml:"milestones"`
+	Phase      string   `yaml:"phase"`
+	Duration   string   `yaml:"duration"`
+	Milestones []string `yaml:"milestones"`
 }
 
 type BRRisk struct {
@@ -104,17 +104,17 @@ type BRRisk struct {
 }
 
 const (
-	MinProblemStatementLength    = 50
-	MinValuePropositionLength    = 30
-	MinPersonaDescriptionLength  = 20
-	MinUseCaseDescriptionLength  = 20
-	MinRequirementDescLength     = 20
-	MinRationaleLength           = 10
-	MinUseCaseNameLength         = 5
-	MinUseCaseOutcomeLength      = 10
-	MinPersonaNameLength         = 2
-	MaxPersonaNameLength         = 50
-	MinCategoryLength            = 3
+	MinProblemStatementLength   = 50
+	MinValuePropositionLength   = 30
+	MinPersonaDescriptionLength = 20
+	MinUseCaseDescriptionLength = 20
+	MinRequirementDescLength    = 20
+	MinRationaleLength          = 10
+	MinUseCaseNameLength        = 5
+	MinUseCaseOutcomeLength     = 10
+	MinPersonaNameLength        = 2
+	MaxPersonaNameLength        = 50
+	MinCategoryLength           = 3
 )
 
 var frIDPattern = regexp.MustCompile(`^FR-(\d{1,4})$`)

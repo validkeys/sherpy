@@ -30,10 +30,10 @@ func FormatResult(typeName, filename string, result *ValidationResult, strict bo
 
 	if len(errors) > 0 {
 		errWord := "error"
-	if len(errors) != 1 {
-		errWord = "errors"
-	}
-	parts := []string{fmt.Sprintf("%d %s", len(errors), errWord)}
+		if len(errors) != 1 {
+			errWord = "errors"
+		}
+		parts := []string{fmt.Sprintf("%d %s", len(errors), errWord)}
 		if len(warnings) > 0 {
 			parts = append(parts, fmt.Sprintf("%d warning", len(warnings)))
 		}

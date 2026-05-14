@@ -22,17 +22,17 @@ type GAMetadata struct {
 }
 
 type GACategory struct {
-	Name  string   `yaml:"name"`
-	Gaps  []GAGap  `yaml:"gaps"`
+	Name string  `yaml:"name"`
+	Gaps []GAGap `yaml:"gaps"`
 }
 
 type GAGap struct {
-	ID           int      `yaml:"id"`
-	Requirement  string   `yaml:"requirement"`
-	Question     string   `yaml:"question"`
-	Answer       *string  `yaml:"answer"`
-	Priority     string   `yaml:"priority"`
-	Tags         []string `yaml:"tags,omitempty"`
+	ID          int      `yaml:"id"`
+	Requirement string   `yaml:"requirement"`
+	Question    string   `yaml:"question"`
+	Answer      *string  `yaml:"answer"`
+	Priority    string   `yaml:"priority"`
+	Tags        []string `yaml:"tags,omitempty"`
 }
 
 var gaValidStatuses = map[string]bool{
@@ -47,16 +47,16 @@ var gaValidPriorities = map[string]bool{
 	"low":      true,
 }
 var gaValidCategories = map[string]bool{
-	"problem_and_goals":            true,
-	"personas_and_users":           true,
-	"scope":                        true,
-	"functional_requirements":      true,
-	"non_functional_requirements":  true,
-	"success_criteria":             true,
-	"assumptions":                  true,
-	"constraints":                  true,
+	"problem_and_goals":             true,
+	"personas_and_users":            true,
+	"scope":                         true,
+	"functional_requirements":       true,
+	"non_functional_requirements":   true,
+	"success_criteria":              true,
+	"assumptions":                   true,
+	"constraints":                   true,
 	"dependencies_and_integrations": true,
-	"risks":                        true,
+	"risks":                         true,
 }
 var gaVersionPattern = regexp.MustCompile(`^\d+\.\d+$`)
 

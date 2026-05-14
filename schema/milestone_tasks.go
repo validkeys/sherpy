@@ -9,13 +9,13 @@ import (
 )
 
 type MilestoneTasks struct {
-	Milestone        string           `yaml:"milestone"`
-	Name             string           `yaml:"name"`
-	Generated        string           `yaml:"generated"`
-	StyleAnchorRefs  []string         `yaml:"style_anchor_refs,omitempty"`
+	Milestone         string              `yaml:"milestone"`
+	Name              string              `yaml:"name"`
+	Generated         string              `yaml:"generated"`
+	StyleAnchorRefs   []string            `yaml:"style_anchor_refs,omitempty"`
 	GlobalConstraints MTGlobalConstraints `yaml:"global_constraints"`
-	QualityGates     []MTQualityGate  `yaml:"quality_gates"`
-	Tasks            []MTTask         `yaml:"tasks"`
+	QualityGates      []MTQualityGate     `yaml:"quality_gates"`
+	Tasks             []MTTask            `yaml:"tasks"`
 }
 
 type MTGlobalConstraints struct {
@@ -27,9 +27,9 @@ type MTGlobalConstraints struct {
 }
 
 type MTQualityGate struct {
-	Stage     string   `yaml:"stage"`
-	Commands  []string `yaml:"commands,omitempty"`
-	Criteria  []string `yaml:"criteria,omitempty"`
+	Stage    string   `yaml:"stage"`
+	Commands []string `yaml:"commands,omitempty"`
+	Criteria []string `yaml:"criteria,omitempty"`
 }
 
 type MTTask struct {

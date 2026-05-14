@@ -224,7 +224,6 @@ milestones:
 	}
 }
 
-
 func TestMilestonesCircularDependencyWithFixture(t *testing.T) {
 	// Test circular dependency detection with fixture
 	data, err := os.ReadFile("../testdata/invalid/milestones-circular-deps.yaml")

@@ -39,7 +39,7 @@ func RegisteredTypes() []string {
 }
 
 var funcMap = template.FuncMap{
-	"join":      func(sep string, items []string) string { return strings.Join(items, sep) },
+	"join": func(sep string, items []string) string { return strings.Join(items, sep) },
 	"bulletList": func(items []string) string {
 		var b strings.Builder
 		for _, item := range items {
@@ -50,7 +50,7 @@ var funcMap = template.FuncMap{
 		return b.String()
 	},
 	"joinComma": func(items []string) string { return strings.Join(items, ", ") },
-	"add":      func(a, b int) int { return a + b },
+	"add":       func(a, b int) int { return a + b },
 	"escapeMarkdown": func(s string) string {
 		// Escape markdown special characters to prevent injection
 		replacer := strings.NewReplacer(

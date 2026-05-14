@@ -9,28 +9,28 @@ import (
 )
 
 type Milestones struct {
-	Version               string     `yaml:"version"`
-	Project               string     `yaml:"project"`
-	Generated             string     `yaml:"generated"`
-	BusinessRequirements  string     `yaml:"business_requirements"`
-	TechnicalRequirements string     `yaml:"technical_requirements"`
-	Meta                  MSMeta     `yaml:"meta"`
+	Version               string        `yaml:"version"`
+	Project               string        `yaml:"project"`
+	Generated             string        `yaml:"generated"`
+	BusinessRequirements  string        `yaml:"business_requirements"`
+	TechnicalRequirements string        `yaml:"technical_requirements"`
+	Meta                  MSMeta        `yaml:"meta"`
 	Milestones            []MSMilestone `yaml:"milestones"`
 }
 
 type MSMeta struct {
-	OrderingStrategy   string `yaml:"ordering_strategy"`
-	OrderingRationale  string `yaml:"ordering_rationale"`
+	OrderingStrategy  string `yaml:"ordering_strategy"`
+	OrderingRationale string `yaml:"ordering_rationale"`
 }
 
 type MSMilestone struct {
-	ID               string   `yaml:"id"`
-	Name             string   `yaml:"name"`
-	Description      string   `yaml:"description"`
-	Dependencies     []string `yaml:"dependencies"`
-	EstimatedDuration string  `yaml:"estimated_duration"`
-	TasksFile        string   `yaml:"tasks_file"`
-	SuccessCriteria  []string `yaml:"success_criteria"`
+	ID                string   `yaml:"id"`
+	Name              string   `yaml:"name"`
+	Description       string   `yaml:"description"`
+	Dependencies      []string `yaml:"dependencies"`
+	EstimatedDuration string   `yaml:"estimated_duration"`
+	TasksFile         string   `yaml:"tasks_file"`
+	SuccessCriteria   []string `yaml:"success_criteria"`
 }
 
 var msIDPattern = regexp.MustCompile(`^m\d+$`)

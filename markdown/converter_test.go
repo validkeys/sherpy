@@ -22,7 +22,6 @@ func assertContains(t *testing.T, got, substr string) {
 	}
 }
 
-
 func TestConvertAllDocumentTypes(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -187,7 +186,6 @@ func TestConvertAllDocumentTypes(t *testing.T) {
 		})
 	}
 }
-
 
 func TestResolveConverter(t *testing.T) {
 	_, err := ResolveConverter("business-requirements")
@@ -444,27 +442,27 @@ func TestEscapeHTML(t *testing.T) {
 func TestMarkdownInjectionInTemplates(t *testing.T) {
 	// Test that malicious content can be safely rendered using escape functions
 	tests := []struct {
-		name     string
-		template string
-		data     interface{}
-		wantErr  bool
-		contains []string
+		name        string
+		template    string
+		data        interface{}
+		wantErr     bool
+		contains    []string
 		notContains []string
 	}{
 		{
-			name:     "escape markdown in user field",
-			template: "# {{escapeMarkdown .Title}}",
-			data:     struct{ Title string }{Title: "[malicious](javascript:alert('xss'))"},
-			wantErr:  false,
-			contains: []string{`\[malicious\]\(javascript:alert\('xss'\)\)`},
+			name:        "escape markdown in user field",
+			template:    "# {{escapeMarkdown .Title}}",
+			data:        struct{ Title string }{Title: "[malicious](javascript:alert('xss'))"},
+			wantErr:     false,
+			contains:    []string{`\[malicious\]\(javascript:alert\('xss'\)\)`},
 			notContains: []string{"[malicious]"},
 		},
 		{
-			name:     "escape HTML in user field",
-			template: "Content: {{escapeHTML .Content}}",
-			data:     struct{ Content string }{Content: "<script>alert('xss')</script>"},
-			wantErr:  false,
-			contains: []string{"&lt;script&gt;"},
+			name:        "escape HTML in user field",
+			template:    "Content: {{escapeHTML .Content}}",
+			data:        struct{ Content string }{Content: "<script>alert('xss')</script>"},
+			wantErr:     false,
+			contains:    []string{"&lt;script&gt;"},
 			notContains: []string{"<script>"},
 		},
 		{

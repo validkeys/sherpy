@@ -9,13 +9,13 @@ import (
 )
 
 type Timeline struct {
-	Version       string        `yaml:"version"`
-	Project       string        `yaml:"project"`
-	Generated     string        `yaml:"generated"`
-	MilestonesFile string       `yaml:"milestones_file"`
-	Summary       TLSummary     `yaml:"summary"`
-	Timeline      []TLEntry     `yaml:"timeline"`
-	Workback      TLWorkback    `yaml:"workback"`
+	Version        string     `yaml:"version"`
+	Project        string     `yaml:"project"`
+	Generated      string     `yaml:"generated"`
+	MilestonesFile string     `yaml:"milestones_file"`
+	Summary        TLSummary  `yaml:"summary"`
+	Timeline       []TLEntry  `yaml:"timeline"`
+	Workback       TLWorkback `yaml:"workback"`
 }
 
 type TLSummary struct {
