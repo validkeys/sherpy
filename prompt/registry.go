@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strings"
 )
@@ -88,7 +89,40 @@ var registry = map[string]Prompt{
 	},
 }
 
+var orphanedWarnings []string
+
+func init() {
+	// Validate all registered prompts have content
+	var missing []string
+	for name := range registry {
+		if body, ok := content[name]; !ok {
+			missing = append(missing, name)
+		} else if len(body) == 0 {
+			missing = append(missing, name+" (empty)")
+		}
+	}
+
+	if len(missing) > 0 {
+		panic(fmt.Sprintf("prompt validation failed - missing or empty content: %s",
+			strings.Join(missing, ", ")))
+	}
+
+	// Also check for orphaned content (in content map but not registered)
+	for name := range content {
+		if _, ok := registry[name]; !ok {
+			orphanedWarnings = append(orphanedWarnings, name)
+		}
+	}
+}
+
 func RegisteredPrompts() []Prompt {
+	// Print orphaned warning once
+	if len(orphanedWarnings) > 0 {
+		fmt.Fprintf(os.Stderr, "Warning: orphaned prompt content (not in registry): %s\n",
+			strings.Join(orphanedWarnings, ", "))
+		orphanedWarnings = nil // Clear so we only warn once
+	}
+
 	prompts := make([]Prompt, 0, len(registry))
 	for _, p := range registry {
 		prompts = append(prompts, p)
@@ -141,5 +175,6 @@ func PromptContent(name string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("no content for prompt %q", name)
 	}
+	// Content already stripped by gen_prompts.go at build time
 	return body, nil
 }
