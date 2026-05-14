@@ -35,6 +35,25 @@ go install github.com/kydavis/sherpy@latest
 
 Download pre-built binaries for macOS and Linux from the [releases page](https://github.com/kydavis/sherpy/releases).
 
+## Quick Start
+
+```bash
+# 1. List available document types
+sherpy types
+
+# 2. Validate a document
+sherpy validate -t business-requirements -f docs/business-requirements.yaml
+
+# 3. Convert to markdown
+sherpy to-markdown -t business-requirements -f docs/business-requirements.yaml -o output.md
+
+# 4. Validate with strict mode (warnings → errors)
+sherpy validate -t business-requirements -f docs/business-requirements.yaml --strict
+
+# 5. View help for any command
+sherpy validate --help
+```
+
 ## Usage
 
 ### List Document Types
@@ -287,11 +306,65 @@ sherpy/
 └── .goreleaser.yml   # Release configuration
 ```
 
+## Security Features
+
+Sherpy CLI includes multiple security protections to ensure safe operation:
+
+### Path Traversal Protection
+- **MaxDepth validation** - File paths are validated to prevent directory traversal attacks
+- **Path cleaning** - All paths are cleaned and validated before file operations
+- **Prevents**: `../../etc/passwd`, symlink attacks, malicious file access
+
+### File Size Limits
+- **10MB maximum** - Files larger than 10MB are rejected before processing
+- **Early validation** - Size checked before content is read
+- **Prevents**: Memory exhaustion, DoS attacks via large files
+
+### Secure File Permissions
+- **0600 permissions** - Output files are created with user-only read/write permissions
+- **No group/world access** - Protects sensitive planning documents
+- **Applies to**: All markdown output files
+
+### Injection Prevention
+- **Markdown escaping** - User content is escaped to prevent markdown injection
+- **HTML escaping** - HTML special characters are escaped to prevent XSS
+- **Template safety** - Panic recovery for template execution errors
+- **Prevents**: XSS attacks, markdown injection, malicious template rendering
+
+### ReDoS Protection
+- **MaxIDLength = 100** - IDs are length-checked before regex evaluation
+- **Pre-validation** - Length validation occurs before expensive regex operations
+- **Prevents**: Regular expression denial of service attacks
+
+### Error Handling
+- **Graceful degradation** - Errors are caught and reported without crashing
+- **Panic recovery** - Template execution panics are recovered
+- **Clear error messages** - Security errors provide actionable feedback
+
+### Best Practices
+```bash
+# Validate file permissions after conversion
+sherpy to-markdown -t business-requirements -f input.yaml -o output.md
+ls -l output.md  # Should show -rw------- (600)
+
+# Check file size before processing
+stat -f%z input.yaml  # macOS
+stat -c%s input.yaml  # Linux
+# Reject if > 10MB (10485760 bytes)
+
+# Use absolute paths when possible
+sherpy validate -t milestones -f /absolute/path/to/milestones.yaml
+
+# Run in restricted environments for untrusted input
+docker run --rm -v $(pwd):/data sherpy validate -t business-requirements -f /data/input.yaml
+```
+
 ## Exit Codes
 
 - `0` - Success
 - `1` - Validation failed or command error
 - `2` - File not found or read error
+- **Security errors return exit code 1 with descriptive messages**
 
 ## Requirements
 
