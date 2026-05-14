@@ -218,3 +218,38 @@ tasks:
 		t.Errorf("expected error about gate stage, got: %v", result.Errors)
 	}
 }
+
+func TestMilestoneTasksEdgeCases(t *testing.T) {
+	t.Run("empty dependencies array doesn't crash", func(t *testing.T) {
+		yaml := `
+milestone: m0
+name: "Test milestone"
+generated: "2024-01-01"
+global_constraints:
+  allowed_patterns: ["pattern"]
+  forbidden_patterns: ["forbidden"]
+  tdd_required: true
+  max_task_duration_minutes: 120
+  commit_strategy: "commit after each task"
+quality_gates:
+  - stage: pre-commit
+    commands: ["test"]
+    criteria:
+      - "test passes"
+tasks:
+  - id: m0-001
+    name: "Test task"
+    description: "A test task description that meets the minimum length"
+    estimate_minutes: 60
+    type: code
+    dependencies: []
+    files:
+      create: ["test.txt"]
+    instructions: "Test instructions that meet the minimum length requirement which must be at least one hundred chars."
+`
+		_, err := ValidateMilestoneTasks([]byte(yaml), false)
+		if err != nil {
+			t.Errorf("empty dependencies should not cause parse error: %v", err)
+		}
+	})
+}

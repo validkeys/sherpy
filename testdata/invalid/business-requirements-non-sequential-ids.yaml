@@ -1,0 +1,13 @@
+project: Test
+version: 1.0
+generated: "2024-01-01"
+overview:
+  problem: "This is a test problem statement that meets the minimum character requirement of fifty characters for validation."
+  value_proposition: "Value proposition with minimum thirty characters requirement met."
+functional_requirements:
+  - id: FR-001
+    description: "First requirement"
+    priority: high
+  - id: FR-003  # Should be FR-002 - non-sequential
+    description: "Third requirement"
+    priority: medium

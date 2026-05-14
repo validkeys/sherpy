@@ -23,280 +23,171 @@ func assertContains(t *testing.T, got, substr string) {
 }
 
 
-func TestConvertBusinessRequirements(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/business-requirements/example.yaml")
-	got, err := ConvertBusinessRequirements(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) == 0 {
-		t.Fatal("output is empty")
+func TestConvertAllDocumentTypes(t *testing.T) {
+	tests := []struct {
+		name      string
+		converter ConverterFunc
+		yamlPath  string
+		wantInMD  []string // Strings that should appear in output
+	}{
+		{
+			name:      "business-requirements",
+			converter: ConvertBusinessRequirements,
+			yamlPath:  "../docs/specifications/business-requirements/example.yaml",
+			wantInMD: []string{
+				"# Business Requirements:",
+				"## Problem Statement",
+				"## Value Proposition",
+				"## Scope",
+				"## User Personas",
+				"## Use Cases",
+				"## Functional Requirements",
+				"## Success Criteria",
+				"## Assumptions",
+				"## Risks",
+				"## Constraints",
+				"## Timeline",
+				"| ID | Description | Priority | Rationale |",
+				"| Criterion | Metric | Target |",
+				"| Risk | Probability | Impact | Mitigation |",
+				"### Technical",
+				"### Task Management Requirements",
+				"| FR-1 |",
+				"**Phase:**",
+				"**Duration:**",
+				"Version:",
+				"Generated:",
+			},
+		},
+		{
+			name:      "technical-requirements",
+			converter: ConvertTechnicalRequirements,
+			yamlPath:  "../docs/specifications/technical-requirements/example.yaml",
+			wantInMD: []string{
+				"# Technical Requirements:",
+				"## Architecture",
+				"## Technology Stack",
+				"## Project Structure",
+				"## Data Model",
+				"## API",
+				"## Security",
+				"## Testing",
+				"## Development / Code Quality",
+				"## Operations / Deployment",
+				"## Constraints",
+				"## Trade-offs",
+				"## Open Questions",
+				"| Name | Responsibility |",
+				"| Path | Purpose |",
+				"| Name | Config |",
+				"| Decision | Rationale | Alternative | Consequence |",
+			},
+		},
+		{
+			name:      "milestones",
+			converter: ConvertMilestones,
+			yamlPath:  "../docs/specifications/milestones/example.yaml",
+			wantInMD: []string{
+				"# Milestones:",
+				"## Strategy",
+				"## Milestones",
+				"### m0:",
+				"**Dependencies:**",
+				"**Success Criteria:**",
+			},
+		},
+		{
+			name:      "milestone-tasks",
+			converter: ConvertMilestoneTasks,
+			yamlPath:  "../docs/specifications/milestone-tasks/example.yaml",
+			wantInMD: []string{
+				"## Global Constraints",
+				"## Quality Gates",
+				"## Tasks",
+				"| Stage | Commands | Criteria |",
+				"**Type:**",
+				"**Instructions:**",
+				"**Create:**",
+				"**Modify:**",
+			},
+		},
+		{
+			name:      "timeline",
+			converter: ConvertTimeline,
+			yamlPath:  "../docs/specifications/timeline/example.yaml",
+			wantInMD: []string{
+				"# Timeline:",
+				"## Summary",
+				"## Development Milestones",
+				"## Post-Development Phases",
+				"## Workback Schedule",
+				"| ID | Name | Start | Completion | Days |",
+				"| ID | Name | Type | Start Date | Completion Date |",
+				"**Development Days:**",
+				"**Delivery Model:**",
+				"| m0 |",
+				"| post-pr-creation |",
+				"production-deploy",
+			},
+		},
+		{
+			name:      "qa-test-plan",
+			converter: ConvertQATestPlan,
+			yamlPath:  "../docs/specifications/qa-test-plan/example.yaml",
+			wantInMD: []string{
+				"# QA Test Plan:",
+				"## Summary",
+				"## Test Suites",
+				"**Test Suites:**",
+				"**Priority Breakdown:**",
+				"| ID | Name | Type | Priority |",
+				"**Preconditions:**",
+				"**Expected Result:**",
+				"1. ",
+				"2. ",
+			},
+		},
+		{
+			name:      "gap-analysis",
+			converter: ConvertGapAnalysis,
+			yamlPath:  "../docs/specifications/gap-analysis-worksheet/example.yaml",
+			wantInMD: []string{
+				"# Gap Analysis Worksheet",
+				"**Document:**",
+				"**Status:**",
+				"**Total Gaps:**",
+				"### Gap 1",
+				"**Question:**",
+				"**Requirement:**",
+				"**Answer:**",
+			},
+		},
 	}
 
-	for _, s := range []string{
-		"# Business Requirements:",
-		"## Problem Statement",
-		"## Value Proposition",
-		"## Scope",
-		"## User Personas",
-		"## Use Cases",
-		"## Functional Requirements",
-		"## Success Criteria",
-		"## Assumptions",
-		"| ID | Description | Priority | Rationale |",
-		"| Criterion | Metric | Target |",
-		"Version:",
-		"Generated:",
-	} {
-		assertContains(t, got, s)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := mustReadExample(t, tt.yamlPath)
+			md, err := tt.converter(data)
+			if err != nil {
+				t.Fatalf("conversion failed: %v", err)
+			}
+
+			// Common checks
+			if len(md) == 0 {
+				t.Fatal("output is empty")
+			}
+			if len(md) < 100 {
+				t.Errorf("output suspiciously short: %d bytes", len(md))
+			}
+
+			// Check for expected content
+			for _, want := range tt.wantInMD {
+				assertContains(t, md, want)
+			}
+		})
 	}
 }
 
-func TestConvertBusinessRequirementsRisks(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/business-requirements/example.yaml")
-	got, err := ConvertBusinessRequirements(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "## Risks")
-	assertContains(t, got, "| Risk | Probability | Impact | Mitigation |")
-}
-
-func TestConvertBusinessRequirementsConstraints(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/business-requirements/example.yaml")
-	got, err := ConvertBusinessRequirements(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "## Constraints")
-	assertContains(t, got, "### Technical")
-}
-
-func TestConvertBusinessRequirementsTimeline(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/business-requirements/example.yaml")
-	got, err := ConvertBusinessRequirements(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "## Timeline")
-	assertContains(t, got, "**Phase:**")
-	assertContains(t, got, "**Duration:**")
-}
-
-func TestConvertBusinessRequirementsFRGrouping(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/business-requirements/example.yaml")
-	got, err := ConvertBusinessRequirements(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "### Task Management Requirements")
-	assertContains(t, got, "| FR-1 |")
-}
-
-func TestConvertTechnicalRequirements(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/technical-requirements/example.yaml")
-	got, err := ConvertTechnicalRequirements(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) == 0 {
-		t.Fatal("output is empty")
-	}
-
-	for _, s := range []string{
-		"# Technical Requirements:",
-		"## Architecture",
-		"## Technology Stack",
-		"## Project Structure",
-		"## Data Model",
-		"## API",
-		"## Security",
-		"## Testing",
-		"## Development / Code Quality",
-		"## Operations / Deployment",
-		"## Constraints",
-		"| Name | Responsibility |",
-		"| Path | Purpose |",
-		"| Name | Config |",
-	} {
-		assertContains(t, got, s)
-	}
-}
-
-func TestConvertTechnicalRequirementsTradeOffs(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/technical-requirements/example.yaml")
-	got, err := ConvertTechnicalRequirements(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "## Trade-offs")
-	assertContains(t, got, "| Decision | Rationale | Alternative | Consequence |")
-}
-
-func TestConvertTechnicalRequirementsOpenQuestions(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/technical-requirements/example.yaml")
-	got, err := ConvertTechnicalRequirements(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "## Open Questions")
-}
-
-func TestConvertMilestones(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/milestones/example.yaml")
-	got, err := ConvertMilestones(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) == 0 {
-		t.Fatal("output is empty")
-	}
-
-	for _, s := range []string{
-		"# Milestones:",
-		"## Strategy",
-		"## Milestones",
-		"### m0:",
-		"**Dependencies:**",
-		"**Success Criteria:**",
-	} {
-		assertContains(t, got, s)
-	}
-}
-
-func TestConvertMilestoneTasks(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/milestone-tasks/example.yaml")
-	got, err := ConvertMilestoneTasks(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) == 0 {
-		t.Fatal("output is empty")
-	}
-
-	for _, s := range []string{
-		"## Global Constraints",
-		"## Quality Gates",
-		"## Tasks",
-		"| Stage | Commands | Criteria |",
-		"**Type:**",
-		"**Instructions:**",
-	} {
-		assertContains(t, got, s)
-	}
-}
-
-func TestConvertMilestoneTasksFiles(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/milestone-tasks/example.yaml")
-	got, err := ConvertMilestoneTasks(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "**Create:**")
-	assertContains(t, got, "**Modify:**")
-}
-
-func TestConvertTimeline(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/timeline/example.yaml")
-	got, err := ConvertTimeline(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) == 0 {
-		t.Fatal("output is empty")
-	}
-
-	for _, s := range []string{
-		"# Timeline:",
-		"## Summary",
-		"## Development Milestones",
-		"## Post-Development Phases",
-		"## Workback Schedule",
-		"| ID | Name | Start | Completion | Days |",
-		"| ID | Name | Type | Start Date | Completion Date |",
-		"**Development Days:**",
-		"**Delivery Model:**",
-	} {
-		assertContains(t, got, s)
-	}
-}
-
-func TestConvertTimelineSeparatesTypes(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/timeline/example.yaml")
-	got, err := ConvertTimeline(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "| m0 |")
-	assertContains(t, got, "| post-pr-creation |")
-	assertContains(t, got, "production-deploy")
-}
-
-func TestConvertQATestPlan(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/qa-test-plan/example.yaml")
-	got, err := ConvertQATestPlan(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) == 0 {
-		t.Fatal("output is empty")
-	}
-
-	for _, s := range []string{
-		"# QA Test Plan:",
-		"## Summary",
-		"## Test Suites",
-		"**Test Suites:**",
-		"**Priority Breakdown:**",
-		"| ID | Name | Type | Priority |",
-		"**Preconditions:**",
-		"**Expected Result:**",
-	} {
-		assertContains(t, got, s)
-	}
-}
-
-func TestConvertQATestPlanSteps(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/qa-test-plan/example.yaml")
-	got, err := ConvertQATestPlan(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "1. ")
-	assertContains(t, got, "2. ")
-}
-
-func TestConvertGapAnalysis(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/gap-analysis-worksheet/example.yaml")
-	got, err := ConvertGapAnalysis(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got) == 0 {
-		t.Fatal("output is empty")
-	}
-
-	for _, s := range []string{
-		"# Gap Analysis Worksheet",
-		"**Document:**",
-		"**Status:**",
-		"**Total Gaps:**",
-		"### Gap 1",
-		"**Question:**",
-		"**Requirement:**",
-	} {
-		assertContains(t, got, s)
-	}
-}
-
-func TestConvertGapAnalysisAnswer(t *testing.T) {
-	data := mustReadExample(t, "../docs/specifications/gap-analysis-worksheet/example.yaml")
-	got, err := ConvertGapAnalysis(data)
-	if err != nil {
-		t.Fatal(err)
-	}
-	assertContains(t, got, "**Answer:**")
-}
 
 func TestResolveConverter(t *testing.T) {
 	_, err := ResolveConverter("business-requirements")

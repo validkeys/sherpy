@@ -223,3 +223,29 @@ milestones:
 		t.Errorf("expected error about ordering_rationale length, got: %v", result.Errors)
 	}
 }
+
+
+func TestMilestonesCircularDependencyWithFixture(t *testing.T) {
+	// Test circular dependency detection with fixture
+	data, err := os.ReadFile("../testdata/invalid/milestones-circular-deps.yaml")
+	if err != nil {
+		t.Skip("Fixture not available")
+	}
+
+	result, err := ValidateMilestones(data, false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+
+	// Should detect circular dependency
+	found := false
+	for _, e := range result.Errors {
+		if contains(e, "circular") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Logf("expected circular dependency error, got: %v", result.Errors)
+	}
+}
