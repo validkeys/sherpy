@@ -86,7 +86,7 @@ func ValidateQATestPlan(data []byte, strict bool) (*ValidationResult, error) {
 	validateQATestSuites(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
+		result.ApplyStrict()
 		result.Warnings = nil
 	}
 

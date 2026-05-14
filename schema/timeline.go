@@ -76,7 +76,7 @@ func ValidateTimeline(data []byte, strict bool) (*ValidationResult, error) {
 	validateTLWorkback(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
+		result.ApplyStrict()
 		result.Warnings = nil
 	}
 

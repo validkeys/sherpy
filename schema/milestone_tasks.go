@@ -74,7 +74,7 @@ func ValidateMilestoneTasks(data []byte, strict bool) (*ValidationResult, error)
 	validateMTTasks(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
+		result.ApplyStrict()
 		result.Warnings = nil
 	}
 
@@ -183,35 +183,8 @@ func detectMTCircularDependencies(doc MilestoneTasks, r *ValidationResult) {
 		adj[t.ID] = append(adj[t.ID], t.Dependencies...)
 	}
 
-	visited := map[string]bool{}
-	inStack := map[string]bool{}
-
-	var dfs func(id string) bool
-	dfs = func(id string) bool {
-		visited[id] = true
-		inStack[id] = true
-
-		for _, dep := range adj[id] {
-			if inStack[dep] {
-				return true
-			}
-			if !visited[dep] {
-				if dfs(dep) {
-					return true
-				}
-			}
-		}
-
-		inStack[id] = false
-		return false
-	}
-
-	for _, t := range doc.Tasks {
-		if !visited[t.ID] {
-			if dfs(t.ID) {
-				r.Errors = append(r.Errors, "tasks contain circular dependencies")
-				return
-			}
-		}
+	hasCycle, cycle := detectCircularDependencies(adj)
+	if hasCycle {
+		r.Errors = append(r.Errors, fmt.Sprintf("circular dependency detected in tasks: %s", strings.Join(cycle, " -> ")))
 	}
 }

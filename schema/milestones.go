@@ -53,7 +53,7 @@ func ValidateMilestones(data []byte, strict bool) (*ValidationResult, error) {
 	validateMSMilestones(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
+		result.ApplyStrict()
 		result.Warnings = nil
 	}
 
@@ -141,35 +141,8 @@ func detectMSCircularDependencies(doc Milestones, r *ValidationResult) {
 		adj[m.ID] = append(adj[m.ID], m.Dependencies...)
 	}
 
-	visited := map[string]bool{}
-	inStack := map[string]bool{}
-
-	var dfs func(id string) bool
-	dfs = func(id string) bool {
-		visited[id] = true
-		inStack[id] = true
-
-		for _, dep := range adj[id] {
-			if inStack[dep] {
-				return true
-			}
-			if !visited[dep] {
-				if dfs(dep) {
-					return true
-				}
-			}
-		}
-
-		inStack[id] = false
-		return false
-	}
-
-	for _, m := range doc.Milestones {
-		if !visited[m.ID] {
-			if dfs(m.ID) {
-				r.Errors = append(r.Errors, "milestones contain circular dependencies")
-				return
-			}
-		}
+	hasCycle, cycle := detectCircularDependencies(adj)
+	if hasCycle {
+		r.Errors = append(r.Errors, fmt.Sprintf("circular dependency detected in milestones: %s", strings.Join(cycle, " -> ")))
 	}
 }
