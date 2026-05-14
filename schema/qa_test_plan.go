@@ -148,7 +148,10 @@ func validateQATestSuites(doc QATestPlan, r *ValidationResult) {
 	hasSec := false
 
 	for i, suite := range doc.TestSuites {
-		if !qaSuiteIDPattern.MatchString(suite.ID) {
+		// Check length before regex to prevent ReDoS
+		if len(suite.ID) > MaxIDLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("test_suites.%d.id exceeds maximum length of %d characters", i, MaxIDLength))
+		} else if !qaSuiteIDPattern.MatchString(suite.ID) {
 			r.Errors = append(r.Errors, fmt.Sprintf("test_suites.%d.id must match ts-[slug] pattern (got %q)", i, suite.ID))
 		}
 		if seenSuiteIDs[suite.ID] {
@@ -165,7 +168,10 @@ func validateQATestSuites(doc QATestPlan, r *ValidationResult) {
 		}
 
 		for j, tc := range suite.TestCases {
-			if !qaCaseIDPattern.MatchString(tc.ID) {
+			// Check length before regex to prevent ReDoS
+			if len(tc.ID) > MaxIDLength {
+				r.Errors = append(r.Errors, fmt.Sprintf("test_suites.%d.test_cases.%d.id exceeds maximum length of %d characters", i, j, MaxIDLength))
+			} else if !qaCaseIDPattern.MatchString(tc.ID) {
 				r.Errors = append(r.Errors, fmt.Sprintf("test_suites.%d.test_cases.%d.id must match tc-[slug]-NNN pattern (got %q)", i, j, tc.ID))
 			}
 			if allCaseIDs[tc.ID] {

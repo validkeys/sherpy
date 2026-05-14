@@ -2,6 +2,7 @@ package schema
 
 import (
 	"regexp"
+	"strings"
 	"testing"
 )
 
@@ -200,5 +201,111 @@ func TestApplyStrict(t *testing.T) {
 	}
 	if len(r.Warnings) != 0 {
 		t.Errorf("expected 0 warnings after ApplyStrict, got %d", len(r.Warnings))
+	}
+}
+
+func TestValidateIDFormat(t *testing.T) {
+	pattern := regexp.MustCompile(`^FR-(\d{1,4})$`)
+
+	tests := []struct {
+		name       string
+		id         string
+		wantValid  bool
+		wantErrors int
+	}{
+		{
+			name:       "valid ID",
+			id:         "FR-123",
+			wantValid:  true,
+			wantErrors: 0,
+		},
+		{
+			name:       "invalid format",
+			id:         "INVALID",
+			wantValid:  false,
+			wantErrors: 1,
+		},
+		{
+			name:       "ID too long - ReDoS prevention",
+			id:         "FR-" + string(make([]byte, MaxIDLength)),
+			wantValid:  false,
+			wantErrors: 1,
+		},
+		{
+			name:       "at max length but valid format",
+			id:         "FR-1",
+			wantValid:  true,
+			wantErrors: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ValidationResult{}
+			valid := validateIDFormat(r, tt.id, pattern, "test_field")
+
+			if valid != tt.wantValid {
+				t.Errorf("validateIDFormat() = %v, want %v", valid, tt.wantValid)
+			}
+			if len(r.Errors) != tt.wantErrors {
+				t.Errorf("expected %d errors, got %d: %v", tt.wantErrors, len(r.Errors), r.Errors)
+			}
+		})
+	}
+}
+
+func TestReDoSPrevention(t *testing.T) {
+	// Test that extremely long IDs are rejected before regex processing
+	pattern := regexp.MustCompile(`^FR-(\d{1,4})$`)
+
+	tests := []struct {
+		name      string
+		id        string
+		wantError bool
+	}{
+		{
+			name:      "normal length ID",
+			id:        "FR-123",
+			wantError: false,
+		},
+		{
+			name:      "1000 character ID - potential ReDoS",
+			id:        "FR-" + string(make([]byte, 1000)),
+			wantError: true,
+		},
+		{
+			name:      "10000 character ID - severe ReDoS",
+			id:        "FR-" + string(make([]byte, 10000)),
+			wantError: true,
+		},
+		{
+			name:      "exactly at max length but invalid",
+			id:        string(make([]byte, MaxIDLength)),
+			wantError: true, // Should be processed by regex and fail format check
+		},
+		{
+			name:      "one over max length",
+			id:        string(make([]byte, MaxIDLength+1)),
+			wantError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := &ValidationResult{}
+			validateIDFormat(r, tt.id, pattern, "test_field")
+
+			hasError := len(r.Errors) > 0
+			if hasError != tt.wantError {
+				t.Errorf("expected error=%v, got error=%v (errors: %v)", tt.wantError, hasError, r.Errors)
+			}
+
+			// Verify that length check error comes before regex error
+			if tt.wantError && len(r.Errors) > 0 {
+				if len(tt.id) > MaxIDLength && !strings.Contains(r.Errors[0], "exceeds maximum length") {
+					t.Errorf("expected length error first, got: %s", r.Errors[0])
+				}
+			}
+		})
 	}
 }

@@ -315,3 +315,189 @@ generated: "2024-01-01"
 	_, err := ConvertBusinessRequirements([]byte(nullBR))
 	_ = err // Should not panic
 }
+
+func TestEscapeMarkdown(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "escapes brackets",
+			input: "[link](url)",
+			want:  `\[link\]\(url\)`,
+		},
+		{
+			name:  "escapes asterisks",
+			input: "*bold* **bolder**",
+			want:  `\*bold\* \*\*bolder\*\*`,
+		},
+		{
+			name:  "escapes underscores",
+			input: "_italic_ __bold__",
+			want:  `\_italic\_ \_\_bold\_\_`,
+		},
+		{
+			name:  "escapes backticks",
+			input: "`code` ```block```",
+			want:  "\\`code\\` \\`\\`\\`block\\`\\`\\`",
+		},
+		{
+			name:  "escapes hash and exclamation",
+			input: "# header ![image](url)",
+			want:  `\# header \!\[image\]\(url\)`,
+		},
+		{
+			name:  "escapes backslashes",
+			input: `\escape`,
+			want:  `\\escape`,
+		},
+		{
+			name:  "malicious markdown injection",
+			input: "[click me](javascript:alert('xss'))",
+			want:  `\[click me\]\(javascript:alert\('xss'\)\)`,
+		},
+		{
+			name:  "empty string",
+			input: "",
+			want:  "",
+		},
+		{
+			name:  "no special chars",
+			input: "plain text",
+			want:  "plain text",
+		},
+	}
+
+	escapeMarkdown := funcMap["escapeMarkdown"].(func(string) string)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := escapeMarkdown(tt.input)
+			if got != tt.want {
+				t.Errorf("escapeMarkdown(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestEscapeHTML(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "escapes script tags",
+			input: "<script>alert('xss')</script>",
+			want:  "&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;",
+		},
+		{
+			name:  "escapes img tags",
+			input: `<img src=x onerror="alert('xss')">`,
+			want:  "&lt;img src=x onerror=&quot;alert(&#39;xss&#39;)&quot;&gt;",
+		},
+		{
+			name:  "escapes ampersands",
+			input: "A & B",
+			want:  "A &amp; B",
+		},
+		{
+			name:  "escapes quotes",
+			input: `"double" and 'single'`,
+			want:  "&quot;double&quot; and &#39;single&#39;",
+		},
+		{
+			name:  "escapes angle brackets",
+			input: "<tag>content</tag>",
+			want:  "&lt;tag&gt;content&lt;/tag&gt;",
+		},
+		{
+			name:  "malicious iframe injection",
+			input: `<iframe src="data:text/html,<script>alert('xss')</script>"></iframe>`,
+			want:  "&lt;iframe src=&quot;data:text/html,&lt;script&gt;alert(&#39;xss&#39;)&lt;/script&gt;&quot;&gt;&lt;/iframe&gt;",
+		},
+		{
+			name:  "empty string",
+			input: "",
+			want:  "",
+		},
+		{
+			name:  "no special chars",
+			input: "plain text",
+			want:  "plain text",
+		},
+	}
+
+	escapeHTML := funcMap["escapeHTML"].(func(string) string)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := escapeHTML(tt.input)
+			if got != tt.want {
+				t.Errorf("escapeHTML(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMarkdownInjectionInTemplates(t *testing.T) {
+	// Test that malicious content can be safely rendered using escape functions
+	tests := []struct {
+		name     string
+		template string
+		data     interface{}
+		wantErr  bool
+		contains []string
+		notContains []string
+	}{
+		{
+			name:     "escape markdown in user field",
+			template: "# {{escapeMarkdown .Title}}",
+			data:     struct{ Title string }{Title: "[malicious](javascript:alert('xss'))"},
+			wantErr:  false,
+			contains: []string{`\[malicious\]\(javascript:alert\('xss'\)\)`},
+			notContains: []string{"[malicious]"},
+		},
+		{
+			name:     "escape HTML in user field",
+			template: "Content: {{escapeHTML .Content}}",
+			data:     struct{ Content string }{Content: "<script>alert('xss')</script>"},
+			wantErr:  false,
+			contains: []string{"&lt;script&gt;"},
+			notContains: []string{"<script>"},
+		},
+		{
+			name:     "unescaped structural markdown preserved",
+			template: "## {{.Title}}\n\n- Item 1\n- Item 2",
+			data:     struct{ Title string }{Title: "Safe Title"},
+			wantErr:  false,
+			contains: []string{"## Safe Title", "- Item 1", "- Item 2"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := execTemplate("test", tt.template, tt.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("execTemplate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil {
+				return
+			}
+
+			for _, want := range tt.contains {
+				if !strings.Contains(result, want) {
+					t.Errorf("output missing %q\nGot: %s", want, result)
+				}
+			}
+
+			for _, notWant := range tt.notContains {
+				if strings.Contains(result, notWant) {
+					t.Errorf("output should not contain %q\nGot: %s", notWant, result)
+				}
+			}
+		})
+	}
+}
