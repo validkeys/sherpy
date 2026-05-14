@@ -268,14 +268,25 @@ If critical gaps found (severity: high), ask:
 > 2. Proceed to technical requirements (address later)
 > 3. Review the gaps and decide"
 
+## Validation
+
+After generating `business-requirements.yaml`, if `sherpy` is installed and available on the path, validate the generated document:
+
+```bash
+sherpy validate -t business-requirements -f {base_directory}/requirements/business-requirements.yaml
+```
+
+If validation errors are found, fix them before proceeding to the next phase.
+
 ## Next Steps
 
 After completing the business requirements interview and gap analysis:
 
-1. Review gap analysis report
-2. Address any critical gaps
-3. Use `/technical-requirements-interview` to derive technical specifications
-4. Use `/implementation-planner` to generate implementation plans
+1. **Validate the document** (if sherpy is available)
+2. Review gap analysis report
+3. Address any critical gaps
+4. Use `/technical-requirements-interview` to derive technical specifications
+5. Use `/implementation-planner` to generate implementation plans
 
 ## Examples
 

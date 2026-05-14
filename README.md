@@ -16,10 +16,43 @@ Sherpy CLI (`sherpy`) validates structured YAML documents against predefined sch
 
 ## Installation
 
-### From Source
+### Quick Install (Recommended)
+
+**macOS and Linux:**
 
 ```bash
-git clone https://github.com/kydavis/sherpy.git
+curl -fsSL https://raw.githubusercontent.com/validkeys/sherpy/main/install.sh | bash
+```
+
+Or download and inspect first:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/validkeys/sherpy/main/install.sh -o install.sh
+chmod +x install.sh
+./install.sh
+```
+
+This script will:
+- Check for required dependencies (Go, Git, Make)
+- Clone the repository to a temporary directory
+- Build the binary from source
+- Install to `/usr/local/bin` (may prompt for sudo)
+- Optionally install the `sherpy-cli-planner` skill for Claude Code
+- Verify the installation
+- Clean up temporary files
+
+**Optional:** If Claude Code is detected, the installer will offer to install the `sherpy-cli-planner` skill, which provides a `/sherpy-cli-planner` command that orchestrates the full 12-step planning workflow using sherpy CLI prompts.
+
+**Requirements:**
+- Go 1.26 or later
+- Git
+- Make
+- Node.js/npm (optional, for Claude Code skill installation via `npx skills`)
+
+### From Source (Manual)
+
+```bash
+git clone https://github.com/validkeys/sherpy.git
 cd sherpy
 make build
 sudo make install
@@ -28,12 +61,27 @@ sudo make install
 ### Using Go
 
 ```bash
-go install github.com/kydavis/sherpy@latest
+go install github.com/validkeys/sherpy@latest
 ```
 
 ### Pre-built Binaries
 
-Download pre-built binaries for macOS and Linux from the [releases page](https://github.com/kydavis/sherpy/releases).
+Download pre-built binaries for macOS and Linux from the [releases page](https://github.com/validkeys/sherpy/releases).
+
+## Uninstall
+
+To remove Sherpy from your system:
+
+```bash
+# Using the uninstall script
+curl -fsSL https://raw.githubusercontent.com/validkeys/sherpy/main/uninstall.sh | bash
+
+# Or manually
+sudo rm /usr/local/bin/sherpy
+
+# Or with make (if in the repo directory)
+make uninstall
+```
 
 ## Quick Start
 
@@ -47,10 +95,16 @@ sherpy validate -t business-requirements -f docs/business-requirements.yaml
 # 3. Convert to markdown
 sherpy to-markdown -t business-requirements -f docs/business-requirements.yaml -o output.md
 
-# 4. Validate with strict mode (warnings → errors)
+# 4. Output skill prompt instructions (for AI agents)
+sherpy prompt -t business-requirements-interview
+
+# 5. List available prompts
+sherpy prompt --list
+
+# 6. Validate with strict mode (warnings → errors)
 sherpy validate -t business-requirements -f docs/business-requirements.yaml --strict
 
-# 5. View help for any command
+# 7. View help for any command
 sherpy validate --help
 ```
 
@@ -105,6 +159,106 @@ sherpy validate -t milestone-tasks -f docs/milestone-m1.tasks.yaml
 - **Date validation** - Validates date formats and workback calculations
 - **Dependency graph validation** - Detects circular dependencies in milestones and tasks
 - **Custom business rules** - Type-specific validation rules (allocation percentages, date ranges, etc.)
+
+### Output Skill Prompts
+
+Output skill prompt instructions to stdout (for AI agents):
+
+```bash
+# List available prompts
+sherpy prompt --list
+
+# Output specific prompt instructions
+sherpy prompt -t business-requirements-interview
+sherpy prompt -t implementation-planner
+sherpy prompt -t qa-test-plan
+```
+
+This command strips YAML frontmatter from `skills/*/SKILL.md` files and outputs the instructional content. It's designed for AI agents that need step-by-step guidance for planning tasks. The prompt content is embedded in the binary at build time, so no external files are required.
+
+Available prompts:
+- `gap-analysis-worksheet` - Analyzes initial requirements for gaps
+- `business-requirements-interview` - Gathers business requirements
+- `technical-requirements-interview` - Gathers technical requirements
+- `style-anchors-collection` - Documents code patterns
+- `implementation-planner` - Generates implementation plans
+- `implementation-plan-review` - Reviews implementation plans
+- `definition-of-done` - Defines milestone acceptance criteria
+- `architecture-decision-record` - Documents architectural decisions
+- `delivery-timeline` - Generates delivery timelines
+- `qa-test-plan` - Generates QA test plans
+- `developer-summary` - Generates developer summaries
+- `executive-summary` - Generates executive summaries
+
+## Token Efficiency
+
+The `sherpy prompt` command and `sherpy-cli-planner` skill provide a token-efficient alternative to installing all 17 individual planning skills in Claude Code.
+
+### Calculation Methodology
+
+**Traditional approach:** Install all skill files in Claude Code
+
+```
+skills/
+  business-requirements-interview/SKILL.md       8 KB
+  technical-requirements-interview/SKILL.md     10 KB
+  gap-analysis-worksheet/SKILL.md                6 KB
+  architecture-decision-record/SKILL.md          5 KB
+  style-anchors-collection/SKILL.md             13 KB
+  implementation-planner/SKILL.md               28 KB
+  implementation-plan-review/SKILL.md           16 KB
+  definition-of-done/SKILL.md                   10 KB
+  delivery-timeline/SKILL.md                    16 KB
+  qa-test-plan/SKILL.md                          6 KB
+  developer-summary/SKILL.md                    10 KB
+  executive-summary/SKILL.md                    13 KB
+  implementation-plan-best-practices/SKILL.md    9 KB
+  sherpy-flow/SKILL.md                          13 KB
+  sherpy-cli/SKILL.md                           18 KB
+  create-continuation-prompt/SKILL.md            2 KB
+  sherpy-cli-planner/SKILL.md                   11 KB
+  ────────────────────────────────────────────────
+  TOTAL: ~202 KB (all skills loaded in context)
+```
+
+**CLI approach:** Install orchestrator + load prompts on-demand
+
+```
+skills/
+  sherpy-cli-planner/SKILL.md                   11 KB
+  sherpy-cli/SKILL.md                           18 KB
+  ────────────────────────────────────────────────
+  Baseline: 29 KB
+
+Per-step (loaded via sherpy prompt -t <type>):
+  Step 1: gap-analysis-worksheet                 6 KB
+  Step 2: business-requirements-interview        8 KB
+  (only one step active at a time)
+  ────────────────────────────────────────────────
+  Typical: 29 KB + 8 KB = 37 KB total
+  Maximum: 29 KB + 28 KB = 57 KB (when using implementation-planner)
+```
+
+### Token Savings
+
+- **Traditional:** All 202 KB loaded simultaneously
+- **CLI approach:** 29-57 KB (only active step loaded)
+- **Savings:** 72-86% reduction in context window usage
+
+### When to Use Each Approach
+
+**Use traditional skills** if:
+- You're using Claude Code interactively
+- You want slash commands available (`/business-requirements-interview`)
+- You jump between workflow steps frequently
+
+**Use CLI approach** if:
+- You're running workflows via CLI automation
+- You want to minimize token usage
+- You follow the 12-step workflow sequentially
+- You're integrating with CI/CD or scripts
+
+Both approaches produce identical output artifacts.
 
 ### Convert to Markdown
 
@@ -311,9 +465,40 @@ sherpy/
 Sherpy CLI includes multiple security protections to ensure safe operation:
 
 ### Path Traversal Protection
-- **MaxDepth validation** - File paths are validated to prevent directory traversal attacks
-- **Path cleaning** - All paths are cleaned and validated before file operations
-- **Prevents**: `../../etc/passwd`, symlink attacks, malicious file access
+
+Sherpy validates file paths to prevent directory traversal attacks while allowing legitimate access to project files.
+
+**Path Policy:**
+- ✓ **Allowed:** Current directory and subdirectories
+- ✓ **Allowed:** One level of parent directory traversal (`../docs`)
+- ✗ **Blocked:** Two or more levels of parent traversal (`../../etc`)
+
+**Examples:**
+```bash
+# Allowed paths
+sherpy validate -f ./requirements.yaml -t business-requirements
+sherpy validate -f docs/business-requirements.yaml -t business-requirements
+sherpy validate -f ../docs/requirements.yaml -t business-requirements
+
+# Blocked paths
+sherpy validate -f ../../etc/passwd -t business-requirements
+# Error: path traversal detected: ../../etc/passwd
+```
+
+**Rationale:**
+
+The one-level traversal allowance enables legitimate use cases like:
+- Accessing sibling directories in multi-project workspaces
+- Running sherpy from a different directory than your documents
+- Shared tooling in monorepos
+
+Since sherpy only **reads** files (no writes or execution) and respects your filesystem permissions, the security risk is limited to reading files you already have access to.
+
+**Additional Protections:**
+- Paths are normalized using `filepath.Clean`
+- Absolute path validation prevents bypass attempts
+- Your OS filesystem permissions still apply
+- Combined with 10MB file size limit below
 
 ### File Size Limits
 - **10MB maximum** - Files larger than 10MB are rejected before processing

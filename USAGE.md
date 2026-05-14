@@ -39,6 +39,45 @@ sherpy to-markdown --help
 sherpy version  # If version command is available
 ```
 
+### Output Skill Prompts
+
+Output skill prompt instructions for AI agents:
+
+```bash
+# List all available prompts
+sherpy prompt --list
+
+# Output specific prompt instructions
+sherpy prompt -t business-requirements-interview
+sherpy prompt -t implementation-planner
+sherpy prompt -t qa-test-plan
+
+# Get help for prompt command
+sherpy prompt --help
+```
+
+The `prompt` command extracts skill instructions from embedded SKILL.md files and outputs them to stdout without YAML frontmatter. This is designed for AI agents that need step-by-step guidance for planning workflow steps.
+
+**Use cases:**
+- Loading skill instructions into AI agent context
+- Building orchestrated planning workflows
+- Token-efficient alternative to installing individual skill files
+- Embedding planning guidance in CI/CD pipelines
+
+**Available prompts:**
+- `gap-analysis-worksheet` - Analyzes initial requirements for gaps
+- `business-requirements-interview` - Gathers business requirements
+- `technical-requirements-interview` - Gathers technical requirements
+- `style-anchors-collection` - Documents code patterns as style anchors
+- `implementation-planner` - Generates implementation plans with TDD tasks
+- `implementation-plan-review` - Reviews plans against best practices
+- `definition-of-done` - Defines milestone acceptance criteria
+- `architecture-decision-record` - Documents architectural decisions
+- `delivery-timeline` - Generates delivery timelines
+- `qa-test-plan` - Generates QA test plans
+- `developer-summary` - Generates developer summaries
+- `executive-summary` - Generates executive summaries
+
 ## Document Types
 
 Sherpy supports seven document types:
@@ -189,7 +228,7 @@ jobs:
       
       - name: Install Sherpy
         run: |
-          go install github.com/kydavis/sherpy@latest
+          go install github.com/validkeys/sherpy@latest
       
       - name: Validate Documents
         run: |
@@ -205,7 +244,7 @@ validate-docs:
   stage: test
   image: golang:1.26
   script:
-    - go install github.com/kydavis/sherpy@latest
+    - go install github.com/validkeys/sherpy@latest
     - sherpy validate -t business-requirements -f docs/business-requirements.yaml --strict
     - sherpy validate -t technical-requirements -f docs/technical-requirements.yaml --strict
 ```
@@ -523,8 +562,8 @@ SHERPY_DEBUG=1 sherpy validate -t business-requirements -f docs/file.yaml
 
 ### Getting Help
 
-- **GitHub Issues**: https://github.com/kydavis/sherpy/issues
-- **Documentation**: https://github.com/kydavis/sherpy/tree/main/docs
+- **GitHub Issues**: https://github.com/validkeys/sherpy/issues
+- **Documentation**: https://github.com/validkeys/sherpy/tree/main/docs
 - **Examples**: See `docs/specifications/*/example.yaml`
 
 ## Best Practices

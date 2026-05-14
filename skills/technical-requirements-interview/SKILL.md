@@ -349,14 +349,25 @@ If critical gaps found (severity: high or blocking open questions), ask:
 > 2. Proceed to implementation planning (address during development)
 > 3. Review the gaps and decide"
 
+## Validation
+
+After generating `technical-requirements.yaml`, if `sherpy` is installed and available on the path, validate the generated document:
+
+```bash
+sherpy validate -t technical-requirements -f {base_directory}/requirements/technical-requirements.yaml
+```
+
+If validation errors are found, fix them before proceeding to the next phase.
+
 ## Next Steps
 
 After completing the technical requirements interview and gap analysis:
 
-1. Review gap analysis report
-2. Address any critical gaps or blocking questions
-3. Validate technical choices are realistic
-4. Use `/implementation-planner` to generate implementation plans
+1. **Validate the document** (if sherpy is available)
+2. Review gap analysis report
+3. Address any critical gaps or blocking questions
+4. Validate technical choices are realistic
+5. Use `/implementation-planner` to generate implementation plans
 
 ## Examples
 

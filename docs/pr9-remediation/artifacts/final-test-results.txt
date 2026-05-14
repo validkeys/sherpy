@@ -1,0 +1,506 @@
+Final Test Suite Results
+Date: Thu May 14 07:57:47 AM PDT 2026
+
+=== Running Full Test Suite ===
+?   	github.com/kydavis/sherpy	[no test files]
+=== RUN   TestPromptListCommand
+--- PASS: TestPromptListCommand (0.00s)
+=== RUN   TestPromptCommandSuccess
+--- PASS: TestPromptCommandSuccess (0.00s)
+=== RUN   TestPromptCommandErrors
+=== RUN   TestPromptCommandErrors/missing_type_and_no_list_flag
+=== RUN   TestPromptCommandErrors/unknown_type
+--- PASS: TestPromptCommandErrors (0.00s)
+    --- PASS: TestPromptCommandErrors/missing_type_and_no_list_flag (0.00s)
+    --- PASS: TestPromptCommandErrors/unknown_type (0.00s)
+=== RUN   TestPromptAllTypes
+=== RUN   TestPromptAllTypes/gap-analysis-worksheet
+=== RUN   TestPromptAllTypes/business-requirements-interview
+=== RUN   TestPromptAllTypes/technical-requirements-interview
+=== RUN   TestPromptAllTypes/style-anchors-collection
+=== RUN   TestPromptAllTypes/implementation-planner
+=== RUN   TestPromptAllTypes/implementation-plan-review
+=== RUN   TestPromptAllTypes/definition-of-done
+=== RUN   TestPromptAllTypes/architecture-decision-record
+=== RUN   TestPromptAllTypes/delivery-timeline
+=== RUN   TestPromptAllTypes/qa-test-plan
+=== RUN   TestPromptAllTypes/developer-summary
+=== RUN   TestPromptAllTypes/executive-summary
+--- PASS: TestPromptAllTypes (0.00s)
+    --- PASS: TestPromptAllTypes/gap-analysis-worksheet (0.00s)
+    --- PASS: TestPromptAllTypes/business-requirements-interview (0.00s)
+    --- PASS: TestPromptAllTypes/technical-requirements-interview (0.00s)
+    --- PASS: TestPromptAllTypes/style-anchors-collection (0.00s)
+    --- PASS: TestPromptAllTypes/implementation-planner (0.00s)
+    --- PASS: TestPromptAllTypes/implementation-plan-review (0.00s)
+    --- PASS: TestPromptAllTypes/definition-of-done (0.00s)
+    --- PASS: TestPromptAllTypes/architecture-decision-record (0.00s)
+    --- PASS: TestPromptAllTypes/delivery-timeline (0.00s)
+    --- PASS: TestPromptAllTypes/qa-test-plan (0.00s)
+    --- PASS: TestPromptAllTypes/developer-summary (0.00s)
+    --- PASS: TestPromptAllTypes/executive-summary (0.00s)
+=== RUN   TestTypesCommand
+--- PASS: TestTypesCommand (0.00s)
+=== RUN   TestValidateCommandMissingFile
+Error: failed to stat file: stat nonexistent.yaml: no such file or directory
+--- PASS: TestValidateCommandMissingFile (0.00s)
+=== RUN   TestValidateCommandMissingType
+Error: type is required: use -t <type>
+--- PASS: TestValidateCommandMissingType (0.00s)
+=== RUN   TestValidateCommandUnknownType
+Error: unknown document type: "unknown"
+--- PASS: TestValidateCommandUnknownType (0.00s)
+=== RUN   TestValidatePathTraversal
+=== RUN   TestValidatePathTraversal/normal_relative_path
+=== RUN   TestValidatePathTraversal/normal_absolute_path
+=== RUN   TestValidatePathTraversal/path_with_parent_directory_(one_level_allowed)
+=== RUN   TestValidatePathTraversal/path_with_multiple_parent_directories
+=== RUN   TestValidatePathTraversal/absolute_path_with_traversal_(cleans_to_valid_path)
+=== RUN   TestValidatePathTraversal/subdirectory_path
+=== RUN   TestValidatePathTraversal/current_directory_reference
+--- PASS: TestValidatePathTraversal (0.00s)
+    --- PASS: TestValidatePathTraversal/normal_relative_path (0.00s)
+    --- PASS: TestValidatePathTraversal/normal_absolute_path (0.00s)
+    --- PASS: TestValidatePathTraversal/path_with_parent_directory_(one_level_allowed) (0.00s)
+    --- PASS: TestValidatePathTraversal/path_with_multiple_parent_directories (0.00s)
+    --- PASS: TestValidatePathTraversal/absolute_path_with_traversal_(cleans_to_valid_path) (0.00s)
+    --- PASS: TestValidatePathTraversal/subdirectory_path (0.00s)
+    --- PASS: TestValidatePathTraversal/current_directory_reference (0.00s)
+=== RUN   TestReadFileWithLimit
+=== RUN   TestReadFileWithLimit/small_file_succeeds
+=== RUN   TestReadFileWithLimit/file_at_size_limit_succeeds
+=== RUN   TestReadFileWithLimit/file_over_size_limit_fails
+=== RUN   TestReadFileWithLimit/path_traversal_blocked
+=== RUN   TestReadFileWithLimit/nonexistent_file_fails
+--- PASS: TestReadFileWithLimit (0.01s)
+    --- PASS: TestReadFileWithLimit/small_file_succeeds (0.00s)
+    --- PASS: TestReadFileWithLimit/file_at_size_limit_succeeds (0.00s)
+    --- PASS: TestReadFileWithLimit/file_over_size_limit_fails (0.00s)
+    --- PASS: TestReadFileWithLimit/path_traversal_blocked (0.00s)
+    --- PASS: TestReadFileWithLimit/nonexistent_file_fails (0.00s)
+=== RUN   TestValidateCommandPathTraversalProtection
+--- PASS: TestValidateCommandPathTraversalProtection (0.00s)
+=== RUN   TestToMarkdownCommand
+=== RUN   TestToMarkdownCommand/success_with_stdout
+=== RUN   TestToMarkdownCommand/missing_type_flag
+=== RUN   TestToMarkdownCommand/missing_file_flag
+=== RUN   TestToMarkdownCommand/invalid_type
+=== RUN   TestToMarkdownCommand/file_not_found
+--- PASS: TestToMarkdownCommand (0.00s)
+    --- PASS: TestToMarkdownCommand/success_with_stdout (0.00s)
+    --- PASS: TestToMarkdownCommand/missing_type_flag (0.00s)
+    --- PASS: TestToMarkdownCommand/missing_file_flag (0.00s)
+    --- PASS: TestToMarkdownCommand/invalid_type (0.00s)
+    --- PASS: TestToMarkdownCommand/file_not_found (0.00s)
+=== RUN   TestToMarkdownWithOutputFile
+--- PASS: TestToMarkdownWithOutputFile (0.00s)
+=== RUN   TestToMarkdownPathTraversal
+--- PASS: TestToMarkdownPathTraversal (0.00s)
+=== RUN   TestToMarkdownAllTypes
+=== RUN   TestToMarkdownAllTypes/business-requirements
+=== RUN   TestToMarkdownAllTypes/technical-requirements
+=== RUN   TestToMarkdownAllTypes/milestones
+=== RUN   TestToMarkdownAllTypes/timeline
+=== RUN   TestToMarkdownAllTypes/qa-test-plan
+--- PASS: TestToMarkdownAllTypes (0.00s)
+    --- PASS: TestToMarkdownAllTypes/business-requirements (0.00s)
+    --- PASS: TestToMarkdownAllTypes/technical-requirements (0.00s)
+    --- PASS: TestToMarkdownAllTypes/milestones (0.00s)
+    --- PASS: TestToMarkdownAllTypes/timeline (0.00s)
+    --- PASS: TestToMarkdownAllTypes/qa-test-plan (0.00s)
+=== RUN   TestErrorMessageContext
+--- PASS: TestErrorMessageContext (0.00s)
+PASS
+ok  	github.com/kydavis/sherpy/cmd	0.015s
+=== RUN   TestValidateAllExamples
+=== RUN   TestValidateAllExamples/business-requirements
+=== RUN   TestValidateAllExamples/technical-requirements
+=== RUN   TestValidateAllExamples/milestones
+=== RUN   TestValidateAllExamples/milestone-tasks
+=== RUN   TestValidateAllExamples/timeline
+=== RUN   TestValidateAllExamples/qa-test-plan
+=== RUN   TestValidateAllExamples/gap-analysis
+--- PASS: TestValidateAllExamples (0.17s)
+    --- PASS: TestValidateAllExamples/business-requirements (0.00s)
+    --- PASS: TestValidateAllExamples/technical-requirements (0.00s)
+    --- PASS: TestValidateAllExamples/milestones (0.00s)
+    --- PASS: TestValidateAllExamples/milestone-tasks (0.00s)
+    --- PASS: TestValidateAllExamples/timeline (0.00s)
+    --- PASS: TestValidateAllExamples/qa-test-plan (0.00s)
+    --- PASS: TestValidateAllExamples/gap-analysis (0.00s)
+=== RUN   TestConvertAllExamples
+=== RUN   TestConvertAllExamples/business-requirements
+=== RUN   TestConvertAllExamples/technical-requirements
+=== RUN   TestConvertAllExamples/milestones
+=== RUN   TestConvertAllExamples/milestone-tasks
+=== RUN   TestConvertAllExamples/timeline
+=== RUN   TestConvertAllExamples/qa-test-plan
+=== RUN   TestConvertAllExamples/gap-analysis
+--- PASS: TestConvertAllExamples (0.06s)
+    --- PASS: TestConvertAllExamples/business-requirements (0.00s)
+    --- PASS: TestConvertAllExamples/technical-requirements (0.00s)
+    --- PASS: TestConvertAllExamples/milestones (0.00s)
+    --- PASS: TestConvertAllExamples/milestone-tasks (0.00s)
+    --- PASS: TestConvertAllExamples/timeline (0.00s)
+    --- PASS: TestConvertAllExamples/qa-test-plan (0.00s)
+    --- PASS: TestConvertAllExamples/gap-analysis (0.00s)
+=== RUN   TestTypesCommand
+--- PASS: TestTypesCommand (0.05s)
+=== RUN   TestValidateErrors
+=== RUN   TestValidateErrors/missing_file
+=== RUN   TestValidateErrors/missing_type_flag
+=== RUN   TestValidateErrors/unknown_type
+--- PASS: TestValidateErrors (0.05s)
+    --- PASS: TestValidateErrors/missing_file (0.00s)
+    --- PASS: TestValidateErrors/missing_type_flag (0.00s)
+    --- PASS: TestValidateErrors/unknown_type (0.00s)
+=== RUN   TestPromptListCommand
+--- PASS: TestPromptListCommand (0.05s)
+=== RUN   TestPromptOutputsContent
+--- PASS: TestPromptOutputsContent (0.05s)
+=== RUN   TestPromptUnknownType
+--- PASS: TestPromptUnknownType (0.05s)
+=== RUN   TestBinaryIsFresh
+--- PASS: TestBinaryIsFresh (1.10s)
+PASS
+ok  	github.com/kydavis/sherpy/integration	1.594s
+=== RUN   TestConvertAllDocumentTypes
+=== RUN   TestConvertAllDocumentTypes/business-requirements
+=== RUN   TestConvertAllDocumentTypes/technical-requirements
+=== RUN   TestConvertAllDocumentTypes/milestones
+=== RUN   TestConvertAllDocumentTypes/milestone-tasks
+=== RUN   TestConvertAllDocumentTypes/timeline
+=== RUN   TestConvertAllDocumentTypes/qa-test-plan
+=== RUN   TestConvertAllDocumentTypes/gap-analysis
+--- PASS: TestConvertAllDocumentTypes (0.01s)
+    --- PASS: TestConvertAllDocumentTypes/business-requirements (0.00s)
+    --- PASS: TestConvertAllDocumentTypes/technical-requirements (0.00s)
+    --- PASS: TestConvertAllDocumentTypes/milestones (0.00s)
+    --- PASS: TestConvertAllDocumentTypes/milestone-tasks (0.00s)
+    --- PASS: TestConvertAllDocumentTypes/timeline (0.00s)
+    --- PASS: TestConvertAllDocumentTypes/qa-test-plan (0.00s)
+    --- PASS: TestConvertAllDocumentTypes/gap-analysis (0.00s)
+=== RUN   TestResolveConverter
+--- PASS: TestResolveConverter (0.00s)
+=== RUN   TestResolveConverterAllTypes
+--- PASS: TestResolveConverterAllTypes (0.00s)
+=== RUN   TestConvertInvalidYAML
+--- PASS: TestConvertInvalidYAML (0.00s)
+=== RUN   TestExecTemplateParseError
+--- PASS: TestExecTemplateParseError (0.00s)
+=== RUN   TestExecTemplateExecuteError
+--- PASS: TestExecTemplateExecuteError (0.00s)
+=== RUN   TestExecTemplatePanicRecovery
+--- PASS: TestExecTemplatePanicRecovery (0.00s)
+=== RUN   TestConvertMalformedYAML
+=== RUN   TestConvertMalformedYAML/milestones
+=== RUN   TestConvertMalformedYAML/timeline
+=== RUN   TestConvertMalformedYAML/qa-test-plan
+=== RUN   TestConvertMalformedYAML/gap-analysis
+=== RUN   TestConvertMalformedYAML/business-requirements
+=== RUN   TestConvertMalformedYAML/technical-requirements
+--- PASS: TestConvertMalformedYAML (0.00s)
+    --- PASS: TestConvertMalformedYAML/milestones (0.00s)
+    --- PASS: TestConvertMalformedYAML/timeline (0.00s)
+    --- PASS: TestConvertMalformedYAML/qa-test-plan (0.00s)
+    --- PASS: TestConvertMalformedYAML/gap-analysis (0.00s)
+    --- PASS: TestConvertMalformedYAML/business-requirements (0.00s)
+    --- PASS: TestConvertMalformedYAML/technical-requirements (0.00s)
+=== RUN   TestConvertEmptyFields
+--- PASS: TestConvertEmptyFields (0.00s)
+=== RUN   TestConvertNullFields
+--- PASS: TestConvertNullFields (0.00s)
+=== RUN   TestEscapeMarkdown
+=== RUN   TestEscapeMarkdown/escapes_brackets
+=== RUN   TestEscapeMarkdown/escapes_asterisks
+=== RUN   TestEscapeMarkdown/escapes_underscores
+=== RUN   TestEscapeMarkdown/escapes_backticks
+=== RUN   TestEscapeMarkdown/escapes_hash_and_exclamation
+=== RUN   TestEscapeMarkdown/escapes_backslashes
+=== RUN   TestEscapeMarkdown/malicious_markdown_injection
+=== RUN   TestEscapeMarkdown/empty_string
+=== RUN   TestEscapeMarkdown/no_special_chars
+--- PASS: TestEscapeMarkdown (0.00s)
+    --- PASS: TestEscapeMarkdown/escapes_brackets (0.00s)
+    --- PASS: TestEscapeMarkdown/escapes_asterisks (0.00s)
+    --- PASS: TestEscapeMarkdown/escapes_underscores (0.00s)
+    --- PASS: TestEscapeMarkdown/escapes_backticks (0.00s)
+    --- PASS: TestEscapeMarkdown/escapes_hash_and_exclamation (0.00s)
+    --- PASS: TestEscapeMarkdown/escapes_backslashes (0.00s)
+    --- PASS: TestEscapeMarkdown/malicious_markdown_injection (0.00s)
+    --- PASS: TestEscapeMarkdown/empty_string (0.00s)
+    --- PASS: TestEscapeMarkdown/no_special_chars (0.00s)
+=== RUN   TestEscapeHTML
+=== RUN   TestEscapeHTML/escapes_script_tags
+=== RUN   TestEscapeHTML/escapes_img_tags
+=== RUN   TestEscapeHTML/escapes_ampersands
+=== RUN   TestEscapeHTML/escapes_quotes
+=== RUN   TestEscapeHTML/escapes_angle_brackets
+=== RUN   TestEscapeHTML/malicious_iframe_injection
+=== RUN   TestEscapeHTML/empty_string
+=== RUN   TestEscapeHTML/no_special_chars
+--- PASS: TestEscapeHTML (0.00s)
+    --- PASS: TestEscapeHTML/escapes_script_tags (0.00s)
+    --- PASS: TestEscapeHTML/escapes_img_tags (0.00s)
+    --- PASS: TestEscapeHTML/escapes_ampersands (0.00s)
+    --- PASS: TestEscapeHTML/escapes_quotes (0.00s)
+    --- PASS: TestEscapeHTML/escapes_angle_brackets (0.00s)
+    --- PASS: TestEscapeHTML/malicious_iframe_injection (0.00s)
+    --- PASS: TestEscapeHTML/empty_string (0.00s)
+    --- PASS: TestEscapeHTML/no_special_chars (0.00s)
+=== RUN   TestMarkdownInjectionInTemplates
+=== RUN   TestMarkdownInjectionInTemplates/escape_markdown_in_user_field
+=== RUN   TestMarkdownInjectionInTemplates/escape_HTML_in_user_field
+=== RUN   TestMarkdownInjectionInTemplates/unescaped_structural_markdown_preserved
+--- PASS: TestMarkdownInjectionInTemplates (0.00s)
+    --- PASS: TestMarkdownInjectionInTemplates/escape_markdown_in_user_field (0.00s)
+    --- PASS: TestMarkdownInjectionInTemplates/escape_HTML_in_user_field (0.00s)
+    --- PASS: TestMarkdownInjectionInTemplates/unescaped_structural_markdown_preserved (0.00s)
+PASS
+ok  	github.com/kydavis/sherpy/markdown	0.007s
+=== RUN   TestStripFrontmatterWithValidFrontmatter
+--- PASS: TestStripFrontmatterWithValidFrontmatter (0.00s)
+=== RUN   TestStripFrontmatterNoFrontmatter
+--- PASS: TestStripFrontmatterNoFrontmatter (0.00s)
+=== RUN   TestStripFrontmatterOnlyOpening
+--- PASS: TestStripFrontmatterOnlyOpening (0.00s)
+=== RUN   TestStripFrontmatterContentStartsWithDash
+--- PASS: TestStripFrontmatterContentStartsWithDash (0.00s)
+=== RUN   TestStripFrontmatterEmptyBody
+--- PASS: TestStripFrontmatterEmptyBody (0.00s)
+=== RUN   TestStripFrontmatterWindowsLineEndings
+--- PASS: TestStripFrontmatterWindowsLineEndings (0.00s)
+=== RUN   TestStripFrontmatterMixedLineEndings
+--- PASS: TestStripFrontmatterMixedLineEndings (0.00s)
+=== RUN   TestStripFrontmatterMultipleDashes
+--- PASS: TestStripFrontmatterMultipleDashes (0.00s)
+=== RUN   TestRegisteredPromptsSorted
+--- PASS: TestRegisteredPromptsSorted (0.00s)
+=== RUN   TestResolvePromptFound
+--- PASS: TestResolvePromptFound (0.00s)
+=== RUN   TestResolvePromptNotFound
+--- PASS: TestResolvePromptNotFound (0.00s)
+=== RUN   TestRegisteredPromptsContainsAllPipeline
+--- PASS: TestRegisteredPromptsContainsAllPipeline (0.00s)
+=== RUN   TestPromptContentReturnsNonEmpty
+--- PASS: TestPromptContentReturnsNonEmpty (0.00s)
+=== RUN   TestPromptContentNoFrontmatter
+--- PASS: TestPromptContentNoFrontmatter (0.00s)
+=== RUN   TestPromptContentUnknownPrompt
+--- PASS: TestPromptContentUnknownPrompt (0.00s)
+=== RUN   TestValidationDetectsMissingContent
+--- PASS: TestValidationDetectsMissingContent (0.00s)
+=== RUN   TestValidationDetectsOrphanedContent
+--- PASS: TestValidationDetectsOrphanedContent (0.00s)
+=== RUN   TestPromptContentConcurrentSafety
+--- PASS: TestPromptContentConcurrentSafety (0.00s)
+PASS
+ok  	github.com/kydavis/sherpy/prompt	0.002s
+=== RUN   TestBusinessRequirementsExamplePasses
+--- PASS: TestBusinessRequirementsExamplePasses (0.00s)
+=== RUN   TestBusinessRequirementsMissingProject
+--- PASS: TestBusinessRequirementsMissingProject (0.00s)
+=== RUN   TestBusinessRequirementsProblemTooShort
+--- PASS: TestBusinessRequirementsProblemTooShort (0.00s)
+=== RUN   TestBusinessRequirementsFRIDPattern
+--- PASS: TestBusinessRequirementsFRIDPattern (0.00s)
+=== RUN   TestBusinessRequirementsActorNotInPersonas
+--- PASS: TestBusinessRequirementsActorNotInPersonas (0.00s)
+=== RUN   TestBusinessRequirementsSystemActorAllowed
+--- PASS: TestBusinessRequirementsSystemActorAllowed (0.00s)
+=== RUN   TestBusinessRequirementsFewRisksWarning
+--- PASS: TestBusinessRequirementsFewRisksWarning (0.00s)
+=== RUN   TestBusinessRequirementsFewRisksStrict
+--- PASS: TestBusinessRequirementsFewRisksStrict (0.00s)
+=== RUN   TestBusinessRequirementsInvalidPriority
+--- PASS: TestBusinessRequirementsInvalidPriority (0.00s)
+=== RUN   TestBusinessRequirementsNonSequentialFRIDs
+--- PASS: TestBusinessRequirementsNonSequentialFRIDs (0.00s)
+=== RUN   TestBusinessRequirementsWithFixtures
+=== RUN   TestBusinessRequirementsWithFixtures/missing_project
+=== RUN   TestBusinessRequirementsWithFixtures/non-sequential_IDs
+--- PASS: TestBusinessRequirementsWithFixtures (0.00s)
+    --- PASS: TestBusinessRequirementsWithFixtures/missing_project (0.00s)
+    --- PASS: TestBusinessRequirementsWithFixtures/non-sequential_IDs (0.00s)
+=== RUN   TestBusinessRequirementsEdgeCases
+=== RUN   TestBusinessRequirementsEdgeCases/unicode_characters
+=== RUN   TestBusinessRequirementsEdgeCases/very_long_strings
+=== RUN   TestBusinessRequirementsEdgeCases/empty_arrays_vs_missing_arrays
+--- PASS: TestBusinessRequirementsEdgeCases (0.00s)
+    --- PASS: TestBusinessRequirementsEdgeCases/unicode_characters (0.00s)
+    --- PASS: TestBusinessRequirementsEdgeCases/very_long_strings (0.00s)
+    --- PASS: TestBusinessRequirementsEdgeCases/empty_arrays_vs_missing_arrays (0.00s)
+=== RUN   TestFormatResultAllPass
+--- PASS: TestFormatResultAllPass (0.00s)
+=== RUN   TestFormatResultWithErrors
+--- PASS: TestFormatResultWithErrors (0.00s)
+=== RUN   TestFormatResultWithWarningsDefault
+--- PASS: TestFormatResultWithWarningsDefault (0.00s)
+=== RUN   TestFormatResultWithWarningsStrict
+--- PASS: TestFormatResultWithWarningsStrict (0.00s)
+=== RUN   TestFormatResultVerboseWithErrorsAndWarnings
+--- PASS: TestFormatResultVerboseWithErrorsAndWarnings (0.00s)
+=== RUN   TestGapAnalysisExamplePasses
+--- PASS: TestGapAnalysisExamplePasses (0.00s)
+=== RUN   TestGapAnalysisMissingStatus
+--- PASS: TestGapAnalysisMissingStatus (0.00s)
+=== RUN   TestGapAnalysisTotalGapsMismatch
+--- PASS: TestGapAnalysisTotalGapsMismatch (0.00s)
+=== RUN   TestGapAnalysisNonSequentialGapIDs
+--- PASS: TestGapAnalysisNonSequentialGapIDs (0.00s)
+=== RUN   TestGapAnalysisInvalidPriority
+--- PASS: TestGapAnalysisInvalidPriority (0.00s)
+=== RUN   TestGapAnalysisInvalidCategory
+--- PASS: TestGapAnalysisInvalidCategory (0.00s)
+=== RUN   TestMilestoneTasksExamplePasses
+--- PASS: TestMilestoneTasksExamplePasses (0.00s)
+=== RUN   TestMilestoneTasksNonSequentialIDs
+--- PASS: TestMilestoneTasksNonSequentialIDs (0.00s)
+=== RUN   TestMilestoneTasksInvalidTaskType
+--- PASS: TestMilestoneTasksInvalidTaskType (0.00s)
+=== RUN   TestMilestoneTasksExceedsMaxDuration
+--- PASS: TestMilestoneTasksExceedsMaxDuration (0.00s)
+=== RUN   TestMilestoneTasksEmptyFiles
+--- PASS: TestMilestoneTasksEmptyFiles (0.00s)
+=== RUN   TestMilestoneTasksInvalidGateStage
+--- PASS: TestMilestoneTasksInvalidGateStage (0.00s)
+=== RUN   TestMilestoneTasksEdgeCases
+=== RUN   TestMilestoneTasksEdgeCases/empty_dependencies_array_doesn't_crash
+--- PASS: TestMilestoneTasksEdgeCases (0.00s)
+    --- PASS: TestMilestoneTasksEdgeCases/empty_dependencies_array_doesn't_crash (0.00s)
+=== RUN   TestMilestonesExamplePasses
+--- PASS: TestMilestonesExamplePasses (0.00s)
+=== RUN   TestMilestonesNonSequentialIDs
+--- PASS: TestMilestonesNonSequentialIDs (0.00s)
+=== RUN   TestMilestonesCircularDependency
+--- PASS: TestMilestonesCircularDependency (0.00s)
+=== RUN   TestMilestonesInvalidStrategy
+--- PASS: TestMilestonesInvalidStrategy (0.00s)
+=== RUN   TestMilestonesForwardDependency
+--- PASS: TestMilestonesForwardDependency (0.00s)
+=== RUN   TestMilestonesShortRationale
+--- PASS: TestMilestonesShortRationale (0.00s)
+=== RUN   TestMilestonesCircularDependencyWithFixture
+    milestones_test.go:248: expected circular dependency error, got: [business_requirements is required technical_requirements is required meta.ordering_strategy must be a valid strategy (got "") meta.ordering_rationale must be at least 20 characters (got 0) milestones.0.id must match m[0-9]+ pattern (got "M-001") milestones.0.id must be "m0" for sequential ordering (got "M-001") milestones.0.description must be at least 50 characters milestones.0.dependencies is required milestones.0.estimated_duration is required milestones.0.tasks_file is required milestones.1.id must match m[0-9]+ pattern (got "M-002") milestones.1.id must be "m1" for sequential ordering (got "M-002") milestones.1.description must be at least 50 characters milestones.1.dependencies is required milestones.1.estimated_duration is required milestones.1.tasks_file is required]
+--- PASS: TestMilestonesCircularDependencyWithFixture (0.00s)
+=== RUN   TestQATestPlanExamplePasses
+--- PASS: TestQATestPlanExamplePasses (0.00s)
+=== RUN   TestQATestPlanInvalidCaseType
+--- PASS: TestQATestPlanInvalidCaseType (0.00s)
+=== RUN   TestQATestPlanPriorityMismatch
+--- PASS: TestQATestPlanPriorityMismatch (0.00s)
+=== RUN   TestQATestPlanInvalidSuiteID
+--- PASS: TestQATestPlanInvalidSuiteID (0.00s)
+=== RUN   TestQATestPlanMissingSteps
+--- PASS: TestQATestPlanMissingSteps (0.00s)
+=== RUN   TestQATestPlanSuiteCountMismatch
+--- PASS: TestQATestPlanSuiteCountMismatch (0.00s)
+=== RUN   TestRegistryListsAllTypes
+--- PASS: TestRegistryListsAllTypes (0.00s)
+=== RUN   TestRegistryReturnsFilePattern
+--- PASS: TestRegistryReturnsFilePattern (0.00s)
+=== RUN   TestRegistryFilePatternUnknown
+--- PASS: TestRegistryFilePatternUnknown (0.00s)
+=== RUN   TestRegistryResolveTypeByName
+--- PASS: TestRegistryResolveTypeByName (0.00s)
+=== RUN   TestRegistryResolveTypeByFilename
+--- PASS: TestRegistryResolveTypeByFilename (0.00s)
+=== RUN   TestTechnicalRequirementsExamplePasses
+--- PASS: TestTechnicalRequirementsExamplePasses (0.00s)
+=== RUN   TestTechnicalRequirementsMissingProject
+--- PASS: TestTechnicalRequirementsMissingProject (0.00s)
+=== RUN   TestTechnicalRequirementsMissingArchitecture
+--- PASS: TestTechnicalRequirementsMissingArchitecture (0.00s)
+=== RUN   TestTechnicalRequirementsInvalidProjectStructureType
+--- PASS: TestTechnicalRequirementsInvalidProjectStructureType (0.00s)
+=== RUN   TestTechnicalRequirementsDuplicateComponentNames
+--- PASS: TestTechnicalRequirementsDuplicateComponentNames (0.00s)
+=== RUN   TestTechnicalRequirementsEmptyConstraints
+--- PASS: TestTechnicalRequirementsEmptyConstraints (0.00s)
+=== RUN   TestTimelineExamplePasses
+--- PASS: TestTimelineExamplePasses (0.00s)
+=== RUN   TestTimelineInvalidDeliveryModel
+--- PASS: TestTimelineInvalidDeliveryModel (0.00s)
+=== RUN   TestTimelineCompletionDayMismatch
+--- PASS: TestTimelineCompletionDayMismatch (0.00s)
+=== RUN   TestTimelineMilestoneCountMismatch
+--- PASS: TestTimelineMilestoneCountMismatch (0.00s)
+=== RUN   TestTimelineDeliveryDaysLessThanDevDays
+--- PASS: TestTimelineDeliveryDaysLessThanDevDays (0.00s)
+=== RUN   TestTimelineWorkbackDeployDateMismatch
+--- PASS: TestTimelineWorkbackDeployDateMismatch (0.00s)
+=== RUN   TestValidateRequiredField
+--- PASS: TestValidateRequiredField (0.00s)
+=== RUN   TestValidateRequiredFields
+--- PASS: TestValidateRequiredFields (0.00s)
+=== RUN   TestValidateStringLength
+--- PASS: TestValidateStringLength (0.00s)
+=== RUN   TestValidateEnum
+--- PASS: TestValidateEnum (0.00s)
+=== RUN   TestValidateSequentialIDs
+=== RUN   TestValidateSequentialIDs/valid_sequential
+=== RUN   TestValidateSequentialIDs/non-sequential
+=== RUN   TestValidateSequentialIDs/invalid_format
+--- PASS: TestValidateSequentialIDs (0.00s)
+    --- PASS: TestValidateSequentialIDs/valid_sequential (0.00s)
+    --- PASS: TestValidateSequentialIDs/non-sequential (0.00s)
+    --- PASS: TestValidateSequentialIDs/invalid_format (0.00s)
+=== RUN   TestDetectCircularDependencies
+=== RUN   TestDetectCircularDependencies/no_cycle
+=== RUN   TestDetectCircularDependencies/simple_cycle
+=== RUN   TestDetectCircularDependencies/self_cycle
+=== RUN   TestDetectCircularDependencies/diamond_no_cycle
+=== RUN   TestDetectCircularDependencies/complex_cycle
+--- PASS: TestDetectCircularDependencies (0.00s)
+    --- PASS: TestDetectCircularDependencies/no_cycle (0.00s)
+    --- PASS: TestDetectCircularDependencies/simple_cycle (0.00s)
+    --- PASS: TestDetectCircularDependencies/self_cycle (0.00s)
+    --- PASS: TestDetectCircularDependencies/diamond_no_cycle (0.00s)
+    --- PASS: TestDetectCircularDependencies/complex_cycle (0.00s)
+=== RUN   TestApplyStrict
+--- PASS: TestApplyStrict (0.00s)
+=== RUN   TestValidateIDFormat
+=== RUN   TestValidateIDFormat/valid_ID
+=== RUN   TestValidateIDFormat/invalid_format
+=== RUN   TestValidateIDFormat/ID_too_long_-_ReDoS_prevention
+=== RUN   TestValidateIDFormat/at_max_length_but_valid_format
+--- PASS: TestValidateIDFormat (0.00s)
+    --- PASS: TestValidateIDFormat/valid_ID (0.00s)
+    --- PASS: TestValidateIDFormat/invalid_format (0.00s)
+    --- PASS: TestValidateIDFormat/ID_too_long_-_ReDoS_prevention (0.00s)
+    --- PASS: TestValidateIDFormat/at_max_length_but_valid_format (0.00s)
+=== RUN   TestReDoSPrevention
+=== RUN   TestReDoSPrevention/normal_length_ID
+=== RUN   TestReDoSPrevention/1000_character_ID_-_potential_ReDoS
+=== RUN   TestReDoSPrevention/10000_character_ID_-_severe_ReDoS
+=== RUN   TestReDoSPrevention/exactly_at_max_length_but_invalid
+=== RUN   TestReDoSPrevention/one_over_max_length
+--- PASS: TestReDoSPrevention (0.00s)
+    --- PASS: TestReDoSPrevention/normal_length_ID (0.00s)
+    --- PASS: TestReDoSPrevention/1000_character_ID_-_potential_ReDoS (0.00s)
+    --- PASS: TestReDoSPrevention/10000_character_ID_-_severe_ReDoS (0.00s)
+    --- PASS: TestReDoSPrevention/exactly_at_max_length_but_invalid (0.00s)
+    --- PASS: TestReDoSPrevention/one_over_max_length (0.00s)
+PASS
+ok  	github.com/kydavis/sherpy/schema	0.010s
+
+=== Test Summary ===
+✅ All tests passed
+
+Packages tested:
+- cmd: PASS
+- integration: PASS
+- markdown: PASS
+- prompt: PASS
+- schema: PASS
+
+No warnings detected in test output.
+
+	github.com/kydavis/sherpy		coverage: 0.0% of statements
+ok  	github.com/kydavis/sherpy/cmd	(cached)	coverage: 84.6% of statements
+ok  	github.com/kydavis/sherpy/integration	1.522s	coverage: [no statements]
+ok  	github.com/kydavis/sherpy/markdown	(cached)	coverage: 88.6% of statements
+ok  	github.com/kydavis/sherpy/prompt	(cached)	coverage: 82.2% of statements
+ok  	github.com/kydavis/sherpy/schema	(cached)	coverage: 77.5% of statements
+
+Test suite completed: Thu May 14 07:57:59 AM PDT 2026

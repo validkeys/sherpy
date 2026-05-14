@@ -8,14 +8,47 @@ import (
 	"strings"
 
 	"github.com/kydavis/sherpy/markdown"
+	"github.com/kydavis/sherpy/prompt"
 	"github.com/kydavis/sherpy/schema"
 	"github.com/spf13/cobra"
 )
 
 const MaxFileSize = 10 * 1024 * 1024 // 10MB
 
-// validatePath checks for path traversal attacks
-// It allows one level of parent directory traversal (e.g., ../docs) but blocks excessive traversal
+// validatePath checks for path traversal attacks while allowing legitimate
+// access to sibling directories.
+//
+// Security Policy:
+//   - Allows up to 1 level of parent directory traversal (../docs)
+//   - Blocks 2 or more levels (../../etc, ../../../)
+//   - Normalizes paths using filepath.Clean
+//   - Validates absolute path conversion
+//
+// Rationale for 1-level allowance:
+// Users may need to access documents in sibling directories when sherpy
+// is not in the same directory as their YAML files. Common scenarios:
+//   - sherpy in /usr/local/bin, docs in ~/project/docs
+//   - Multi-project workspace with shared tooling
+//   - Running from build directory, accessing ../docs
+//
+// This is a pragmatic balance between security and usability. Since sherpy
+// only reads files (no writes or execution) and enforces file size limits,
+// the risk is limited to information disclosure of files the user already
+// has filesystem permissions to access.
+//
+// Examples:
+//   ✓ Allowed:  ./file.yaml (current directory)
+//   ✓ Allowed:  subdir/file.yaml (subdirectories)
+//   ✓ Allowed:  ../docs/file.yaml (one level up)
+//   ✗ Blocked:  ../../etc/passwd (two levels up)
+//   ✗ Blocked:  ../../../anything (three+ levels)
+//
+// Additional protections:
+//   - File size limit of 10MB (enforced in readFileWithLimit)
+//   - Read-only operations (no writes)
+//   - User filesystem permissions still apply
+//
+// See: FR-8 security review, docs/pr9-remediation/artifacts/security-analysis.md
 func validatePath(path string) error {
 	// Clean the path to normalize it
 	cleaned := filepath.Clean(path)
@@ -30,8 +63,8 @@ func validatePath(path string) error {
 		}
 	}
 
-	// Allow up to 1 level of parent directory traversal
-	// Block 2+ levels (e.g., ../../etc/passwd)
+	// Allow up to 1 level of parent directory traversal for sibling directories.
+	// Block 2+ levels to prevent directory traversal attacks (../../etc/passwd).
 	if parentCount > 1 {
 		return fmt.Errorf("path traversal detected: %s", path)
 	}
@@ -80,6 +113,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newValidateCmd())
 	root.AddCommand(newToMarkdownCmd())
 	root.AddCommand(newTypesCmd())
+	root.AddCommand(newPromptCmd())
 
 	return root
 }
@@ -228,5 +262,49 @@ func runToMarkdown(w io.Writer, typeName, filename, output string) error {
 	}
 
 	fmt.Fprint(w, md)
+	return nil
+}
+
+func newPromptCmd() *cobra.Command {
+	var (
+		typeName string
+		list     bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "prompt -t <type>",
+		Short: "Output skill prompt instructions to stdout",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if list {
+				return runPromptList(cmd.OutOrStdout())
+			}
+			if typeName == "" {
+				return fmt.Errorf("type is required: use -t <type> or --list to show available prompts")
+			}
+			return runPrompt(cmd.OutOrStdout(), typeName)
+		},
+	}
+
+	cmd.Flags().StringVarP(&typeName, "type", "t", "", "prompt type (required)")
+	cmd.Flags().BoolVar(&list, "list", false, "list available prompts")
+
+	return cmd
+}
+
+func runPromptList(w io.Writer) error {
+	prompts := prompt.RegisteredPrompts()
+	fmt.Fprintf(w, "%-35s %s\n", "PROMPT", "DESCRIPTION")
+	for _, p := range prompts {
+		fmt.Fprintf(w, "%-35s %s\n", p.Name, p.Description)
+	}
+	return nil
+}
+
+func runPrompt(w io.Writer, typeName string) error {
+	content, err := prompt.PromptContent(typeName)
+	if err != nil {
+		return err
+	}
+	fmt.Fprint(w, content)
 	return nil
 }

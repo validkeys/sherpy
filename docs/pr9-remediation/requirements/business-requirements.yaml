@@ -1,0 +1,163 @@
+version: "1.0"
+project:
+  name: "PR #9 Code Review Remediation"
+  description: "Address all concerns from PR #9 code review: remove committed binary, fix orphaned prompts, deduplicate code, update documentation, and improve security"
+  stakeholders:
+    - name: "Development Team"
+      role: "Implementation"
+    - name: "Code Reviewers"
+      role: "Approval"
+
+functional_requirements:
+  - id: FR-1
+    name: "Remove Committed Binary"
+    priority: critical
+    description: |
+      Remove the accidentally committed sherpy binary (6.3MB) from the Git repository
+      to prevent repository bloat and security scanner triggers.
+    acceptance_criteria:
+      - Binary removed from Git history on the branch
+      - .gitignore properly configured to prevent future commits
+      - Verified that binary is not tracked
+
+  - id: FR-2
+    name: "Fix Orphaned Prompts Warning"
+    priority: high
+    description: |
+      Address test warnings about orphaned prompt content (implementation-plan-best-practices,
+      sherpy-cli-planner, sherpy-flow, create-continuation-prompt, sherpy-cli) that appear
+      in content map but not in registry.
+    acceptance_criteria:
+      - No warnings in test output
+      - gen_prompts.go filters non-pipeline skills
+      - Tests pass cleanly without clutter
+
+  - id: FR-3
+    name: "Deduplicate stripFrontmatter Function"
+    priority: medium
+    description: |
+      Extract duplicated stripFrontmatter() implementation from prompt/registry.go
+      and prompt/gen_prompts.go into a shared location.
+    acceptance_criteria:
+      - Single implementation in shared file
+      - Both consumers use shared implementation
+      - Tests verify behavior remains identical
+      - No code duplication
+
+  - id: FR-4
+    name: "Update Repository References"
+    priority: high
+    description: |
+      Fix inconsistent repository references in documentation. Update kydavis/sherpy
+      to validkeys/sherpy throughout all documentation files.
+    acceptance_criteria:
+      - All docs reference validkeys/sherpy
+      - No references to kydavis/sherpy remain
+      - Links are functional and correct
+
+  - id: FR-5
+    name: "Add CHANGELOG Entry"
+    priority: medium
+    description: |
+      Document the new sherpy prompt command in CHANGELOG.md following
+      conventional commit format.
+    acceptance_criteria:
+      - CHANGELOG.md updated with new command
+      - Version and date included
+      - Features and usage documented
+
+  - id: FR-6
+    name: "Document go:generate Workflow"
+    priority: low
+    description: |
+      Add contributor documentation explaining the go:generate workflow
+      for updating embedded skill content.
+    acceptance_criteria:
+      - CONTRIBUTING.md includes generate workflow
+      - Steps are clear and actionable
+      - Examples provided
+
+  - id: FR-7
+    name: "Add CI Check for Generated Files"
+    priority: medium
+    description: |
+      Add GitHub Actions workflow check to verify content_generated.go
+      is up-to-date and not stale.
+    acceptance_criteria:
+      - CI checks run make generate
+      - CI fails if generated file differs
+      - Clear error message for contributors
+
+  - id: FR-8
+    name: "Review Path Traversal Security Policy"
+    priority: high
+    description: |
+      Review and clarify the path traversal validation policy. Currently allows
+      1 level of parent directory traversal (../docs) but blocks 2+ levels.
+      Document rationale or restrict further.
+    acceptance_criteria:
+      - Security policy documented
+      - Rationale explained in comments
+      - Tests validate expected behavior
+      - Alternative approaches evaluated
+
+non_functional_requirements:
+  - id: NFR-1
+    category: security
+    requirement: "All path traversal scenarios properly validated and tested"
+    acceptance_criteria:
+      - Edge cases covered in tests
+      - Security rationale documented
+      - Alternative approaches evaluated
+
+  - id: NFR-2
+    category: maintainability
+    requirement: "No code duplication, DRY principles followed"
+    acceptance_criteria:
+      - stripFrontmatter() not duplicated
+      - Shared utilities properly organized
+
+  - id: NFR-3
+    category: quality
+    requirement: "Clean test output with no warnings or clutter"
+    acceptance_criteria:
+      - No orphaned prompt warnings
+      - Tests run cleanly
+      - Output is readable
+
+  - id: NFR-4
+    category: documentation
+    requirement: "Complete and accurate documentation for contributors and users"
+    acceptance_criteria:
+      - Repository references consistent
+      - CHANGELOG maintained
+      - Contributor workflow documented
+
+assumptions:
+  - "PR #9 branch feat/sherpy-prompt-command exists and is active"
+  - "All tests currently pass"
+  - "GitHub Actions CI is configured"
+  - ".gitignore already contains sherpy binary entry"
+
+constraints:
+  - "Must not break existing functionality"
+  - "Must maintain backward compatibility"
+  - "All changes must be testable"
+  - "Security changes must not break valid use cases"
+
+success_metrics:
+  - metric: "Binary removal"
+    target: "sherpy binary not in Git history"
+    measurement: "git log --all --full-history -- sherpy"
+
+  - metric: "Test cleanliness"
+    target: "Zero warnings in test output"
+    measurement: "go test ./... 2>&1 | grep -i warning"
+
+  - metric: "Code quality"
+    target: "No duplicate code in prompt package"
+    measurement: "Manual code review"
+
+  - metric: "Documentation accuracy"
+    target: "100% validkeys/sherpy references"
+    measurement: "grep -r kydavis/sherpy docs/"

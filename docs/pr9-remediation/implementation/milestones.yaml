@@ -1,0 +1,102 @@
+version: "1.0"
+project:
+  name: "PR #9 Code Review Remediation"
+  description: "Address all concerns from code review: remove binary, fix warnings, deduplicate code, update docs"
+  repository: "validkeys/sherpy"
+  branch: "feat/sherpy-prompt-command"
+
+metadata:
+  created: "2026-05-14"
+  ordering_strategy: "single-feature-branch"
+  total_estimated_hours: 6.5
+  author: "claude-sonnet-4.5"
+
+milestones:
+  - id: m0
+    name: "Code Quality & Refactoring"
+    description: |
+      Extract shared utilities and clean up code duplication. Fix orphaned prompt
+      warnings by filtering non-pipeline skills during generation.
+    dependencies: []
+    estimated_duration: "2 hours"
+    tasks_file: "tasks/milestone-m0.tasks.yaml"
+    success_criteria:
+      - "stripFrontmatter() exists in single location (prompt/frontmatter.go)"
+      - "Both registry.go and gen_prompts.go use shared implementation"
+      - "gen_prompts.go filters non-pipeline skills via skipList"
+      - "All tests pass without orphaned prompt warnings"
+      - "No code duplication in prompt package"
+
+  - id: m1
+    name: "Repository Cleanup"
+    description: |
+      Remove accidentally committed sherpy binary from Git history. This is critical
+      to prevent repository bloat (6.3MB) and security scanner triggers.
+    dependencies: []
+    estimated_duration: "45 minutes"
+    tasks_file: "tasks/milestone-m1.tasks.yaml"
+    success_criteria:
+      - "sherpy binary removed from all Git history on branch"
+      - "git log --all -- sherpy shows no commits"
+      - ".gitignore properly configured"
+      - "Repository size reduced by ~6MB"
+
+  - id: m2
+    name: "Documentation Updates"
+    description: |
+      Update repository references from kydavis/sherpy to validkeys/sherpy.
+      Add CHANGELOG.md entry and contributor workflow documentation.
+    dependencies: [m0]
+    estimated_duration: "1.5 hours"
+    tasks_file: "tasks/milestone-m2.tasks.yaml"
+    success_criteria:
+      - "All docs reference validkeys/sherpy consistently"
+      - "No kydavis/sherpy references remain"
+      - "CHANGELOG.md includes prompt command entry"
+      - "CONTRIBUTING.md documents go:generate workflow"
+      - "All documentation is accurate and complete"
+
+  - id: m3
+    name: "Security Review & Documentation"
+    description: |
+      Review path traversal policy and document security rationale. Clarify why
+      1 level of parent directory traversal is allowed vs 0 or unlimited.
+    dependencies: [m0]
+    estimated_duration: "1.25 hours"
+    tasks_file: "tasks/milestone-m3.tasks.yaml"
+    success_criteria:
+      - "Security policy documented in validatePath() comments"
+      - "Rationale for 1-level traversal explained"
+      - "Alternative approaches evaluated and documented"
+      - "Tests validate expected behavior"
+      - "Security section in README updated"
+
+  - id: m4
+    name: "CI/CD Automation"
+    description: |
+      Add GitHub Actions workflow to validate content_generated.go is current.
+      Prevents stale generated content from being merged.
+    dependencies: [m0, m2]
+    estimated_duration: "1 hour"
+    tasks_file: "tasks/milestone-m4.tasks.yaml"
+    success_criteria:
+      - ".github/workflows/validate-generated.yml created"
+      - "CI runs make generate and checks for diffs"
+      - "CI fails with clear message if content is stale"
+      - "Workflow tested on branch"
+
+  - id: m5
+    name: "Final Validation & Review"
+    description: |
+      Comprehensive code review of all changes. Verify all concerns addressed,
+      tests pass, documentation complete, and ready for re-review.
+    dependencies: [m1, m2, m3, m4]
+    estimated_duration: "30 minutes"
+    tasks_file: "tasks/milestone-m5.tasks.yaml"
+    success_criteria:
+      - "All FR requirements verified complete"
+      - "All NFR requirements verified met"
+      - "Test suite passes with zero warnings"
+      - "Binary not in Git history"
+      - "Documentation accurate and complete"
+      - "Ready for code review re-approval"

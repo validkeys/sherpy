@@ -1,4 +1,4 @@
-.PHONY: help build install test lint clean vet staticcheck
+.PHONY: help build install uninstall test lint clean vet staticcheck generate
 
 # Default target
 .DEFAULT_GOAL := help
@@ -14,6 +14,7 @@ GOINSTALL=$(GOCMD) install
 GOTEST=$(GOCMD) test
 GOVET=$(GOCMD) vet
 GOCLEAN=$(GOCMD) clean
+GOGENERATE=$(GOCMD) generate
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -21,13 +22,19 @@ help: ## Show this help message
 	@echo 'Available targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-build: ## Build the binary
+generate: ## Generate embedded prompt content
+	$(GOGENERATE) ./prompt/...
+
+build: generate ## Generate + build the binary
 	$(GOBUILD) -o $(BINARY_NAME) -v .
 
 install: build ## Install the binary to /usr/local/bin
 	sudo cp $(BINARY_NAME) $(INSTALL_PATH)/$(BINARY_NAME)
 
-test: ## Run all tests
+uninstall: ## Remove the binary from /usr/local/bin
+	sudo rm -f $(INSTALL_PATH)/$(BINARY_NAME)
+
+test: generate ## Run all tests
 	$(GOTEST) ./... -v -count=1
 
 vet: ## Run go vet

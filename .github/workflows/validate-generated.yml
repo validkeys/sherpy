@@ -1,0 +1,46 @@
+name: Validate Generated Content
+
+on:
+  push:
+    branches: [main, feat/**, fix/**]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-generated:
+    name: Check Generated Files Up-to-Date
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Run go generate
+        run: make generate
+
+      - name: Check for uncommitted changes
+        run: |
+          if ! git diff --exit-code prompt/content_generated.go; then
+            echo ""
+            echo "❌ ERROR: content_generated.go is stale!"
+            echo ""
+            echo "The embedded prompt content does not match the skill files."
+            echo ""
+            echo "To fix this:"
+            echo "  1. Run: make generate"
+            echo "  2. Commit: git add prompt/content_generated.go"
+            echo "  3. Push your changes"
+            echo ""
+            echo "This ensures the binary embeds the latest skill content."
+            exit 1
+          fi
+
+      - name: Success message
+        run: |
+          echo "✅ Generated content is up-to-date"
+          echo "Skills and embedded content are in sync"

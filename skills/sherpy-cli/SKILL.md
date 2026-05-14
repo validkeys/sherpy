@@ -57,6 +57,30 @@ sherpy to-markdown -t business-requirements -f docs/business-requirements.yaml -
 sherpy types
 ```
 
+### Load Skill Prompt Instructions
+
+Output skill prompt instructions for AI agents (CLI-only feature):
+
+```bash
+# List available prompts
+sherpy prompt --list
+
+# Output specific skill instructions (for AI agents)
+sherpy prompt -t business-requirements-interview
+sherpy prompt -t implementation-planner
+sherpy prompt -t qa-test-plan
+```
+
+The `sherpy prompt` command outputs embedded skill instructions without YAML frontmatter. This provides a token-efficient alternative to installing individual skill files. The content is embedded in the binary at build time.
+
+**Available prompts:**
+- `gap-analysis-worksheet`, `business-requirements-interview`, `technical-requirements-interview`
+- `style-anchors-collection`, `implementation-planner`, `implementation-plan-review`
+- `definition-of-done`, `architecture-decision-record`, `delivery-timeline`
+- `qa-test-plan`, `developer-summary`, `executive-summary`
+
+See also: **sherpy-cli-planner** skill for orchestrated planning workflows via CLI.
+
 ## Validation Features
 
 Sherpy CLI performs comprehensive validation:
@@ -197,7 +221,7 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Install Sherpy CLI
-        run: go install github.com/kydavis/sherpy@latest
+        run: go install github.com/validkeys/sherpy@latest
       
       - name: Validate Planning Documents
         run: |
@@ -213,7 +237,7 @@ validate-docs:
   stage: test
   image: golang:1.26
   script:
-    - go install github.com/kydavis/sherpy@latest
+    - go install github.com/validkeys/sherpy@latest
     - sherpy validate -t business-requirements -f docs/requirements/business-requirements.yaml --strict
     - sherpy validate -t technical-requirements -f docs/requirements/technical-requirements.yaml --strict
 ```
@@ -393,7 +417,7 @@ done
 ### From Source
 
 ```bash
-git clone https://github.com/kydavis/sherpy.git
+git clone https://github.com/validkeys/sherpy.git
 cd sherpy
 make build
 sudo make install
@@ -402,7 +426,7 @@ sudo make install
 ### Using Go
 
 ```bash
-go install github.com/kydavis/sherpy@latest
+go install github.com/validkeys/sherpy@latest
 ```
 
 ### Verify Installation
@@ -477,7 +501,7 @@ stat -c%s docs/file.yaml  # Linux
 
 ## Documentation
 
-- **GitHub**: https://github.com/kydavis/sherpy
+- **GitHub**: https://github.com/validkeys/sherpy
 - **README**: [README.md](../../README.md)
 - **Usage Guide**: [USAGE.md](../../USAGE.md)
 - **Security**: [SECURITY.md](../../SECURITY.md)
