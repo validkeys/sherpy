@@ -238,16 +238,6 @@ A timestamped backup is created before modification:
 - Location: `{base_directory}/implementation/milestones.yaml.backup.YYYYMMDD-HHMMSS`
 - Contains: Complete original milestones.yaml before enhancement
 
-## Validation
-
-After enhancing `milestones.yaml`, if `sherpy` is installed and available on the path, validate the updated document:
-
-```bash
-sherpy validate -t milestones -f {base_directory}/implementation/milestones.yaml
-```
-
-If validation errors are found, fix them before proceeding with development. The backup file remains available if a restore is needed.
-
 ## Example
 
 See `/docs/specifications/milestones/example.yaml` for milestone m1 with complete acceptance_criteria and exit_checklist.

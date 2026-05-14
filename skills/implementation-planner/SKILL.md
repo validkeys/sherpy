@@ -910,22 +910,6 @@ If you encounter unexpected patterns:
 4. **REPORT** - Ask for guidance
 5. **UPDATE** - Add rule to prevent recurrence
 
-## Validation
-
-After generating `milestones.yaml` and milestone task files, if `sherpy` is installed and available on the path, validate all generated documents:
-
-```bash
-# Validate milestones file
-sherpy validate -t milestones -f {base_directory}/implementation/milestones.yaml
-
-# Validate each milestone tasks file
-sherpy validate -t milestone-tasks -f {base_directory}/implementation/tasks/milestone-m0.tasks.yaml
-sherpy validate -t milestone-tasks -f {base_directory}/implementation/tasks/milestone-m1.tasks.yaml
-# ... repeat for all generated milestone task files
-```
-
-If validation errors are found, fix them before starting development work.
-
 ## Examples
 
 See **[references/milestones-example.yaml](references/milestones-example.yaml)** and **[references/milestone-tasks-example.yaml](references/milestone-tasks-example.yaml)** for sample output files.

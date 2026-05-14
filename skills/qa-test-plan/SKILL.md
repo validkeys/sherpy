@@ -143,16 +143,6 @@ See **[references/output-spec.md](references/output-spec.md)** for the complete 
 
 See **[references/example.yaml](references/example.yaml)** for a full example.
 
-## Validation
-
-After generating `qa-test-plan.yaml`, if `sherpy` is installed and available on the path, validate the generated document:
-
-```bash
-sherpy validate -t qa-test-plan -f {base_directory}/delivery/qa-test-plan.yaml
-```
-
-If validation errors are found, fix them before using the test plan.
-
 ## Example Output
 
 See **[references/example.yaml](references/example.yaml)** for a complete sample QA test plan.
