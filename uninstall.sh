@@ -20,6 +20,8 @@ NC='\033[0m' # No Color
 # Configuration
 BINARY_NAME="sherpy"
 INSTALL_DIR="/usr/local/bin"
+SKILLS_DIR="$HOME/.claude/skills"
+SKILL_NAME="sherpy-cli-planner"
 
 info() {
     echo -e "${BLUE}==>${NC} $1"
@@ -116,6 +118,48 @@ verify_removal() {
     fi
 }
 
+# Check for installed skill
+check_skill() {
+    if [ -d "$SKILLS_DIR/$SKILL_NAME" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Ask about skill removal
+prompt_skill_removal() {
+    echo ""
+
+    if ! check_skill; then
+        return
+    fi
+
+    warn "Found $SKILL_NAME skill at $SKILLS_DIR/$SKILL_NAME"
+    echo ""
+    read -p "Remove $SKILL_NAME skill? (Y/n): " -n 1 -r
+    echo ""
+
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        info "Keeping skill installation"
+        return
+    fi
+
+    remove_skill
+}
+
+# Remove skill
+remove_skill() {
+    info "Removing $SKILL_NAME skill..."
+
+    if rm -rf "$SKILLS_DIR/$SKILL_NAME"; then
+        success "Removed $SKILL_NAME skill"
+    else
+        error "Failed to remove skill"
+        echo "Remove manually: rm -rf \"$SKILLS_DIR/$SKILL_NAME\""
+    fi
+}
+
 # Main uninstallation flow
 main() {
     echo ""
@@ -129,6 +173,7 @@ main() {
     echo ""
     remove_binary
     verify_removal
+    prompt_skill_removal
     echo ""
 
     # Success message

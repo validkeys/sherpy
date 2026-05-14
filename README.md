@@ -37,8 +37,11 @@ This script will:
 - Clone the repository to a temporary directory
 - Build the binary from source
 - Install to `/usr/local/bin` (may prompt for sudo)
+- Optionally install the `sherpy-cli-planner` skill for Claude Code
 - Verify the installation
 - Clean up temporary files
+
+**Optional:** If Claude Code is detected, the installer will offer to install the `sherpy-cli-planner` skill, which provides a `/sherpy-cli-planner` command that orchestrates the full 12-step planning workflow using sherpy CLI prompts.
 
 **Requirements:**
 - Go 1.26 or later

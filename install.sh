@@ -21,6 +21,8 @@ NC='\033[0m' # No Color
 BINARY_NAME="sherpy"
 INSTALL_DIR="/usr/local/bin"
 MIN_GO_VERSION="1.26"
+SKILLS_DIR="$HOME/.claude/skills"
+SKILL_NAME="sherpy-cli-planner"
 
 # Platform detection
 OS="$(uname -s)"
@@ -237,6 +239,95 @@ verify_installation() {
     fi
 }
 
+# Check if Claude Code is installed
+check_claude_code() {
+    if [ -d "$HOME/.claude" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Ask about skill installation
+prompt_skill_installation() {
+    echo ""
+    echo "╔═══════════════════════════════════════╗"
+    echo "║    Claude Code Skill Installation    ║"
+    echo "╚═══════════════════════════════════════╝"
+    echo ""
+
+    if ! check_claude_code; then
+        info "Claude Code not detected (~/.claude directory not found)"
+        info "Skipping skill installation"
+        return
+    fi
+
+    success "Claude Code detected"
+    echo ""
+    info "The sherpy-cli-planner skill orchestrates the full planning pipeline"
+    info "using sherpy CLI commands. Would you like to install it?"
+    echo ""
+    echo "  - Provides /sherpy-cli-planner command in Claude Code"
+    echo "  - Runs 12-step planning workflow (requirements → implementation)"
+    echo "  - Token-efficient (loads instructions on-demand via CLI)"
+    echo ""
+    read -p "Install sherpy-cli-planner skill? (Y/n): " -n 1 -r
+    echo ""
+
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        info "Skipping skill installation"
+        return
+    fi
+
+    install_skill
+}
+
+# Install skill
+install_skill() {
+    info "Installing $SKILL_NAME skill..."
+
+    # Create skills directory if it doesn't exist
+    if [ ! -d "$SKILLS_DIR" ]; then
+        if mkdir -p "$SKILLS_DIR"; then
+            success "Created skills directory: $SKILLS_DIR"
+        else
+            error "Failed to create skills directory"
+            warn "You can install the skill manually later"
+            return
+        fi
+    fi
+
+    # Copy skill files
+    SKILL_SOURCE="$TEMP_DIR/skills/$SKILL_NAME"
+    SKILL_DEST="$SKILLS_DIR/$SKILL_NAME"
+
+    if [ ! -d "$SKILL_SOURCE" ]; then
+        error "Skill source not found: $SKILL_SOURCE"
+        warn "You can install the skill manually from the repository"
+        return
+    fi
+
+    # Remove existing skill if present
+    if [ -d "$SKILL_DEST" ]; then
+        warn "Existing $SKILL_NAME installation found"
+        info "Removing old version"
+        rm -rf "$SKILL_DEST"
+    fi
+
+    # Copy skill directory
+    if cp -r "$SKILL_SOURCE" "$SKILL_DEST"; then
+        success "Installed $SKILL_NAME skill to $SKILLS_DIR"
+        echo ""
+        info "Usage in Claude Code:"
+        echo "  /sherpy-cli-planner [output-directory]"
+        echo ""
+    else
+        error "Failed to install skill"
+        warn "You can install the skill manually:"
+        echo "  cp -r $SKILL_SOURCE $SKILLS_DIR/"
+    fi
+}
+
 # Cleanup temporary files
 cleanup() {
     if [ -n "$TEMP_DIR" ] && [ -d "$TEMP_DIR" ]; then
@@ -272,6 +363,9 @@ main() {
     build_binary
     install_binary
     verify_installation
+
+    # Optional skill installation
+    prompt_skill_installation
     echo ""
 
     # Cleanup
