@@ -3,8 +3,6 @@ package schema
 import (
 	"fmt"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 type TechnicalRequirements struct {
@@ -143,8 +141,8 @@ type TROpenQuestion struct {
 
 func ValidateTechnicalRequirements(data []byte, strict bool) (*ValidationResult, error) {
 	var doc TechnicalRequirements
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML: %w", err)
+	if err := unmarshalWithBetterErrors(data, &doc, "technical-requirements"); err != nil {
+		return nil, err
 	}
 
 	result := &ValidationResult{}

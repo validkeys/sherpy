@@ -1,10 +1,13 @@
 package schema
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -143,4 +146,108 @@ func fieldRequiredError(fieldName string) string {
 
 func fieldInvalidError(fieldName, reason string) string {
 	return fmt.Sprintf("%s: %s", fieldName, reason)
+}
+
+// enhanceYAMLError takes a yaml unmarshal error and the original YAML data,
+// then provides a more helpful error message with context and suggestions
+func enhanceYAMLError(err error, data []byte, docType string) error {
+	errMsg := err.Error()
+
+	// Extract line number from error message
+	lineNumRe := regexp.MustCompile(`line (\d+)`)
+	matches := lineNumRe.FindStringSubmatch(errMsg)
+	if len(matches) < 2 {
+		return fmt.Errorf("failed to parse YAML: %w", err)
+	}
+
+	lineNum, _ := strconv.Atoi(matches[1])
+
+	// Get the problematic line and surrounding context
+	lines := bytes.Split(data, []byte("\n"))
+	if lineNum < 1 || lineNum > len(lines) {
+		return fmt.Errorf("failed to parse YAML: %w", err)
+	}
+
+	problematicLine := string(lines[lineNum-1])
+	fieldName := extractFieldName(problematicLine)
+
+	// Build enhanced error message
+	var msg strings.Builder
+	msg.WriteString(fmt.Sprintf("YAML parsing error at line %d", lineNum))
+
+	if fieldName != "" {
+		msg.WriteString(fmt.Sprintf(" (field: %s)", fieldName))
+	}
+
+	msg.WriteString(":\n\n")
+
+	// Show context (2 lines before and after)
+	contextStart := lineNum - 3
+	if contextStart < 1 {
+		contextStart = 1
+	}
+	contextEnd := lineNum + 2
+	if contextEnd > len(lines) {
+		contextEnd = len(lines)
+	}
+
+	for i := contextStart; i <= contextEnd; i++ {
+		prefix := "  "
+		if i == lineNum {
+			prefix = "> "
+		}
+		msg.WriteString(fmt.Sprintf("%s%4d | %s\n", prefix, i, lines[i-1]))
+	}
+
+	msg.WriteString("\n")
+
+	// Provide specific suggestions based on error type
+	if strings.Contains(errMsg, "cannot unmarshal !!map into string") {
+		msg.WriteString("Problem: Found a map/object where a simple string value was expected.\n\n")
+		msg.WriteString("Suggestions:\n")
+		msg.WriteString("  • If this should be a string, remove the nested structure and use a simple value\n")
+		msg.WriteString("  • Check that indentation is correct (YAML is whitespace-sensitive)\n")
+		msg.WriteString("  • Verify the field matches the expected schema structure\n")
+		if fieldName != "" {
+			msg.WriteString(fmt.Sprintf("  • Check the %s schema documentation for the correct format\n", docType))
+		}
+	} else if strings.Contains(errMsg, "cannot unmarshal !!str into") {
+		msg.WriteString("Problem: Found a string where a structured value (map/array) was expected.\n\n")
+		msg.WriteString("Suggestions:\n")
+		msg.WriteString("  • If this should be a map, use key-value pairs with proper indentation\n")
+		msg.WriteString("  • If this should be an array, use '- item' format with dashes\n")
+		msg.WriteString("  • Check the schema documentation for the expected structure\n")
+	} else if strings.Contains(errMsg, "cannot unmarshal !!seq into") {
+		msg.WriteString("Problem: Found an array where a different type was expected.\n\n")
+		msg.WriteString("Suggestions:\n")
+		msg.WriteString("  • Check if this field should be a single value instead of a list\n")
+		msg.WriteString("  • Verify the field type in the schema documentation\n")
+	} else {
+		msg.WriteString(fmt.Sprintf("Problem: %s\n\n", errMsg))
+		msg.WriteString("Suggestions:\n")
+		msg.WriteString("  • Check YAML syntax (proper indentation, quotes, colons)\n")
+		msg.WriteString("  • Verify field names match the schema exactly\n")
+		msg.WriteString("  • Ensure all required fields are present\n")
+	}
+
+	msg.WriteString("\nFor schema reference, run: sherpy types")
+
+	return fmt.Errorf("%s", msg.String())
+}
+
+// extractFieldName attempts to extract the YAML field name from a line
+func extractFieldName(line string) string {
+	trimmed := strings.TrimSpace(line)
+	if idx := strings.Index(trimmed, ":"); idx > 0 {
+		return strings.TrimSpace(trimmed[:idx])
+	}
+	return ""
+}
+
+// unmarshalWithBetterErrors attempts to unmarshal YAML with enhanced error messages
+func unmarshalWithBetterErrors(data []byte, v interface{}, docType string) error {
+	if err := yaml.Unmarshal(data, v); err != nil {
+		return enhanceYAMLError(err, data, docType)
+	}
+	return nil
 }

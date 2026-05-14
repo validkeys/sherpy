@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 type GapAnalysis struct {
@@ -62,8 +60,8 @@ var gaVersionPattern = regexp.MustCompile(`^\d+\.\d+$`)
 
 func ValidateGapAnalysis(data []byte, strict bool) (*ValidationResult, error) {
 	var doc GapAnalysis
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML: %w", err)
+	if err := unmarshalWithBetterErrors(data, &doc, "gap-analysis"); err != nil {
+		return nil, err
 	}
 
 	result := &ValidationResult{}

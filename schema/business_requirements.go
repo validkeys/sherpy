@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 type BusinessRequirements struct {
@@ -123,8 +121,8 @@ var validProbabilityImpact = map[string]struct{}{"high": {}, "medium": {}, "low"
 
 func ValidateBusinessRequirements(data []byte, strict bool) (*ValidationResult, error) {
 	var doc BusinessRequirements
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML: %w", err)
+	if err := unmarshalWithBetterErrors(data, &doc, "business-requirements"); err != nil {
+		return nil, err
 	}
 
 	result := &ValidationResult{}

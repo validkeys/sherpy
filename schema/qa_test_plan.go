@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 type QATestPlan struct {
@@ -75,8 +73,8 @@ var qaCoveragePattern = regexp.MustCompile(`^\d+%$`)
 
 func ValidateQATestPlan(data []byte, strict bool) (*ValidationResult, error) {
 	var doc QATestPlan
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML: %w", err)
+	if err := unmarshalWithBetterErrors(data, &doc, "qa-test-plan"); err != nil {
+		return nil, err
 	}
 
 	result := &ValidationResult{}

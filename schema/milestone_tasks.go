@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-
-	"gopkg.in/yaml.v3"
 )
 
 type MilestoneTasks struct {
@@ -62,8 +60,8 @@ var mtValidGateStages = map[string]bool{
 
 func ValidateMilestoneTasks(data []byte, strict bool) (*ValidationResult, error) {
 	var doc MilestoneTasks
-	if err := yaml.Unmarshal(data, &doc); err != nil {
-		return nil, fmt.Errorf("failed to parse YAML: %w", err)
+	if err := unmarshalWithBetterErrors(data, &doc, "milestone-tasks"); err != nil {
+		return nil, err
 	}
 
 	result := &ValidationResult{}
