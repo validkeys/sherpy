@@ -78,11 +78,25 @@ check_go() {
     MIN_MAJOR=$(echo "$MIN_GO_VERSION" | cut -d. -f1)
     MIN_MINOR=$(echo "$MIN_GO_VERSION" | cut -d. -f2)
 
-    if [ "$GO_MAJOR" -lt "$MIN_MAJOR" ] || \
-       ([ "$GO_MAJOR" -eq "$MIN_MAJOR" ] && [ "$GO_MINOR" -lt "$MIN_MINOR" ]); then
-        warn "Go $GO_VERSION is older than recommended $MIN_GO_VERSION"
-        warn "Installation may succeed but is not guaranteed"
+    if [ "$GO_MAJOR" -lt "$MIN_MAJOR" ]; then
+        error "Go $MIN_GO_VERSION or later required (found $GO_VERSION)"
+        echo ""
+        echo "Please upgrade Go:"
+        echo "  - macOS: brew upgrade go"
+        echo "  - Linux: https://go.dev/doc/install"
+        exit 1
     fi
+
+    if [ "$GO_MAJOR" -eq "$MIN_MAJOR" ] && [ "$GO_MINOR" -lt "$MIN_MINOR" ]; then
+        error "Go $MIN_GO_VERSION or later required (found $GO_VERSION)"
+        echo ""
+        echo "Please upgrade Go:"
+        echo "  - macOS: brew upgrade go"
+        echo "  - Linux: https://go.dev/doc/install"
+        exit 1
+    fi
+
+    success "Go version check passed ($GO_VERSION >= $MIN_GO_VERSION)"
 }
 
 # Check if git is installed
