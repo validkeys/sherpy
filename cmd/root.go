@@ -4,11 +4,72 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/kydavis/sherpy/markdown"
 	"github.com/kydavis/sherpy/schema"
 	"github.com/spf13/cobra"
 )
+
+const MaxFileSize = 10 * 1024 * 1024 // 10MB
+
+// validatePath checks for path traversal attacks
+// It allows one level of parent directory traversal (e.g., ../docs) but blocks excessive traversal
+func validatePath(path string) error {
+	// Clean the path to normalize it
+	cleaned := filepath.Clean(path)
+
+	// Count how many ".." segments remain after cleaning
+	// One level up is OK (for accessing sibling directories), more is suspicious
+	parts := strings.Split(cleaned, string(filepath.Separator))
+	parentCount := 0
+	for _, part := range parts {
+		if part == ".." {
+			parentCount++
+		}
+	}
+
+	// Allow up to 1 level of parent directory traversal
+	// Block 2+ levels (e.g., ../../etc/passwd)
+	if parentCount > 1 {
+		return fmt.Errorf("path traversal detected: %s", path)
+	}
+
+	// Convert to absolute path for additional validation
+	_, err := filepath.Abs(cleaned)
+	if err != nil {
+		return fmt.Errorf("invalid path: %w", err)
+	}
+
+	return nil
+}
+
+// readFileWithLimit reads a file with size validation and path checking
+func readFileWithLimit(filename string) ([]byte, error) {
+	// Validate path first
+	if err := validatePath(filename); err != nil {
+		return nil, err
+	}
+
+	// Check size before reading
+	info, err := os.Stat(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat file: %w", err)
+	}
+
+	if info.Size() > MaxFileSize {
+		return nil, fmt.Errorf("file too large: %d bytes (max %d)", info.Size(), MaxFileSize)
+	}
+
+	// Size is OK, read the file
+	data, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	return data, nil
+}
 
 func NewRootCmd() *cobra.Command {
 	root := &cobra.Command{
@@ -79,9 +140,9 @@ func runValidate(w io.Writer, typeName, filename string, strict, verbose bool) e
 		return err
 	}
 
-	data, err := os.ReadFile(filename)
+	data, err := readFileWithLimit(filename)
 	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
+		return err
 	}
 
 	result, err := validator(data, strict)
@@ -93,7 +154,7 @@ func runValidate(w io.Writer, typeName, filename string, strict, verbose bool) e
 	fmt.Fprintln(w, output)
 
 	if !result.Valid() || (strict && len(result.Warnings) > 0) {
-		os.Exit(1)
+		return fmt.Errorf("validation failed")
 	}
 
 	return nil
@@ -130,7 +191,12 @@ func newToMarkdownCmd() *cobra.Command {
 func Execute() {
 	root := NewRootCmd()
 	if err := root.Execute(); err != nil {
-		os.Exit(1)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		// Check error type for specific exit codes
+		if strings.Contains(err.Error(), "validation failed") {
+			os.Exit(1)
+		}
+		os.Exit(2)
 	}
 }
 
@@ -140,9 +206,9 @@ func runToMarkdown(w io.Writer, typeName, filename, output string) error {
 		return err
 	}
 
-	data, err := os.ReadFile(filename)
+	data, err := readFileWithLimit(filename)
 	if err != nil {
-		return fmt.Errorf("failed to read file: %w", err)
+		return err
 	}
 
 	md, err := converter(data)
@@ -151,7 +217,14 @@ func runToMarkdown(w io.Writer, typeName, filename, output string) error {
 	}
 
 	if output != "" {
-		return os.WriteFile(output, []byte(md), 0644)
+		// Validate output path
+		if err := validatePath(output); err != nil {
+			return err
+		}
+		if err := os.WriteFile(output, []byte(md), 0600); err != nil {
+			return fmt.Errorf("failed to write output file %q: %w", output, err)
+		}
+		return nil
 	}
 
 	fmt.Fprint(w, md)

@@ -9,13 +9,13 @@ import (
 )
 
 type MilestoneTasks struct {
-	Milestone        string           `yaml:"milestone"`
-	Name             string           `yaml:"name"`
-	Generated        string           `yaml:"generated"`
-	StyleAnchorRefs  []string         `yaml:"style_anchor_refs,omitempty"`
+	Milestone         string              `yaml:"milestone"`
+	Name              string              `yaml:"name"`
+	Generated         string              `yaml:"generated"`
+	StyleAnchorRefs   []string            `yaml:"style_anchor_refs,omitempty"`
 	GlobalConstraints MTGlobalConstraints `yaml:"global_constraints"`
-	QualityGates     []MTQualityGate  `yaml:"quality_gates"`
-	Tasks            []MTTask         `yaml:"tasks"`
+	QualityGates      []MTQualityGate     `yaml:"quality_gates"`
+	Tasks             []MTTask            `yaml:"tasks"`
 }
 
 type MTGlobalConstraints struct {
@@ -27,9 +27,9 @@ type MTGlobalConstraints struct {
 }
 
 type MTQualityGate struct {
-	Stage     string   `yaml:"stage"`
-	Commands  []string `yaml:"commands,omitempty"`
-	Criteria  []string `yaml:"criteria,omitempty"`
+	Stage    string   `yaml:"stage"`
+	Commands []string `yaml:"commands,omitempty"`
+	Criteria []string `yaml:"criteria,omitempty"`
 }
 
 type MTTask struct {
@@ -74,7 +74,7 @@ func ValidateMilestoneTasks(data []byte, strict bool) (*ValidationResult, error)
 	validateMTTasks(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
+		result.ApplyStrict()
 		result.Warnings = nil
 	}
 
@@ -82,7 +82,10 @@ func ValidateMilestoneTasks(data []byte, strict bool) (*ValidationResult, error)
 }
 
 func validateMTMetadata(doc MilestoneTasks, r *ValidationResult) {
-	if !mtMilestonePattern.MatchString(doc.Milestone) {
+	// Check length before regex to prevent ReDoS
+	if len(doc.Milestone) > MaxIDLength {
+		r.Errors = append(r.Errors, fmt.Sprintf("milestone exceeds maximum length of %d characters", MaxIDLength))
+	} else if !mtMilestonePattern.MatchString(doc.Milestone) {
 		r.Errors = append(r.Errors, fmt.Sprintf("milestone must match m[0-9]+ pattern (got %q)", doc.Milestone))
 	}
 	if len(strings.TrimSpace(doc.Name)) < 10 {
@@ -132,7 +135,10 @@ func validateMTTasks(doc MilestoneTasks, r *ValidationResult) {
 
 	validTaskIDs := map[string]bool{}
 	for i, t := range doc.Tasks {
-		if !mtTaskIDPattern.MatchString(t.ID) {
+		// Check length before regex to prevent ReDoS
+		if len(t.ID) > MaxIDLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("tasks.%d.id exceeds maximum length of %d characters", i, MaxIDLength))
+		} else if !mtTaskIDPattern.MatchString(t.ID) {
 			r.Errors = append(r.Errors, fmt.Sprintf("tasks.%d.id must match mN-NNN pattern (got %q)", i, t.ID))
 		}
 
@@ -183,35 +189,8 @@ func detectMTCircularDependencies(doc MilestoneTasks, r *ValidationResult) {
 		adj[t.ID] = append(adj[t.ID], t.Dependencies...)
 	}
 
-	visited := map[string]bool{}
-	inStack := map[string]bool{}
-
-	var dfs func(id string) bool
-	dfs = func(id string) bool {
-		visited[id] = true
-		inStack[id] = true
-
-		for _, dep := range adj[id] {
-			if inStack[dep] {
-				return true
-			}
-			if !visited[dep] {
-				if dfs(dep) {
-					return true
-				}
-			}
-		}
-
-		inStack[id] = false
-		return false
-	}
-
-	for _, t := range doc.Tasks {
-		if !visited[t.ID] {
-			if dfs(t.ID) {
-				r.Errors = append(r.Errors, "tasks contain circular dependencies")
-				return
-			}
-		}
+	hasCycle, cycle := detectCircularDependencies(adj)
+	if hasCycle {
+		r.Errors = append(r.Errors, fmt.Sprintf("circular dependency detected in tasks: %s", strings.Join(cycle, " -> ")))
 	}
 }

@@ -10,29 +10,29 @@ import (
 )
 
 type BusinessRequirements struct {
-	Project                    string                              `yaml:"project"`
-	Version                    string                              `yaml:"version"`
-	Generated                  string                              `yaml:"generated"`
-	Overview                   BROverview                          `yaml:"overview"`
-	Personas                   []BRPersona                         `yaml:"personas"`
-	UseCases                   []BRUseCase                         `yaml:"use_cases"`
-	FunctionalRequirements     []BRFunctionalRequirement           `yaml:"functional_requirements"`
-	NonFunctionalRequirements  *BRNonFunctionalRequirements        `yaml:"non_functional_requirements,omitempty"`
-	SuccessCriteria            []BRSuccessCriterion                `yaml:"success_criteria"`
-	Constraints                *BRConstraints                      `yaml:"constraints,omitempty"`
-	Dependencies               *BRDependencies                     `yaml:"dependencies,omitempty"`
-	Timeline                   *BRTimeline                         `yaml:"timeline,omitempty"`
-	Assumptions                []string                            `yaml:"assumptions"`
-	Risks                      []BRRisk                            `yaml:"risks,omitempty"`
-	FutureEnhancements         []string                            `yaml:"future_enhancements,omitempty"`
-	DocumentationReferences    map[string]string                   `yaml:"documentation_references,omitempty"`
-	Notes                      string                              `yaml:"notes,omitempty"`
+	Project                   string                       `yaml:"project"`
+	Version                   string                       `yaml:"version"`
+	Generated                 string                       `yaml:"generated"`
+	Overview                  BROverview                   `yaml:"overview"`
+	Personas                  []BRPersona                  `yaml:"personas"`
+	UseCases                  []BRUseCase                  `yaml:"use_cases"`
+	FunctionalRequirements    []BRFunctionalRequirement    `yaml:"functional_requirements"`
+	NonFunctionalRequirements *BRNonFunctionalRequirements `yaml:"non_functional_requirements,omitempty"`
+	SuccessCriteria           []BRSuccessCriterion         `yaml:"success_criteria"`
+	Constraints               *BRConstraints               `yaml:"constraints,omitempty"`
+	Dependencies              *BRDependencies              `yaml:"dependencies,omitempty"`
+	Timeline                  *BRTimeline                  `yaml:"timeline,omitempty"`
+	Assumptions               []string                     `yaml:"assumptions"`
+	Risks                     []BRRisk                     `yaml:"risks,omitempty"`
+	FutureEnhancements        []string                     `yaml:"future_enhancements,omitempty"`
+	DocumentationReferences   map[string]string            `yaml:"documentation_references,omitempty"`
+	Notes                     string                       `yaml:"notes,omitempty"`
 }
 
 type BROverview struct {
-	Problem          string    `yaml:"problem"`
-	ValueProposition string    `yaml:"value_proposition"`
-	Scope            BRScope   `yaml:"scope"`
+	Problem          string  `yaml:"problem"`
+	ValueProposition string  `yaml:"value_proposition"`
+	Scope            BRScope `yaml:"scope"`
 }
 
 type BRScope struct {
@@ -91,9 +91,9 @@ type BRDependencies struct {
 }
 
 type BRTimeline struct {
-	Phase       string   `yaml:"phase"`
-	Duration    string   `yaml:"duration"`
-	Milestones  []string `yaml:"milestones"`
+	Phase      string   `yaml:"phase"`
+	Duration   string   `yaml:"duration"`
+	Milestones []string `yaml:"milestones"`
 }
 
 type BRRisk struct {
@@ -103,9 +103,23 @@ type BRRisk struct {
 	Mitigation  string `yaml:"mitigation"`
 }
 
+const (
+	MinProblemStatementLength   = 50
+	MinValuePropositionLength   = 30
+	MinPersonaDescriptionLength = 20
+	MinUseCaseDescriptionLength = 20
+	MinRequirementDescLength    = 20
+	MinRationaleLength          = 10
+	MinUseCaseNameLength        = 5
+	MinUseCaseOutcomeLength     = 10
+	MinPersonaNameLength        = 2
+	MaxPersonaNameLength        = 50
+	MinCategoryLength           = 3
+)
+
 var frIDPattern = regexp.MustCompile(`^FR-(\d{1,4})$`)
-var validPriorities = map[string]bool{"high": true, "medium": true, "low": true}
-var validProbabilityImpact = map[string]bool{"high": true, "medium": true, "low": true}
+var validPriorities = map[string]struct{}{"high": {}, "medium": {}, "low": {}}
+var validProbabilityImpact = map[string]struct{}{"high": {}, "medium": {}, "low": {}}
 
 func ValidateBusinessRequirements(data []byte, strict bool) (*ValidationResult, error) {
 	var doc BusinessRequirements
@@ -127,32 +141,31 @@ func ValidateBusinessRequirements(data []byte, strict bool) (*ValidationResult, 
 	validateBRRisks(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
-		result.Warnings = nil
+		result.ApplyStrict()
 	}
 
 	return result, nil
 }
 
 func validateBRMetadata(doc BusinessRequirements, r *ValidationResult) {
-	if strings.TrimSpace(doc.Project) == "" {
-		r.Errors = append(r.Errors, "project is required")
-	}
-	if strings.TrimSpace(doc.Version) == "" {
-		r.Errors = append(r.Errors, "version is required")
-	}
-	if strings.TrimSpace(doc.Generated) == "" {
-		r.Errors = append(r.Errors, "generated is required")
-	}
+	validateRequiredFields(r, map[string]string{
+		"project":   doc.Project,
+		"version":   doc.Version,
+		"generated": doc.Generated,
+	})
 }
 
 func validateBROverview(doc BusinessRequirements, r *ValidationResult) {
-	if len(strings.TrimSpace(doc.Overview.Problem)) < 50 {
-		r.Errors = append(r.Errors, fmt.Sprintf("overview.problem must be at least 50 characters (got %d)", len(strings.TrimSpace(doc.Overview.Problem))))
+	problem := strings.TrimSpace(doc.Overview.Problem)
+	if len(problem) < MinProblemStatementLength {
+		r.Errors = append(r.Errors, fmt.Sprintf("overview.problem must be at least %d characters (got %d)", MinProblemStatementLength, len(problem)))
 	}
-	if len(strings.TrimSpace(doc.Overview.ValueProposition)) < 30 {
-		r.Errors = append(r.Errors, fmt.Sprintf("overview.value_proposition must be at least 30 characters (got %d)", len(strings.TrimSpace(doc.Overview.ValueProposition))))
+
+	valueProp := strings.TrimSpace(doc.Overview.ValueProposition)
+	if len(valueProp) < MinValuePropositionLength {
+		r.Errors = append(r.Errors, fmt.Sprintf("overview.value_proposition must be at least %d characters (got %d)", MinValuePropositionLength, len(valueProp)))
 	}
+
 	if len(doc.Overview.Scope.InScope) < 1 {
 		r.Errors = append(r.Errors, "overview.scope.in_scope must have at least 1 item")
 	}
@@ -165,12 +178,15 @@ func validateBRPersonas(doc BusinessRequirements, personaNames map[string]bool, 
 	}
 	for i, p := range doc.Personas {
 		name := strings.TrimSpace(p.Name)
-		if len(name) < 2 || len(name) > 50 {
-			r.Errors = append(r.Errors, fmt.Sprintf("personas.%d.name must be 2-50 characters (got %d)", i, len(name)))
+		if len(name) < MinPersonaNameLength || len(name) > MaxPersonaNameLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("personas.%d.name must be %d-%d characters (got %d)", i, MinPersonaNameLength, MaxPersonaNameLength, len(name)))
 		}
-		if len(strings.TrimSpace(p.Description)) < 20 {
-			r.Errors = append(r.Errors, fmt.Sprintf("personas.%d.description must be at least 20 characters", i))
+
+		desc := strings.TrimSpace(p.Description)
+		if len(desc) < MinPersonaDescriptionLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("personas.%d.description must be at least %d characters", i, MinPersonaDescriptionLength))
 		}
+
 		if len(p.Goals) < 1 {
 			r.Errors = append(r.Errors, fmt.Sprintf("personas.%d.goals must have at least 1 item", i))
 		}
@@ -191,14 +207,20 @@ func validateBRUseCases(doc BusinessRequirements, personaNames map[string]bool, 
 		if !personaNames[actor] {
 			r.Errors = append(r.Errors, fmt.Sprintf("use_cases.%d.actor %q does not match any persona name", i, actor))
 		}
-		if len(strings.TrimSpace(uc.Name)) < 5 {
-			r.Errors = append(r.Errors, fmt.Sprintf("use_cases.%d.name must be at least 5 characters", i))
+
+		name := strings.TrimSpace(uc.Name)
+		if len(name) < MinUseCaseNameLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("use_cases.%d.name must be at least %d characters", i, MinUseCaseNameLength))
 		}
-		if len(strings.TrimSpace(uc.Description)) < 20 {
-			r.Errors = append(r.Errors, fmt.Sprintf("use_cases.%d.description must be at least 20 characters", i))
+
+		desc := strings.TrimSpace(uc.Description)
+		if len(desc) < MinUseCaseDescriptionLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("use_cases.%d.description must be at least %d characters", i, MinUseCaseDescriptionLength))
 		}
-		if len(strings.TrimSpace(uc.Outcome)) < 10 {
-			r.Errors = append(r.Errors, fmt.Sprintf("use_cases.%d.outcome must be at least 10 characters", i))
+
+		outcome := strings.TrimSpace(uc.Outcome)
+		if len(outcome) < MinUseCaseOutcomeLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("use_cases.%d.outcome must be at least %d characters", i, MinUseCaseOutcomeLength))
 		}
 	}
 }
@@ -211,6 +233,12 @@ func validateBRFunctionalRequirements(doc BusinessRequirements, r *ValidationRes
 
 	seenIDs := map[int]bool{}
 	for i, fr := range doc.FunctionalRequirements {
+		// Check length before regex to prevent ReDoS
+		if len(fr.ID) > MaxIDLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.id exceeds maximum length of %d characters", i, MaxIDLength))
+			continue
+		}
+
 		matches := frIDPattern.FindStringSubmatch(fr.ID)
 		if matches == nil {
 			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.id must match pattern FR-N (got %q)", i, fr.ID))
@@ -219,17 +247,21 @@ func validateBRFunctionalRequirements(doc BusinessRequirements, r *ValidationRes
 		num, _ := strconv.Atoi(matches[1])
 		seenIDs[num] = true
 
-		if len(strings.TrimSpace(fr.Category)) < 3 {
-			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.category must be at least 3 characters", i))
+		category := strings.TrimSpace(fr.Category)
+		if len(category) < MinCategoryLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.category must be at least %d characters", i, MinCategoryLength))
 		}
-		if len(strings.TrimSpace(fr.Description)) < 20 {
-			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.description must be at least 20 characters", i))
+
+		desc := strings.TrimSpace(fr.Description)
+		if len(desc) < MinRequirementDescLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.description must be at least %d characters", i, MinRequirementDescLength))
 		}
-		if !validPriorities[fr.Priority] {
-			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.priority must be high, medium, or low (got %q)", i, fr.Priority))
-		}
-		if len(strings.TrimSpace(fr.Rationale)) < 10 {
-			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.rationale must be at least 10 characters", i))
+
+		validateEnum(r, fr.Priority, fmt.Sprintf("functional_requirements.%d.priority", i), validPriorities)
+
+		rationale := strings.TrimSpace(fr.Rationale)
+		if len(rationale) < MinRationaleLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.rationale must be at least %d characters", i, MinRationaleLength))
 		}
 	}
 
@@ -278,12 +310,8 @@ func validateBRAssumptions(doc BusinessRequirements, r *ValidationResult) {
 
 func validateBRRisks(doc BusinessRequirements, r *ValidationResult) {
 	for i, risk := range doc.Risks {
-		if !validProbabilityImpact[risk.Probability] {
-			r.Errors = append(r.Errors, fmt.Sprintf("risks.%d.probability must be high, medium, or low (got %q)", i, risk.Probability))
-		}
-		if !validProbabilityImpact[risk.Impact] {
-			r.Errors = append(r.Errors, fmt.Sprintf("risks.%d.impact must be high, medium, or low (got %q)", i, risk.Impact))
-		}
+		validateEnum(r, risk.Probability, fmt.Sprintf("risks.%d.probability", i), validProbabilityImpact)
+		validateEnum(r, risk.Impact, fmt.Sprintf("risks.%d.impact", i), validProbabilityImpact)
 	}
 	if len(doc.Risks) > 0 && len(doc.Risks) < 3 {
 		r.Warnings = append(r.Warnings, fmt.Sprintf("recommended at least 3 risks, found %d", len(doc.Risks)))

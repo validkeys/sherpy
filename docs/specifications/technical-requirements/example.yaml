@@ -783,7 +783,7 @@ success_criteria:
 
   - criterion: Test coverage meets targets
     metric: Code coverage
-    target: > 80% (unit), > 70% (integration)
+    target: "> 80% (unit), > 70% (integration)"
 
 implementation_notes:
   - Reference service-command architecture specification in monorepo docs

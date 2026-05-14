@@ -9,28 +9,28 @@ import (
 )
 
 type Milestones struct {
-	Version               string     `yaml:"version"`
-	Project               string     `yaml:"project"`
-	Generated             string     `yaml:"generated"`
-	BusinessRequirements  string     `yaml:"business_requirements"`
-	TechnicalRequirements string     `yaml:"technical_requirements"`
-	Meta                  MSMeta     `yaml:"meta"`
+	Version               string        `yaml:"version"`
+	Project               string        `yaml:"project"`
+	Generated             string        `yaml:"generated"`
+	BusinessRequirements  string        `yaml:"business_requirements"`
+	TechnicalRequirements string        `yaml:"technical_requirements"`
+	Meta                  MSMeta        `yaml:"meta"`
 	Milestones            []MSMilestone `yaml:"milestones"`
 }
 
 type MSMeta struct {
-	OrderingStrategy   string `yaml:"ordering_strategy"`
-	OrderingRationale  string `yaml:"ordering_rationale"`
+	OrderingStrategy  string `yaml:"ordering_strategy"`
+	OrderingRationale string `yaml:"ordering_rationale"`
 }
 
 type MSMilestone struct {
-	ID               string   `yaml:"id"`
-	Name             string   `yaml:"name"`
-	Description      string   `yaml:"description"`
-	Dependencies     []string `yaml:"dependencies"`
-	EstimatedDuration string  `yaml:"estimated_duration"`
-	TasksFile        string   `yaml:"tasks_file"`
-	SuccessCriteria  []string `yaml:"success_criteria"`
+	ID                string   `yaml:"id"`
+	Name              string   `yaml:"name"`
+	Description       string   `yaml:"description"`
+	Dependencies      []string `yaml:"dependencies"`
+	EstimatedDuration string   `yaml:"estimated_duration"`
+	TasksFile         string   `yaml:"tasks_file"`
+	SuccessCriteria   []string `yaml:"success_criteria"`
 }
 
 var msIDPattern = regexp.MustCompile(`^m\d+$`)
@@ -53,7 +53,7 @@ func ValidateMilestones(data []byte, strict bool) (*ValidationResult, error) {
 	validateMSMilestones(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
+		result.ApplyStrict()
 		result.Warnings = nil
 	}
 
@@ -96,7 +96,10 @@ func validateMSMilestones(doc Milestones, r *ValidationResult) {
 
 	validIDs := map[string]bool{}
 	for i, m := range doc.Milestones {
-		if !msIDPattern.MatchString(m.ID) {
+		// Check length before regex to prevent ReDoS
+		if len(m.ID) > MaxIDLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("milestones.%d.id exceeds maximum length of %d characters", i, MaxIDLength))
+		} else if !msIDPattern.MatchString(m.ID) {
 			r.Errors = append(r.Errors, fmt.Sprintf("milestones.%d.id must match m[0-9]+ pattern (got %q)", i, m.ID))
 		}
 
@@ -141,35 +144,8 @@ func detectMSCircularDependencies(doc Milestones, r *ValidationResult) {
 		adj[m.ID] = append(adj[m.ID], m.Dependencies...)
 	}
 
-	visited := map[string]bool{}
-	inStack := map[string]bool{}
-
-	var dfs func(id string) bool
-	dfs = func(id string) bool {
-		visited[id] = true
-		inStack[id] = true
-
-		for _, dep := range adj[id] {
-			if inStack[dep] {
-				return true
-			}
-			if !visited[dep] {
-				if dfs(dep) {
-					return true
-				}
-			}
-		}
-
-		inStack[id] = false
-		return false
-	}
-
-	for _, m := range doc.Milestones {
-		if !visited[m.ID] {
-			if dfs(m.ID) {
-				r.Errors = append(r.Errors, "milestones contain circular dependencies")
-				return
-			}
-		}
+	hasCycle, cycle := detectCircularDependencies(adj)
+	if hasCycle {
+		r.Errors = append(r.Errors, fmt.Sprintf("circular dependency detected in milestones: %s", strings.Join(cycle, " -> ")))
 	}
 }

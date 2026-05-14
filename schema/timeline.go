@@ -9,13 +9,13 @@ import (
 )
 
 type Timeline struct {
-	Version       string        `yaml:"version"`
-	Project       string        `yaml:"project"`
-	Generated     string        `yaml:"generated"`
-	MilestonesFile string       `yaml:"milestones_file"`
-	Summary       TLSummary     `yaml:"summary"`
-	Timeline      []TLEntry     `yaml:"timeline"`
-	Workback      TLWorkback    `yaml:"workback"`
+	Version        string     `yaml:"version"`
+	Project        string     `yaml:"project"`
+	Generated      string     `yaml:"generated"`
+	MilestonesFile string     `yaml:"milestones_file"`
+	Summary        TLSummary  `yaml:"summary"`
+	Timeline       []TLEntry  `yaml:"timeline"`
+	Workback       TLWorkback `yaml:"workback"`
 }
 
 type TLSummary struct {
@@ -76,7 +76,7 @@ func ValidateTimeline(data []byte, strict bool) (*ValidationResult, error) {
 	validateTLWorkback(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
+		result.ApplyStrict()
 		result.Warnings = nil
 	}
 
@@ -169,7 +169,10 @@ func validateTLTimeline(doc Timeline, r *ValidationResult) {
 		}
 
 		if e.Type == "milestone" {
-			if !tlMilestoneIDPattern.MatchString(e.ID) {
+			// Check length before regex to prevent ReDoS
+			if len(e.ID) > MaxIDLength {
+				r.Errors = append(r.Errors, fmt.Sprintf("timeline.%d.id exceeds maximum length of %d characters", i, MaxIDLength))
+			} else if !tlMilestoneIDPattern.MatchString(e.ID) {
 				r.Errors = append(r.Errors, fmt.Sprintf("timeline.%d.id must match m[0-9]+ for milestones (got %q)", i, e.ID))
 			}
 			if e.CompletionDay != e.StartDay+e.EstimatedDays {

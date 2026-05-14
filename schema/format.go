@@ -5,6 +5,14 @@ import (
 	"strings"
 )
 
+// ApplyStrict promotes warnings to errors for strict validation mode
+func (r *ValidationResult) ApplyStrict() {
+	if len(r.Warnings) > 0 {
+		r.Errors = append(r.Errors, r.Warnings...)
+		r.Warnings = nil
+	}
+}
+
 func FormatResult(typeName, filename string, result *ValidationResult, strict bool) string {
 	errors := result.Errors
 	warnings := result.Warnings
@@ -22,10 +30,10 @@ func FormatResult(typeName, filename string, result *ValidationResult, strict bo
 
 	if len(errors) > 0 {
 		errWord := "error"
-	if len(errors) != 1 {
-		errWord = "errors"
-	}
-	parts := []string{fmt.Sprintf("%d %s", len(errors), errWord)}
+		if len(errors) != 1 {
+			errWord = "errors"
+		}
+		parts := []string{fmt.Sprintf("%d %s", len(errors), errWord)}
 		if len(warnings) > 0 {
 			parts = append(parts, fmt.Sprintf("%d warning", len(warnings)))
 		}

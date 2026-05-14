@@ -1,0 +1,19 @@
+project: Test
+version: 1.0
+generated: "2024-01-01"
+strategy: Test
+milestones:
+  - id: M-001
+    name: Milestone 1
+    description: First
+    depends_on:
+      - M-002
+    success_criteria:
+      - "Criterion 1"
+  - id: M-002
+    name: Milestone 2
+    description: Second
+    depends_on:
+      - M-001  # Circular dependency
+    success_criteria:
+      - "Criterion 2"

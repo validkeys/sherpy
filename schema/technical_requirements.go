@@ -8,47 +8,47 @@ import (
 )
 
 type TechnicalRequirements struct {
-	Project                   string                    `yaml:"project"`
-	Version                   string                    `yaml:"version"`
-	Generated                 string                    `yaml:"generated"`
-	BusinessRequirementsRef   string                    `yaml:"business_requirements_ref"`
-	Overview                  string                    `yaml:"overview,omitempty"`
-	Architecture              TRArchitecture            `yaml:"architecture"`
-	TechnologyStack           TRTechnologyStack         `yaml:"technology_stack"`
-	ProjectStructure          TRProjectStructure        `yaml:"project_structure"`
-	DataModel                 TRDataModel               `yaml:"data_model"`
-	API                       TRAPI                     `yaml:"api"`
-	Security                  TRSecurity                `yaml:"security"`
-	Testing                   TRTesting                 `yaml:"testing"`
-	Development               TRDevelopment             `yaml:"development"`
-	Operations                TROperations              `yaml:"operations"`
-	Constraints               TRConstraints             `yaml:"constraints"`
-	TradeOffs                 []TRTradeOff              `yaml:"trade_offs"`
-	OpenQuestions             []TROpenQuestion          `yaml:"open_questions"`
+	Project                 string             `yaml:"project"`
+	Version                 string             `yaml:"version"`
+	Generated               string             `yaml:"generated"`
+	BusinessRequirementsRef string             `yaml:"business_requirements_ref"`
+	Overview                string             `yaml:"overview,omitempty"`
+	Architecture            TRArchitecture     `yaml:"architecture"`
+	TechnologyStack         TRTechnologyStack  `yaml:"technology_stack"`
+	ProjectStructure        TRProjectStructure `yaml:"project_structure"`
+	DataModel               TRDataModel        `yaml:"data_model"`
+	API                     TRAPI              `yaml:"api"`
+	Security                TRSecurity         `yaml:"security"`
+	Testing                 TRTesting          `yaml:"testing"`
+	Development             TRDevelopment      `yaml:"development"`
+	Operations              TROperations       `yaml:"operations"`
+	Constraints             TRConstraints      `yaml:"constraints"`
+	TradeOffs               []TRTradeOff       `yaml:"trade_offs"`
+	OpenQuestions           []TROpenQuestion   `yaml:"open_questions"`
 }
 
 type TRArchitecture struct {
-	Pattern      string           `yaml:"pattern"`
-	Description  string           `yaml:"description"`
-	Components   []TRComponent    `yaml:"components"`
+	Pattern     string        `yaml:"pattern"`
+	Description string        `yaml:"description"`
+	Components  []TRComponent `yaml:"components"`
 }
 
 type TRComponent struct {
-	Name          string `yaml:"name"`
+	Name           string `yaml:"name"`
 	Responsibility string `yaml:"responsibility"`
 }
 
 type TRTechnologyStack struct {
-	Language       string `yaml:"language"`
-	Runtime        string `yaml:"runtime"`
+	Language       string   `yaml:"language"`
+	Runtime        string   `yaml:"runtime"`
 	Frameworks     []string `yaml:"frameworks"`
-	PackageManager string `yaml:"package_manager"`
+	PackageManager string   `yaml:"package_manager"`
 }
 
 type TRProjectStructure struct {
-	Type           string              `yaml:"type"`
-	Layout         string              `yaml:"layout"`
-	KeyDirectories []TRKeyDirectory    `yaml:"key_directories"`
+	Type           string           `yaml:"type"`
+	Layout         string           `yaml:"layout"`
+	KeyDirectories []TRKeyDirectory `yaml:"key_directories"`
 }
 
 type TRKeyDirectory struct {
@@ -63,16 +63,16 @@ type TRDataModel struct {
 }
 
 type TRAPI struct {
-	Style       string `yaml:"style"`
-	Framework   string `yaml:"framework"`
-	Versioning  string `yaml:"versioning"`
+	Style      string `yaml:"style"`
+	Framework  string `yaml:"framework"`
+	Versioning string `yaml:"versioning"`
 }
 
 type TRSecurity struct {
-	Authentication TRAuthnMethod  `yaml:"authentication"`
-	Authorization  TRAuthzModel   `yaml:"authorization"`
-	Secrets        TRSecrets      `yaml:"secrets"`
-	DataValidation TRDataValid    `yaml:"data_validation"`
+	Authentication TRAuthnMethod `yaml:"authentication"`
+	Authorization  TRAuthzModel  `yaml:"authorization"`
+	Secrets        TRSecrets     `yaml:"secrets"`
+	DataValidation TRDataValid   `yaml:"data_validation"`
 }
 
 type TRAuthnMethod struct {
@@ -96,7 +96,7 @@ type TRDataValid struct {
 }
 
 type TRTesting struct {
-	Strategy string    `yaml:"strategy"`
+	Strategy string `yaml:"strategy"`
 }
 
 type TRDevelopment struct {
@@ -114,7 +114,7 @@ type TROperations struct {
 }
 
 type TRDeployment struct {
-	Target       string `yaml:"target"`
+	Target       string          `yaml:"target"`
 	Environments []TREnvironment `yaml:"environments"`
 }
 
@@ -129,16 +129,16 @@ type TRConstraints struct {
 }
 
 type TRTradeOff struct {
-	Decision     string `yaml:"decision"`
-	Rationale    string `yaml:"rationale"`
-	Alternative  string `yaml:"alternative"`
-	Consequence  string `yaml:"consequence"`
+	Decision    string `yaml:"decision"`
+	Rationale   string `yaml:"rationale"`
+	Alternative string `yaml:"alternative"`
+	Consequence string `yaml:"consequence"`
 }
 
 type TROpenQuestion struct {
-	Question      string   `yaml:"question"`
-	Options       []string `yaml:"options"`
-	Impact        string   `yaml:"impact"`
+	Question string   `yaml:"question"`
+	Options  []string `yaml:"options"`
+	Impact   string   `yaml:"impact"`
 }
 
 func ValidateTechnicalRequirements(data []byte, strict bool) (*ValidationResult, error) {
@@ -164,26 +164,19 @@ func ValidateTechnicalRequirements(data []byte, strict bool) (*ValidationResult,
 	validateTROpenQuestions(doc, result)
 
 	if strict {
-		result.Errors = append(result.Errors, result.Warnings...)
-		result.Warnings = nil
+		result.ApplyStrict()
 	}
 
 	return result, nil
 }
 
 func validateTRMetadata(doc TechnicalRequirements, r *ValidationResult) {
-	if strings.TrimSpace(doc.Project) == "" {
-		r.Errors = append(r.Errors, "project is required")
-	}
-	if strings.TrimSpace(doc.Version) == "" {
-		r.Errors = append(r.Errors, "version is required")
-	}
-	if strings.TrimSpace(doc.Generated) == "" {
-		r.Errors = append(r.Errors, "generated is required")
-	}
-	if strings.TrimSpace(doc.BusinessRequirementsRef) == "" {
-		r.Errors = append(r.Errors, "business_requirements_ref is required")
-	}
+	validateRequiredFields(r, map[string]string{
+		"project":                   doc.Project,
+		"version":                   doc.Version,
+		"generated":                 doc.Generated,
+		"business_requirements_ref": doc.BusinessRequirementsRef,
+	})
 }
 
 func validateTRArchitecture(doc TechnicalRequirements, r *ValidationResult) {
