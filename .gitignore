@@ -54,4 +54,6 @@ temp/
 *.png
 *.jpg
 *.jpeg
+
+# Go binaries
 sherpy
