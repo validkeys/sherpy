@@ -190,6 +190,76 @@ Available prompts:
 - `developer-summary` - Generates developer summaries
 - `executive-summary` - Generates executive summaries
 
+## Token Efficiency
+
+The `sherpy prompt` command and `sherpy-cli-planner` skill provide a token-efficient alternative to installing all 17 individual planning skills in Claude Code.
+
+### Calculation Methodology
+
+**Traditional approach:** Install all skill files in Claude Code
+
+```
+skills/
+  business-requirements-interview/SKILL.md       8 KB
+  technical-requirements-interview/SKILL.md     10 KB
+  gap-analysis-worksheet/SKILL.md                6 KB
+  architecture-decision-record/SKILL.md          5 KB
+  style-anchors-collection/SKILL.md             13 KB
+  implementation-planner/SKILL.md               28 KB
+  implementation-plan-review/SKILL.md           16 KB
+  definition-of-done/SKILL.md                   10 KB
+  delivery-timeline/SKILL.md                    16 KB
+  qa-test-plan/SKILL.md                          6 KB
+  developer-summary/SKILL.md                    10 KB
+  executive-summary/SKILL.md                    13 KB
+  implementation-plan-best-practices/SKILL.md    9 KB
+  sherpy-flow/SKILL.md                          13 KB
+  sherpy-cli/SKILL.md                           18 KB
+  create-continuation-prompt/SKILL.md            2 KB
+  sherpy-cli-planner/SKILL.md                   11 KB
+  ────────────────────────────────────────────────
+  TOTAL: ~202 KB (all skills loaded in context)
+```
+
+**CLI approach:** Install orchestrator + load prompts on-demand
+
+```
+skills/
+  sherpy-cli-planner/SKILL.md                   11 KB
+  sherpy-cli/SKILL.md                           18 KB
+  ────────────────────────────────────────────────
+  Baseline: 29 KB
+
+Per-step (loaded via sherpy prompt -t <type>):
+  Step 1: gap-analysis-worksheet                 6 KB
+  Step 2: business-requirements-interview        8 KB
+  (only one step active at a time)
+  ────────────────────────────────────────────────
+  Typical: 29 KB + 8 KB = 37 KB total
+  Maximum: 29 KB + 28 KB = 57 KB (when using implementation-planner)
+```
+
+### Token Savings
+
+- **Traditional:** All 202 KB loaded simultaneously
+- **CLI approach:** 29-57 KB (only active step loaded)
+- **Savings:** 72-86% reduction in context window usage
+
+### When to Use Each Approach
+
+**Use traditional skills** if:
+- You're using Claude Code interactively
+- You want slash commands available (`/business-requirements-interview`)
+- You jump between workflow steps frequently
+
+**Use CLI approach** if:
+- You're running workflows via CLI automation
+- You want to minimize token usage
+- You follow the 12-step workflow sequentially
+- You're integrating with CI/CD or scripts
+
+Both approaches produce identical output artifacts.
+
 ### Convert to Markdown
 
 Convert a YAML document to Markdown:
