@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/kydavis/sherpy/markdown"
+	"github.com/kydavis/sherpy/prompt"
 	"github.com/kydavis/sherpy/schema"
 	"github.com/spf13/cobra"
 )
@@ -80,6 +81,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newValidateCmd())
 	root.AddCommand(newToMarkdownCmd())
 	root.AddCommand(newTypesCmd())
+	root.AddCommand(newPromptCmd())
 
 	return root
 }
@@ -228,5 +230,49 @@ func runToMarkdown(w io.Writer, typeName, filename, output string) error {
 	}
 
 	fmt.Fprint(w, md)
+	return nil
+}
+
+func newPromptCmd() *cobra.Command {
+	var (
+		typeName string
+		list     bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "prompt -t <type>",
+		Short: "Output skill prompt instructions to stdout",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if list {
+				return runPromptList(cmd.OutOrStdout())
+			}
+			if typeName == "" {
+				return fmt.Errorf("type is required: use -t <type> or --list to show available prompts")
+			}
+			return runPrompt(cmd.OutOrStdout(), typeName)
+		},
+	}
+
+	cmd.Flags().StringVarP(&typeName, "type", "t", "", "prompt type (required)")
+	cmd.Flags().BoolVar(&list, "list", false, "list available prompts")
+
+	return cmd
+}
+
+func runPromptList(w io.Writer) error {
+	prompts := prompt.RegisteredPrompts()
+	fmt.Fprintf(w, "%-35s %s\n", "PROMPT", "DESCRIPTION")
+	for _, p := range prompts {
+		fmt.Fprintf(w, "%-35s %s\n", p.Name, p.Description)
+	}
+	return nil
+}
+
+func runPrompt(w io.Writer, typeName string) error {
+	content, err := prompt.PromptContent(typeName)
+	if err != nil {
+		return err
+	}
+	fmt.Fprint(w, content)
 	return nil
 }

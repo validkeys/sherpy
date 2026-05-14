@@ -47,10 +47,16 @@ sherpy validate -t business-requirements -f docs/business-requirements.yaml
 # 3. Convert to markdown
 sherpy to-markdown -t business-requirements -f docs/business-requirements.yaml -o output.md
 
-# 4. Validate with strict mode (warnings → errors)
+# 4. Output skill prompt instructions (for AI agents)
+sherpy prompt -t business-requirements-interview
+
+# 5. List available prompts
+sherpy prompt --list
+
+# 6. Validate with strict mode (warnings → errors)
 sherpy validate -t business-requirements -f docs/business-requirements.yaml --strict
 
-# 5. View help for any command
+# 7. View help for any command
 sherpy validate --help
 ```
 
@@ -105,6 +111,36 @@ sherpy validate -t milestone-tasks -f docs/milestone-m1.tasks.yaml
 - **Date validation** - Validates date formats and workback calculations
 - **Dependency graph validation** - Detects circular dependencies in milestones and tasks
 - **Custom business rules** - Type-specific validation rules (allocation percentages, date ranges, etc.)
+
+### Output Skill Prompts
+
+Output skill prompt instructions to stdout (for AI agents):
+
+```bash
+# List available prompts
+sherpy prompt --list
+
+# Output specific prompt instructions
+sherpy prompt -t business-requirements-interview
+sherpy prompt -t implementation-planner
+sherpy prompt -t qa-test-plan
+```
+
+This command strips YAML frontmatter from `skills/*/SKILL.md` files and outputs the instructional content. It's designed for AI agents that need step-by-step guidance for planning tasks. The prompt content is embedded in the binary at build time, so no external files are required.
+
+Available prompts:
+- `gap-analysis-worksheet` - Analyzes initial requirements for gaps
+- `business-requirements-interview` - Gathers business requirements
+- `technical-requirements-interview` - Gathers technical requirements
+- `style-anchors-collection` - Documents code patterns
+- `implementation-planner` - Generates implementation plans
+- `implementation-plan-review` - Reviews implementation plans
+- `definition-of-done` - Defines milestone acceptance criteria
+- `architecture-decision-record` - Documents architectural decisions
+- `delivery-timeline` - Generates delivery timelines
+- `qa-test-plan` - Generates QA test plans
+- `developer-summary` - Generates developer summaries
+- `executive-summary` - Generates executive summaries
 
 ### Convert to Markdown
 

@@ -170,6 +170,58 @@ func TestValidateErrors(t *testing.T) {
 	}
 }
 
+// TestPromptListCommand tests the prompt --list command
+func TestPromptListCommand(t *testing.T) {
+	binary := findBinary(t)
+
+	cmd := exec.Command(binary, "prompt", "--list")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("prompt --list failed: %v\n%s", err, string(output))
+	}
+
+	expected := []string{
+		"business-requirements-interview",
+		"implementation-planner",
+		"qa-test-plan",
+	}
+	for _, name := range expected {
+		if !strings.Contains(string(output), name) {
+			t.Errorf("expected %s in prompt list output", name)
+		}
+	}
+}
+
+// TestPromptOutputsContent tests that prompt -t outputs content
+func TestPromptOutputsContent(t *testing.T) {
+	binary := findBinary(t)
+
+	cmd := exec.Command(binary, "prompt", "-t", "business-requirements-interview")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("prompt -t failed: %v\n%s", err, string(output))
+	}
+
+	if len(output) < 100 {
+		t.Errorf("output suspiciously short (%d bytes)", len(output))
+	}
+}
+
+// TestPromptUnknownType tests error handling for unknown prompt types
+func TestPromptUnknownType(t *testing.T) {
+	binary := findBinary(t)
+
+	cmd := exec.Command(binary, "prompt", "-t", "nonexistent")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected error for unknown prompt type")
+	}
+
+	if !strings.Contains(string(output), "unknown") {
+		t.Errorf("expected 'unknown' in error output, got: %s", string(output))
+	}
+}
+
 // findBinary locates the sherpy binary to test
 func findBinary(t *testing.T) string {
 	t.Helper()
