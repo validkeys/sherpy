@@ -61,7 +61,7 @@ sudo make install
 ### Using Go
 
 ```bash
-go install github.com/kydavis/sherpy@latest
+go install github.com/validkeys/sherpy@latest
 ```
 
 ### Pre-built Binaries

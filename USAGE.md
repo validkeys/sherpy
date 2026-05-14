@@ -228,7 +228,7 @@ jobs:
       
       - name: Install Sherpy
         run: |
-          go install github.com/kydavis/sherpy@latest
+          go install github.com/validkeys/sherpy@latest
       
       - name: Validate Documents
         run: |
@@ -244,7 +244,7 @@ validate-docs:
   stage: test
   image: golang:1.26
   script:
-    - go install github.com/kydavis/sherpy@latest
+    - go install github.com/validkeys/sherpy@latest
     - sherpy validate -t business-requirements -f docs/business-requirements.yaml --strict
     - sherpy validate -t technical-requirements -f docs/technical-requirements.yaml --strict
 ```
@@ -562,8 +562,8 @@ SHERPY_DEBUG=1 sherpy validate -t business-requirements -f docs/file.yaml
 
 ### Getting Help
 
-- **GitHub Issues**: https://github.com/kydavis/sherpy/issues
-- **Documentation**: https://github.com/kydavis/sherpy/tree/main/docs
+- **GitHub Issues**: https://github.com/validkeys/sherpy/issues
+- **Documentation**: https://github.com/validkeys/sherpy/tree/main/docs
 - **Examples**: See `docs/specifications/*/example.yaml`
 
 ## Best Practices

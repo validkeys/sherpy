@@ -221,7 +221,7 @@ jobs:
       - uses: actions/checkout@v3
       
       - name: Install Sherpy CLI
-        run: go install github.com/kydavis/sherpy@latest
+        run: go install github.com/validkeys/sherpy@latest
       
       - name: Validate Planning Documents
         run: |
@@ -237,7 +237,7 @@ validate-docs:
   stage: test
   image: golang:1.26
   script:
-    - go install github.com/kydavis/sherpy@latest
+    - go install github.com/validkeys/sherpy@latest
     - sherpy validate -t business-requirements -f docs/requirements/business-requirements.yaml --strict
     - sherpy validate -t technical-requirements -f docs/requirements/technical-requirements.yaml --strict
 ```
@@ -417,7 +417,7 @@ done
 ### From Source
 
 ```bash
-git clone https://github.com/kydavis/sherpy.git
+git clone https://github.com/validkeys/sherpy.git
 cd sherpy
 make build
 sudo make install
@@ -426,7 +426,7 @@ sudo make install
 ### Using Go
 
 ```bash
-go install github.com/kydavis/sherpy@latest
+go install github.com/validkeys/sherpy@latest
 ```
 
 ### Verify Installation
@@ -501,7 +501,7 @@ stat -c%s docs/file.yaml  # Linux
 
 ## Documentation
 
-- **GitHub**: https://github.com/kydavis/sherpy
+- **GitHub**: https://github.com/validkeys/sherpy
 - **README**: [README.md](../../README.md)
 - **Usage Guide**: [USAGE.md](../../USAGE.md)
 - **Security**: [SECURITY.md](../../SECURITY.md)

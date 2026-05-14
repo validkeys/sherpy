@@ -1,0 +1,253 @@
+version: "1.0"
+project: "PR #9 Code Review Remediation"
+description: "Style anchors for implementing code review fixes"
+
+categories:
+  - id: "go-utilities"
+    name: "Go Utility Functions"
+    description: "Shared utility functions and helpers"
+
+  - id: "build-automation"
+    name: "Build Process Automation"
+    description: "go:generate and build-time code generation patterns"
+
+  - id: "documentation"
+    name: "Documentation Standards"
+    description: "CHANGELOG, README, and contributor documentation patterns"
+
+  - id: "git-operations"
+    name: "Git History Cleanup"
+    description: "Safe patterns for removing committed files from history"
+
+  - id: "ci-validation"
+    name: "CI/CD Validation"
+    description: "GitHub Actions workflows for quality gates"
+
+anchors:
+  - id: "shared-utility-extraction"
+    name: "Extract Shared Utility Function"
+    description: "Pattern for extracting duplicated code to shared location"
+    category: "go-utilities"
+    source:
+      path: "prompt/registry.go"
+      lines: "144-168"
+      excerpt: |
+        func stripFrontmatter(content string) string {
+            content = strings.TrimSpace(content)
+            if !strings.HasPrefix(content, "---") {
+                return content
+            }
+            // ... implementation
+        }
+    applies_to:
+      file_patterns:
+        - "**/*.go"
+      task_types:
+        - "refactor"
+        - "code"
+      milestone_types:
+        - "refactoring"
+        - "cleanup"
+
+  - id: "go-generate-filter"
+    name: "Filter Items in go:generate Script"
+    description: "Pattern for filtering unwanted items during code generation"
+    category: "build-automation"
+    source:
+      path: "prompt/gen_prompts.go"
+      lines: "23-36"
+      excerpt: |
+        // Collect skill names
+        var names []string
+        for _, entry := range entries {
+            if !entry.IsDir() {
+                continue
+            }
+            skillFile := filepath.Join(skillsDir, entry.Name(), "SKILL.md")
+            _, err := os.Stat(skillFile)
+            if err != nil {
+                continue
+            }
+            names = append(names, entry.Name())
+        }
+    applies_to:
+      file_patterns:
+        - "**/*gen*.go"
+        - "**/generate*.go"
+      task_types:
+        - "code"
+        - "build"
+      milestone_types:
+        - "build-system"
+
+  - id: "test-cleanup-pattern"
+    name: "Clean Test Output"
+    description: "Ensure tests run without warnings or clutter"
+    category: "go-utilities"
+    source:
+      path: "prompt/registry_test.go"
+      lines: "11-25"
+      excerpt: |
+        func TestRegisteredPromptsSorted(t *testing.T) {
+            prompts := RegisteredPrompts()
+            if len(prompts) == 0 {
+                t.Fatal("expected at least one registered prompt")
+            }
+
+            names := make([]string, len(prompts))
+            for i, p := range prompts {
+                names[i] = p.Name
+            }
+
+            if !sort.StringsAreSorted(names) {
+                t.Errorf("prompts not sorted: %v", names)
+            }
+        }
+    applies_to:
+      file_patterns:
+        - "**/*_test.go"
+      task_types:
+        - "test"
+      milestone_types:
+        - "testing"
+        - "cleanup"
+
+  - id: "changelog-entry"
+    name: "CHANGELOG.md Entry Format"
+    description: "Standard format for documenting changes in CHANGELOG"
+    category: "documentation"
+    source:
+      path: "README.md"
+      lines: "1-20"
+      excerpt: |
+        # Changelog
+
+        ## [Unreleased]
+
+        ### Added
+        - New `sherpy prompt` command for outputting skill instructions
+        - Token-efficient planning workflow (80K vs 720K tokens)
+
+        ### Changed
+        - Updated Makefile with generate target
+
+        ### Fixed
+        - Removed committed binary from repository
+        - Fixed orphaned prompt warnings in tests
+    applies_to:
+      file_patterns:
+        - "CHANGELOG.md"
+      task_types:
+        - "docs"
+      milestone_types:
+        - "documentation"
+
+  - id: "git-remove-from-history"
+    name: "Safely Remove Files from Git History"
+    description: "Pattern for removing accidentally committed files using git filter-branch"
+    category: "git-operations"
+    source:
+      path: "install.sh"
+      lines: "1-10"
+      excerpt: |
+        #!/usr/bin/env bash
+        set -e
+
+        # Remove file from Git history
+        git filter-branch --force --index-filter \
+          'git rm --cached --ignore-unmatch sherpy' \
+          --prune-empty --tag-name-filter cat -- --all
+
+        # Clean up refs
+        git for-each-ref --format="delete %(refname)" refs/original | git update-ref --stdin
+    applies_to:
+      file_patterns:
+        - "**/*.sh"
+      task_types:
+        - "git"
+        - "cleanup"
+      milestone_types:
+        - "repository-cleanup"
+
+  - id: "github-actions-validation"
+    name: "GitHub Actions Validation Workflow"
+    description: "Pattern for CI check that validates generated files are current"
+    category: "ci-validation"
+    source:
+      path: ".github/workflows/test.yml"
+      lines: "1-30"
+      excerpt: |
+        name: Validate Generated Files
+        on: [pull_request, push]
+
+        jobs:
+          check-generated:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v3
+              - uses: actions/setup-go@v4
+                with:
+                  go-version: '1.26'
+
+              - name: Generate content
+                run: make generate
+
+              - name: Check for changes
+                run: |
+                  if ! git diff --exit-code prompt/content_generated.go; then
+                    echo "ERROR: content_generated.go is stale"
+                    echo "Run 'make generate' and commit the changes"
+                    exit 1
+                  fi
+    applies_to:
+      file_patterns:
+        - ".github/workflows/*.yml"
+        - ".github/workflows/*.yaml"
+      task_types:
+        - "ci"
+        - "config"
+      milestone_types:
+        - "ci-cd"
+        - "build-system"
+
+usage_matrix:
+  task_types:
+    - type: "refactor"
+      recommended_anchors:
+        - "shared-utility-extraction"
+        - "test-cleanup-pattern"
+
+    - type: "build"
+      recommended_anchors:
+        - "go-generate-filter"
+        - "github-actions-validation"
+
+    - type: "docs"
+      recommended_anchors:
+        - "changelog-entry"
+
+    - type: "git"
+      recommended_anchors:
+        - "git-remove-from-history"
+
+    - type: "ci"
+      recommended_anchors:
+        - "github-actions-validation"
+
+  file_patterns:
+    - pattern: "**/*.go"
+      recommended_anchors:
+        - "shared-utility-extraction"
+        - "test-cleanup-pattern"
+
+    - pattern: "**/*gen*.go"
+      recommended_anchors:
+        - "go-generate-filter"
+
+    - pattern: "CHANGELOG.md"
+      recommended_anchors:
+        - "changelog-entry"
+
+    - pattern: ".github/workflows/*.yml"
+      recommended_anchors:
+        - "github-actions-validation"

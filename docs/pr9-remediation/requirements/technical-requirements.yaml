@@ -1,0 +1,291 @@
+version: "1.0"
+project:
+  name: "PR #9 Code Review Remediation"
+  description: "Technical implementation requirements for addressing PR #9 code review concerns"
+
+architecture:
+  current_state:
+    description: |
+      PR #9 implements a token-efficient planning workflow via sherpy prompt command.
+      Core components include cmd/root.go (CLI), prompt/registry.go (prompt lookup),
+      and prompt/gen_prompts.go (build-time embedding).
+    components:
+      - name: "CLI Layer"
+        path: "cmd/"
+        technologies: ["Go", "cobra"]
+      - name: "Prompt Registry"
+        path: "prompt/"
+        technologies: ["Go", "go:generate", "embed"]
+      - name: "Integration Tests"
+        path: "integration/"
+        technologies: ["Go", "testing"]
+
+  target_state:
+    description: |
+      Address code review concerns while maintaining existing functionality.
+      Extract shared utilities, improve security documentation, clean up build process.
+    changes:
+      - component: "Prompt Package"
+        change: "Extract stripFrontmatter to shared utility"
+        rationale: "Eliminate code duplication"
+      - component: "Build Process"
+        change: "Filter non-pipeline skills in gen_prompts.go"
+        rationale: "Remove orphaned prompt warnings"
+      - component: "Git History"
+        change: "Remove committed binary"
+        rationale: "Repository hygiene and security"
+      - component: "Documentation"
+        change: "Update repository references and add workflow docs"
+        rationale: "Accuracy and contributor guidance"
+
+technology_stack:
+  languages:
+    - name: "Go"
+      version: "1.26+"
+      justification: "Existing project language"
+    - name: "Bash"
+      version: "any"
+      justification: "Install scripts and CI"
+
+  frameworks:
+    - name: "cobra"
+      version: "latest"
+      justification: "CLI framework already in use"
+
+  tools:
+    - name: "go:generate"
+      justification: "Build-time code generation"
+    - name: "GitHub Actions"
+      justification: "CI/CD pipeline"
+    - name: "Make"
+      justification: "Build automation"
+
+technical_decisions:
+  - id: TD-1
+    decision: "Extract stripFrontmatter to prompt/frontmatter.go"
+    rationale: |
+      Currently duplicated in registry.go and gen_prompts.go. Extracting to shared
+      file eliminates duplication and ensures consistent behavior.
+    alternatives:
+      - Keep duplication: rejected due to maintenance burden
+      - Use external library: rejected, simple function doesn't warrant dependency
+    implications:
+      - Both files import from frontmatter.go
+      - Tests updated to test shared implementation
+      - Build-time (gen_prompts.go) uses same logic as runtime (registry.go)
+
+  - id: TD-2
+    decision: "Filter non-pipeline skills in gen_prompts.go"
+    rationale: |
+      Orphaned warnings occur because gen_prompts.go embeds all skills but registry.go
+      only registers 12 pipeline steps. Filtering at generation time removes clutter.
+    alternatives:
+      - Register all skills: rejected, CLI should only expose pipeline steps
+      - Silence warnings: rejected, warnings indicate misalignment
+      - Separate directories: rejected, overkill for current structure
+    implications:
+      - gen_prompts.go has skipList map
+      - Only pipeline skills embedded in content_generated.go
+      - Orchestrator skills (sherpy-cli-planner, etc) not in binary
+      - Tests pass without warnings
+
+  - id: TD-3
+    decision: "Use git filter-branch or BFG Repo-Cleaner for binary removal"
+    rationale: |
+      Binary is already committed to branch. Simple git rm --cached only removes from
+      working tree, not history. Must rewrite history to remove 6.3MB blob.
+    alternatives:
+      - git rm --cached: rejected, doesn't remove from history
+      - Leave in history: rejected, causes repo bloat
+      - git filter-branch: accepted, standard Git tool
+      - BFG Repo-Cleaner: alternative, faster but requires external tool
+    implications:
+      - Branch history will be rewritten
+      - Force push required
+      - Collaborators must re-clone or rebase
+      - Safer to do before merge
+
+  - id: TD-4
+    decision: "Document path traversal policy in code comments"
+    rationale: |
+      Current policy allows 1 level (../docs) but blocks 2+ (../../etc). Rationale
+      is unclear. Document why this trade-off exists or tighten restrictions.
+    alternatives:
+      - Allow all traversal: rejected, security risk
+      - Block all traversal: considered, may break valid sibling directory access
+      - Current (1 level): acceptable if documented
+      - Allowlist approach: considered, more complex
+    implications:
+      - Security policy explicitly documented in validatePath()
+      - Tests validate expected behavior
+      - README documents file path expectations
+
+  - id: TD-5
+    decision: "Add .github/workflows/validate-generated.yml"
+    rationale: |
+      Prevent stale content_generated.go by checking in CI that running make generate
+      produces no changes. Catches developer mistakes early.
+    alternatives:
+      - Pre-commit hooks: rejected, not enforced for all devs
+      - Manual review: rejected, error-prone
+      - Don't check: rejected, allows stale content
+    implications:
+      - CI runs make generate
+      - CI fails if git diff shows changes
+      - Clear error message for contributors
+
+code_organization:
+  structure:
+    - path: "prompt/"
+      purpose: "Prompt registry and utilities"
+      files:
+        - name: "frontmatter.go"
+          purpose: "Shared frontmatter stripping (NEW)"
+        - name: "registry.go"
+          purpose: "Prompt lookup and validation"
+        - name: "gen_prompts.go"
+          purpose: "Build-time skill embedding"
+        - name: "content_generated.go"
+          purpose: "Generated embed content"
+        - name: "registry_test.go"
+          purpose: "Registry and frontmatter tests"
+
+    - path: "docs/"
+      purpose: "Documentation"
+      files:
+        - name: "CHANGELOG.md"
+          purpose: "Version history (NEW)"
+        - name: "CONTRIBUTING.md"
+          purpose: "Contributor guide (UPDATED)"
+
+    - path: ".github/workflows/"
+      purpose: "CI/CD"
+      files:
+        - name: "validate-generated.yml"
+          purpose: "Check generated files up-to-date (NEW)"
+
+  naming_conventions:
+    - "Use snake_case for YAML files"
+    - "Use camelCase for Go functions"
+    - "Use PascalCase for Go types"
+    - "Use kebab-case for CLI commands"
+
+  import_organization:
+    - "Standard library imports first"
+    - "Third-party imports second"
+    - "Local imports third"
+    - "Blank line between groups"
+
+data_management:
+  storage:
+    - type: "Embedded Content"
+      technology: "go:embed"
+      purpose: "Skill prompt content in binary"
+      location: "prompt/content_generated.go"
+
+  validation:
+    - "stripFrontmatter tests verify edge cases"
+    - "Registry init() validates all prompts have content"
+    - "CI validates generated content is current"
+
+security_requirements:
+  - id: SEC-1
+    requirement: "Path traversal protection"
+    implementation: |
+      validatePath() in cmd/root.go checks for excessive parent directory traversal.
+      Current policy allows 1 level (for sibling directories like ../docs).
+    validation:
+      - "Tests cover valid cases: ./file, subdir/file, ../docs/file"
+      - "Tests block invalid cases: ../../etc/passwd, ../../../"
+      - "Security rationale documented in comments"
+
+  - id: SEC-2
+    requirement: "File size limits"
+    implementation: "readFileWithLimit() enforces 10MB max"
+    validation: "Tests verify rejection of oversized files"
+
+  - id: SEC-3
+    requirement: "No command injection"
+    implementation: "Use exec.Command() properly, not shell execution"
+    validation: "Code review verifies proper usage"
+
+testing_strategy:
+  unit_tests:
+    - "Test stripFrontmatter() edge cases in prompt/frontmatter_test.go"
+    - "Verify gen_prompts.go skipList filters correctly"
+    - "Test path traversal validation in cmd/root_test.go"
+
+  integration_tests:
+    - "Verify prompt --list output contains only pipeline skills"
+    - "Test binary execution with no warnings"
+    - "Validate all 12 pipeline prompts accessible"
+
+  ci_tests:
+    - "make generate produces no changes"
+    - "All unit and integration tests pass"
+    - "No warnings in test output"
+
+performance_requirements:
+  - requirement: "No performance degradation"
+    target: "Identical performance to current implementation"
+    measurement: "Benchmark tests before/after"
+
+  - requirement: "Binary size"
+    target: "No significant increase (< 5%)"
+    measurement: "Compare binary sizes"
+
+deployment:
+  build_process:
+    steps:
+      - "Run make generate to embed skills"
+      - "Run make build to compile binary"
+      - "Run make test to validate"
+
+  release_process:
+    steps:
+      - "Update CHANGELOG.md"
+      - "Create release tag"
+      - "Build binaries for platforms"
+      - "Publish to GitHub releases"
+
+quality_gates:
+  pre_commit:
+    - "go fmt ./..."
+    - "go vet ./..."
+    - "make generate (if skills changed)"
+
+  ci:
+    - "make generate && git diff --exit-code prompt/content_generated.go"
+    - "make test"
+    - "go vet ./..."
+
+  pre_merge:
+    - "All CI checks pass"
+    - "Code review approved"
+    - "No warnings in test output"
+    - "Binary not in Git history"
+
+migration_strategy:
+  approach: "In-place updates on PR branch"
+  steps:
+    - "Create remediation branch from feat/sherpy-prompt-command"
+    - "Apply all fixes"
+    - "Test thoroughly"
+    - "Rewrite history to remove binary"
+    - "Force push branch"
+    - "Request re-review"
+
+  rollback_plan: |
+    If issues arise, original branch state preserved in reflog.
+    Can reset to commit before history rewrite.
+
+maintenance:
+  ongoing_tasks:
+    - "Update CHANGELOG.md for new releases"
+    - "Run make generate when skills change"
+    - "Monitor CI for stale content warnings"
+
+  documentation_updates:
+    - "Keep CONTRIBUTING.md current with workflow changes"
+    - "Update README.md with new features"
+    - "Maintain consistency in repository references"

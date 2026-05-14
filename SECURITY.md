@@ -417,8 +417,8 @@ Security features implemented following:
 ## Contact
 
 - **Security Issues**: security@validkeys.com
-- **General Issues**: https://github.com/kydavis/sherpy/issues
-- **Documentation**: https://github.com/kydavis/sherpy
+- **General Issues**: https://github.com/validkeys/sherpy/issues
+- **Documentation**: https://github.com/validkeys/sherpy
 
 ## License
 

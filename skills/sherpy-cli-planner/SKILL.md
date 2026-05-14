@@ -19,7 +19,7 @@ sherpy --help
 If not installed:
 
 ```bash
-go install github.com/kydavis/sherpy@latest
+go install github.com/validkeys/sherpy@latest
 ```
 
 ## Usage
