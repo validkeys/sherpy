@@ -53,15 +53,23 @@ var funcMap = template.FuncMap{
 	"add":      func(a, b int) int { return a + b },
 }
 
-func execTemplate(name, text string, data interface{}) (string, error) {
+func execTemplate(name, text string, data interface{}) (result string, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("template execution panic: %v", r)
+		}
+	}()
+
 	tmpl, err := template.New(name).Funcs(funcMap).Parse(text)
 	if err != nil {
 		return "", fmt.Errorf("template parse error: %w", err)
 	}
+
 	var buf strings.Builder
 	if err := tmpl.Execute(&buf, data); err != nil {
 		return "", fmt.Errorf("template execute error: %w", err)
 	}
+
 	return buf.String(), nil
 }
 
