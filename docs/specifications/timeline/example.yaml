@@ -4,9 +4,9 @@ generated: "2025-01-27T14:00:00Z"
 milestones_file: ../implementation/milestones.yaml
 
 summary:
-  total_development_days: 55
-  total_delivery_days: 80
-  is_large_project: true   # 55 dev days > 30 AND 8 milestones > 5
+  total_development_days: 56
+  total_delivery_days: 81
+  is_large_project: true   # 56 dev days > 30 AND 8 milestones > 5
   milestone_count: 8
   qa_rounds: 2
   qa_days_per_round: 5
@@ -76,7 +76,7 @@ timeline:
     name: Release & Distribution
     type: milestone
     start_day: 53
-    completion_day: 55
+    completion_day: 56
     estimated_days: 3
     dependencies: [m6]
 
@@ -86,175 +86,175 @@ timeline:
   - id: post-pr-creation
     name: PR Creation
     type: delivery
-    start_day: 55
-    completion_day: 55
+    start_day: 56
+    completion_day: 56
     estimated_days: 0
     notes: "Opened upon completion of final milestone (m7)"
 
   - id: post-pr-review
     name: PR Review
     type: delivery
-    start_day: 55
-    completion_day: 57
+    start_day: 56
+    completion_day: 58
     estimated_days: 2
 
   - id: post-review-feedback
     name: Review Feedback Implementation
     type: delivery
-    start_day: 57
-    completion_day: 60
+    start_day: 58
+    completion_day: 61
     estimated_days: 3
     notes: "Extended duration (3 days) for first of multiple QA rounds"
 
   - id: post-merge
     name: Merge
     type: delivery
-    start_day: 60
-    completion_day: 60
+    start_day: 61
+    completion_day: 61
     estimated_days: 0
 
   - id: post-deployment
     name: Deployment
     type: delivery
-    start_day: 60
-    completion_day: 61
+    start_day: 61
+    completion_day: 62
     estimated_days: 1
 
   - id: post-qa-r1-deadline
     name: QA Deadline (Round 1)
     type: delivery
-    start_day: 61
-    completion_day: 66
+    start_day: 62
+    completion_day: 67
     estimated_days: 5
     notes: "Time allotted for QA team testing"
 
   - id: post-qa-r1-feedback-impl
     name: QA Feedback Implementation (Round 1)
     type: delivery
-    start_day: 66
-    completion_day: 69
+    start_day: 67
+    completion_day: 70
     estimated_days: 3
     notes: "Extended duration (3 days) for first QA round"
 
   - id: post-qa-r1-pr
     name: QA PR (Round 1)
     type: delivery
-    start_day: 69
-    completion_day: 69
+    start_day: 70
+    completion_day: 70
     estimated_days: 0
 
   - id: post-qa-r1-feedback
     name: QA Feedback (Round 1)
     type: delivery
-    start_day: 69
-    completion_day: 71
+    start_day: 70
+    completion_day: 72
     estimated_days: 2
     notes: "Extended duration (2 days) for first QA round"
 
   - id: post-qa-r1-merge
     name: QA Merge (Round 1)
     type: delivery
-    start_day: 71
-    completion_day: 71
+    start_day: 72
+    completion_day: 72
     estimated_days: 0
 
   - id: post-qa-r2-deadline
     name: QA Deadline (Round 2)
     type: delivery
-    start_day: 71
-    completion_day: 76
+    start_day: 72
+    completion_day: 77
     estimated_days: 5
     notes: "Time allotted for QA team testing"
 
   - id: post-qa-r2-feedback-impl
     name: QA Feedback Implementation (Round 2)
     type: delivery
-    start_day: 76
-    completion_day: 78
+    start_day: 77
+    completion_day: 79
     estimated_days: 2
     notes: "Standard duration (2 days) for final QA round"
 
   - id: post-qa-r2-pr
     name: QA PR (Round 2)
     type: delivery
-    start_day: 78
-    completion_day: 78
+    start_day: 79
+    completion_day: 79
     estimated_days: 0
 
   - id: post-qa-r2-feedback
     name: QA Feedback (Round 2)
     type: delivery
-    start_day: 78
-    completion_day: 79
+    start_day: 79
+    completion_day: 80
     estimated_days: 1
     notes: "Standard duration (1 day) for final QA round"
 
   - id: post-qa-r2-merge
     name: QA Merge (Round 2)
     type: delivery
-    start_day: 79
-    completion_day: 79
+    start_day: 80
+    completion_day: 80
     estimated_days: 0
 
   - id: post-signoff
     name: Signoff
     type: delivery
-    start_day: 79
-    completion_day: 80
+    start_day: 80
+    completion_day: 81
     estimated_days: 1
 
 workback:
   production_deploy_date: "2026-06-05"   # Friday
-  project_start_date: "2026-02-13"        # Friday — Day 0, 80 business days before deploy
+  project_start_date: "2026-02-12"        # Thursday — Day 0, 81 business days before deploy
   schedule:
     # ── Development Milestones ──────────────────────────────────────────────
 
     - id: m0
       name: Foundation & Project Setup
       type: milestone
-      start_date: "2026-02-13"
-      completion_date: "2026-02-20"
+      start_date: "2026-02-12"
+      completion_date: "2026-02-19"
 
     - id: m1
       name: Workflow Definition & Loading
       type: milestone
-      start_date: "2026-02-20"
-      completion_date: "2026-03-06"
+      start_date: "2026-02-19"
+      completion_date: "2026-03-05"
 
     - id: m2
       name: Task Execution Engine
       type: milestone
-      start_date: "2026-03-06"
-      completion_date: "2026-03-20"
+      start_date: "2026-03-05"
+      completion_date: "2026-03-19"
 
     - id: m3
       name: Built-in Task Library
       type: milestone
-      start_date: "2026-03-20"
-      completion_date: "2026-04-03"
+      start_date: "2026-03-19"
+      completion_date: "2026-04-02"
 
     - id: m4
       name: CLI Interface & User Experience
       type: milestone
-      start_date: "2026-04-03"
-      completion_date: "2026-04-15"
+      start_date: "2026-04-02"
+      completion_date: "2026-04-14"
 
     - id: m5
       name: Documentation & Examples
       type: milestone
-      start_date: "2026-04-15"
-      completion_date: "2026-04-22"
+      start_date: "2026-04-14"
+      completion_date: "2026-04-21"
 
     - id: m6
       name: Testing & Quality Assurance
       type: milestone
-      start_date: "2026-04-22"
-      completion_date: "2026-04-29"
+      start_date: "2026-04-21"
+      completion_date: "2026-04-28"
 
     - id: m7
       name: Release & Distribution
       type: milestone
-      start_date: "2026-04-29"
+      start_date: "2026-04-28"
       completion_date: "2026-05-01"
 
     # ── Post-Development Delivery Phases ────────────────────────────────────
