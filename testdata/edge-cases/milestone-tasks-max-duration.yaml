@@ -1,0 +1,16 @@
+project: Test
+version: 1.0
+milestone_id: M-001
+tasks:
+  - id: T-001
+    description: "Task at maximum duration"
+    type: feature
+    duration_minutes: 120  # Exactly at max limit
+    depends_on: []
+    instructions: "Test instructions"
+  - id: T-002
+    description: "Task below maximum"
+    type: bug
+    duration_minutes: 119
+    depends_on: []
+    instructions: "More instructions"

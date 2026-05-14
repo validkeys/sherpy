@@ -430,3 +430,118 @@ func searchString(s, substr string) bool {
 	}
 	return false
 }
+
+func TestBusinessRequirementsWithFixtures(t *testing.T) {
+	tests := []struct {
+		name      string
+		fixture   string
+		wantError string
+	}{
+		{
+			name:      "missing project",
+			fixture:   "../testdata/invalid/business-requirements-missing-project.yaml",
+			wantError: "project",
+		},
+		{
+			name:      "non-sequential IDs",
+			fixture:   "../testdata/invalid/business-requirements-non-sequential-ids.yaml",
+			wantError: "sequential",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := os.ReadFile(tt.fixture)
+			if err != nil {
+				t.Fatalf("failed to read fixture: %v", err)
+			}
+
+			result, err := ValidateBusinessRequirements(data, false)
+			if err != nil {
+				t.Fatalf("unexpected parse error: %v", err)
+			}
+
+			if result.Valid() {
+				t.Errorf("expected validation to fail, but it passed")
+			}
+
+			found := false
+			for _, e := range result.Errors {
+				if contains(e, tt.wantError) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("expected error containing %q, got %v", tt.wantError, result.Errors)
+			}
+		})
+	}
+}
+
+func TestBusinessRequirementsEdgeCases(t *testing.T) {
+	t.Run("unicode characters",  func(t *testing.T) {
+		// Test that unicode characters are parsed without crashing
+		yaml := `
+project: "Test 日本語 🚀"
+version: 1.0
+generated: "2024-01-01"
+overview:
+  problem: "Problem with émojis 🎯 meets minimum fifty character requirement."
+  value_proposition: "Unicode support αβγ minimum thirty chars."
+`
+		result, err := ValidateBusinessRequirements([]byte(yaml), false)
+		if err != nil {
+			t.Errorf("unicode should be supported: %v", err)
+		}
+		// May have validation errors for missing fields, but shouldn't crash
+		_ = result
+	})
+
+	t.Run("very long strings", func(t *testing.T) {
+		longStr := make([]byte, 10000)
+		for i := range longStr {
+			longStr[i] = 'a'
+		}
+		yaml := `project: Test
+version: 1.0
+generated: "2024-01-01"
+overview:
+  problem: "` + string(longStr) + `"
+  value_proposition: "Value proposition"`
+
+		result, err := ValidateBusinessRequirements([]byte(yaml), false)
+		// Should handle without crashing
+		_ = result
+		_ = err
+	})
+
+	t.Run("empty arrays vs missing arrays", func(t *testing.T) {
+		// Empty array
+		yaml1 := `
+project: Test
+version: 1.0
+generated: "2024-01-01"
+overview:
+  problem: "This is a test problem statement that meets the minimum character requirement of fifty characters."
+  value_proposition: "Value proposition minimum length."
+functional_requirements: []
+`
+		result1, _ := ValidateBusinessRequirements([]byte(yaml1), false)
+
+		// Missing array
+		yaml2 := `
+project: Test
+version: 1.0
+generated: "2024-01-01"
+overview:
+  problem: "This is a test problem statement that meets the minimum character requirement of fifty characters."
+  value_proposition: "Value proposition minimum length."
+`
+		result2, _ := ValidateBusinessRequirements([]byte(yaml2), false)
+
+		// Both should be handled (may produce warnings)
+		_ = result1
+		_ = result2
+	})
+}

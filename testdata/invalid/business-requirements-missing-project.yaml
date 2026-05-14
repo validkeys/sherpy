@@ -1,0 +1,6 @@
+# Missing project field - should error
+version: 1.0
+generated: "2024-01-01"
+overview:
+  problem: "Test problem statement"
+  value_proposition: "Test value"

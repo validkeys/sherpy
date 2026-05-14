@@ -1,0 +1,11 @@
+project: Test Project
+version: 1.0
+generated: "2024-01-01"
+strategy: Test strategy
+milestones:
+  - id: M-001
+    name: Test Milestone
+    description: Test description
+    depends_on: []
+    success_criteria:
+      - "Test criterion"
