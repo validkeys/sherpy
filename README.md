@@ -1,290 +1,322 @@
-# Sherpy - Structured Requirements & Planning Skills for AI Agents
+# Sherpy CLI
 
-Sherpy is a collection of Claude Code skills that bring structured software development methodology to AI-assisted coding. These skills guide you through business requirements gathering, technical requirements definition, and detailed implementation planning.
+A Go CLI tool for validating and converting Sherpy YAML documents to Markdown.
 
 ## Overview
 
-Sherpy provides complementary skills:
+Sherpy CLI (`sherpy`) validates structured YAML documents against predefined schemas and converts them to formatted Markdown. It supports seven document types used in software project planning:
 
-1. **Gap Analysis Worksheet** - Analyze initial requirements for gaps and generate a structured worksheet for a business analyst to complete
-2. **Business Requirements Interview** - Conduct structured interviews to gather comprehensive business requirements
-3. **Technical Requirements Interview** - Derive technical specifications from business requirements through guided interviews
-4. **Implementation Planner** - Generate detailed implementation plans with milestones, tasks, and best practices
-5. **Implementation Plan Review** - Review generated plans against best practices and identify gaps
-6. **Definition of Done** - Generate per-milestone acceptance criteria
-7. **Architecture Decision Records** - Extract and formalize architectural decisions as ADRs
-8. **Delivery Timeline** - Generate a day-by-day delivery timeline from milestones, including post-development PR, QA, and signoff phases
-9. **QA Test Plan** - Generate comprehensive test plans from requirements
-10. **Developer Summary** - Generate concise developer-focused project summaries
-11. **Executive Summary** - Generate stakeholder-friendly executive summaries
-12. **Sherpy Flow** - Orchestrate the complete workflow from start to finish with automatic file organization
+- **business-requirements** - Business requirements with personas, use cases, and functional requirements
+- **technical-requirements** - Technical specifications, architecture, and implementation details
+- **milestones** - Project milestones with dependencies and success criteria
+- **milestone-tasks** - Detailed task breakdowns with time estimates and dependencies
+- **timeline** - Delivery timeline with workback dates and phase breakdowns
+- **qa-test-plan** - QA test suites with test cases and execution steps
+- **gap-analysis** - Gap analysis worksheets with identified gaps and recommendations
 
 ## Installation
 
-Install all Sherpy skills with a single command:
+### From Source
 
 ```bash
-npx skills add validkeys/sherpy
+git clone https://github.com/kydavis/sherpy.git
+cd sherpy
+make build
+sudo make install
 ```
 
-Or install individual skills:
+### Using Go
 
 ```bash
-npx skills add validkeys/sherpy@gap-analysis-worksheet
-npx skills add validkeys/sherpy@business-requirements-interview
-npx skills add validkeys/sherpy@technical-requirements-interview
-npx skills add validkeys/sherpy@implementation-planner
-npx skills add validkeys/sherpy@delivery-timeline
+go install github.com/kydavis/sherpy@latest
 ```
 
-## Quick Start
+### Pre-built Binaries
 
-### Recommended: Use Sherpy Flow
+Download pre-built binaries for macOS and Linux from the [releases page](https://github.com/kydavis/sherpy/releases).
 
-The easiest way to use Sherpy is with the complete workflow orchestrator:
+## Usage
 
-```
-/sherpy-flow
-```
+### List Document Types
 
-This will:
-- Guide you through all planning steps in sequence
-- Automatically organize files into the `docs/` folder structure
-- Resume from where you left off if interrupted
-- Generate both developer and executive summaries at the end
+List all supported document types and their file patterns:
 
-### Or Use Individual Skills
-
-You can also run each skill independently:
-
-#### 1. Business Requirements Interview
-
-Start by gathering business requirements:
-
-```
-/business-requirements-interview
+```bash
+sherpy types
 ```
 
-The skill will:
-
-- Ask one question at a time with multiple-choice options
-- Track your progress in a JSONL file
-- Generate `business-requirements.yaml` when complete
-
-#### 2. Technical Requirements Interview
-
-Once you have business requirements, gather technical requirements:
-
+Output:
 ```
-/technical-requirements-interview path/to/business-requirements.yaml
+Available document types:
+  business-requirements    business-requirements.yaml
+  technical-requirements   technical-requirements.yaml
+  milestones              milestones.yaml
+  milestone-tasks         milestone-*.tasks.yaml
+  timeline                timeline.yaml
+  qa-test-plan            qa-test-plan.yaml
+  gap-analysis            gap-analysis-worksheet.yaml
 ```
 
-The skill will:
+### Validate Documents
 
-- Load your business requirements as context
-- Ask targeted technical questions
-- Generate `technical-requirements.yaml` when complete
+Validate a YAML document against its schema:
 
-#### 3. Implementation Planner
-
-Generate a detailed implementation plan:
-
-```
-/implementation-planner path/to/business-requirements.yaml path/to/technical-requirements.yaml
+```bash
+sherpy validate -t <type> -f <file>
 ```
 
-The skill will:
+Examples:
 
-- Analyze requirements and dependencies
-- Create milestone breakdown
-- Generate detailed task files with:
-  - Time estimates (30m - 2.5h per task)
-  - Style anchors and code examples
-  - TDD requirements
-  - Quality constraints
+```bash
+# Validate business requirements
+sherpy validate -t business-requirements -f docs/business-requirements.yaml
 
-#### 4. Generate Summaries
+# Validate with strict mode (warnings become errors)
+sherpy validate -t business-requirements -f docs/business-requirements.yaml --strict
 
-After planning is complete, generate summaries:
-
-```
-/developer-summary
-/executive-summary
+# Validate milestone tasks
+sherpy validate -t milestone-tasks -f docs/milestone-m1.tasks.yaml
 ```
 
-These auto-discover your planning artifacts and generate focused summaries for developers and stakeholders.
+#### Validation Features
 
-## Folder Structure
+- **Schema validation** - Ensures all required fields are present and correctly typed
+- **Cross-field validation** - Validates references between fields (e.g., FR-IDs, dependencies)
+- **Sequential ID validation** - Ensures IDs follow sequential patterns (FR-001, FR-002, etc.)
+- **Date validation** - Validates date formats and workback calculations
+- **Dependency graph validation** - Detects circular dependencies in milestones and tasks
+- **Custom business rules** - Type-specific validation rules (allocation percentages, date ranges, etc.)
 
-Sherpy automatically organizes all planning artifacts into a structured folder hierarchy:
+### Convert to Markdown
 
-```
-project/
-├── docs/
-│   ├── planning/
-│   │   ├── business-requirements.yaml
-│   │   ├── technical-requirements.yaml
-│   │   └── gap-analysis-worksheet.md
-│   ├── implementation/
-│   │   ├── milestones.yaml
-│   │   └── tasks/
-│   │       ├── milestone-m0.tasks.yaml
-│   │       ├── milestone-m1.tasks.yaml
-│   │       └── ...
-│   ├── delivery/
-│   │   ├── timeline.yaml
-│   │   ├── qa-test-plan.yaml
-│   │   └── definition-of-done.yaml
-│   ├── architecture/
-│   │   └── adrs/
-│   │       ├── INDEX.md
-│   │       ├── ADR-001-*.md
-│   │       └── ...
-│   ├── artifacts/
-│   │   ├── implementation-plan-review.yaml
-│   │   ├── business-interview.jsonl
-│   │   └── technical-interview.jsonl
-│   └── summaries/
-│       ├── developer-summary.md
-│       └── executive-summary.md
+Convert a YAML document to Markdown:
+
+```bash
+sherpy to-markdown -t <type> -f <file> [-o <output>]
 ```
 
-**When using `/sherpy-flow`**, all files are automatically organized into this structure after each skill completes. Individual skills still output to the project root, but sherpy-flow moves them to the appropriate locations.
+Examples:
 
-**Benefits of the folder structure:**
-- **Organized** - All related documents grouped together
-- **Scannable** - Easy to find what you need
-- **Gitignore-friendly** - Can exclude `docs/artifacts/` for interview transcripts
-- **Professional** - Ready for team collaboration and stakeholder review
+```bash
+# Convert to stdout
+sherpy to-markdown -t business-requirements -f docs/business-requirements.yaml
 
-## Workflow
+# Convert to file
+sherpy to-markdown -t business-requirements -f docs/business-requirements.yaml -o output.md
 
-```
-Initial Requirements (any format)
-         ↓
-Gap Analysis Worksheet → gap-analysis-worksheet.md
-         ↓
-  BA Completes Worksheet
-         ↓
-Business Interview → Business Requirements YAML
-         ↓                       ↓
-    Gap Analysis          Review & Address Gaps
-                                 ↓
-Technical Interview → Technical Requirements YAML
-         ↓                       ↓
-    Gap Analysis          Review & Address Gaps
-                                 ↓
-Implementation Planner → Milestones + Task Files
-         ↓                       ↓
-Plan Review             Address Critical Issues
-                                 ↓
-Definition of Done + ADRs + Timeline + QA Plan
-                                 ↓
-Generate Developer & Executive Summaries
-                                 ↓
-                         Ready for Development
+# Convert all document types
+for type in business-requirements technical-requirements milestones timeline qa-test-plan; do
+  sherpy to-markdown -t $type -f docs/$type.yaml -o docs/$type.md
+done
 ```
 
-## Automatic Quality Assurance
+#### Conversion Features
 
-Each phase includes automatic **gap analysis** to ensure completeness:
+- **Structured formatting** - Consistent markdown structure with headers, tables, and lists
+- **Table rendering** - Complex data rendered as markdown tables
+- **Nested lists** - Hierarchical data rendered as nested bullet lists
+- **Metadata preservation** - All important metadata included in the output
+- **Readable output** - Human-friendly formatting optimized for documentation
 
-### Business Requirements Review
+## Document Type Examples
 
-- ✓ Checks for missing personas, unclear scope, vague success criteria
-- ✓ Identifies undocumented assumptions
-- ✓ Scores completeness (1-10) and provides recommendations
-- ✓ Asks if you want to address gaps before proceeding
+### Business Requirements
 
-### Technical Requirements Review
+```bash
+# Validate
+sherpy validate -t business-requirements -f business-requirements.yaml
 
-- ✓ Verifies alignment with business needs
-- ✓ Checks architecture completeness and consistency
-- ✓ Reviews trade-offs and open questions
-- ✓ Identifies missing error handling, security, monitoring
+# Convert to markdown
+sherpy to-markdown -t business-requirements -f business-requirements.yaml -o business-requirements.md
+```
 
-### Implementation Plan Review
+**Validates:**
+- Project metadata (name, problem statement, objectives)
+- User personas with roles and goals
+- Use cases with actors and flows
+- Functional requirements with sequential FR-IDs
+- Success criteria and constraints
+- Risks and assumptions
 
-- ✓ Validates task sizing (30m - 2.5h rule)
-- ✓ Checks requirement coverage (nothing missed)
-- ✓ Analyzes dependency graph for optimization
-- ✓ Identifies missing test/docs/integration tasks
+### Technical Requirements
 
-**Result:** Each phase outputs a gap analysis report with actionable recommendations before moving to the next phase.
+```bash
+sherpy validate -t technical-requirements -f technical-requirements.yaml
+sherpy to-markdown -t technical-requirements -f technical-requirements.yaml -o technical.md
+```
 
-## Key Features
+**Validates:**
+- Architecture overview and system components
+- Technology stack and dependencies
+- Data models and API specifications
+- Security and performance requirements
+- Deployment and scalability constraints
 
-### Structured Interviews
+### Milestones
 
-- One question at a time
-- Multiple-choice options with recommendations
-- Progress tracking via JSONL
-- Structured YAML output
+```bash
+sherpy validate -t milestones -f milestones.yaml
+sherpy to-markdown -t milestones -f milestones.yaml -o milestones.md
+```
 
-### Implementation Planning Best Practices
+**Validates:**
+- Milestone definitions with sequential IDs
+- Dependency relationships (no circular dependencies)
+- Success criteria and deliverables
+- Estimated durations and ordering strategy
 
-- **Task Sizing**: 30m - 2.5h atomic tasks (30-150 minutes optimal)
-- **Style Anchors**: Include 2-3 concrete code examples per milestone
-- **TDD Enforcement**: Tests required before implementation
-- **Drift Prevention**: Explicit allowed patterns and constraints
-- **Affirmative Instructions**: Clear, positive guidance
+### Milestone Tasks
 
-### Output Formats
+```bash
+sherpy validate -t milestone-tasks -f milestone-m1.tasks.yaml
+sherpy to-markdown -t milestone-tasks -f milestone-m1.tasks.yaml -o tasks-m1.md
+```
 
-- Human-readable YAML documents
-- JSONL interview transcripts for progress tracking
-- Task breakdowns with dependencies and time estimates
+**Validates:**
+- Task definitions with sequential IDs
+- Task types (feature, test, review, docs)
+- Time estimates (max 150 minutes per task)
+- Dependencies within the milestone
+- File operations (create, modify, touch_only)
+- Quality gates at each stage
 
-## Skills Documentation
+### Timeline
 
-### Planning & Requirements
-- [Gap Analysis Worksheet](./skills/gap-analysis-worksheet/) - Surface gaps in initial requirements before formal gathering
-- [Business Requirements Interview](./skills/business-requirements-interview/) - Gather business requirements
-- [Technical Requirements Interview](./skills/technical-requirements-interview/) - Define technical specifications
+```bash
+sherpy validate -t timeline -f timeline.yaml
+sherpy to-markdown -t timeline -f timeline.yaml -o timeline.md
+```
 
-### Implementation Planning
-- [Implementation Planner](./skills/implementation-planner/) - Generate implementation plans
-- [Implementation Plan Review](./skills/implementation-plan-review/) - Review plans against best practices
+**Validates:**
+- Development phases and milestone scheduling
+- Post-development phases (PR, QA, signoff)
+- Workback date calculations
+- Day-by-day breakdown consistency
+- Total delivery days vs. development days
 
-### Architecture & Quality
-- [Architecture Decision Records](./skills/architecture-decision-record/) - Formalize architectural decisions as ADRs
-- [Definition of Done](./skills/definition-of-done/) - Generate per-milestone acceptance criteria
-- [QA Test Plan](./skills/qa-test-plan/) - Generate comprehensive test plans
+### QA Test Plan
 
-### Delivery & Summaries
-- [Delivery Timeline](./skills/delivery-timeline/) - Generate delivery timeline with PR, QA, and signoff phases
-- [Developer Summary](./skills/developer-summary/) - Generate developer-focused project summaries
-- [Executive Summary](./skills/executive-summary/) - Generate stakeholder-friendly executive summaries
+```bash
+sherpy validate -t qa-test-plan -f qa-test-plan.yaml
+sherpy to-markdown -t qa-test-plan -f qa-test-plan.yaml -o qa-plan.md
+```
 
-### Workflow Orchestration
-- [Sherpy Flow](./skills/sherpy-flow/) - Complete end-to-end workflow with automatic file organization
+**Validates:**
+- Test suites with unique suite IDs
+- Test cases by type (positive, negative, edge, security, performance)
+- Test steps with expected results
+- Priority levels and functional requirement mappings
 
-## Documentation
+### Gap Analysis
 
-- [Usage Guide](./docs/USAGE.md) - Detailed usage instructions
-- [Examples](./docs/EXAMPLES.md) - Complete workflow examples
+```bash
+sherpy validate -t gap-analysis -f gap-analysis-worksheet.yaml
+sherpy to-markdown -t gap-analysis -f gap-analysis-worksheet.yaml -o gaps.md
+```
 
-## Philosophy
+**Validates:**
+- Gap identification with sequential gap IDs
+- Gap categories and priorities
+- Recommendations and answers
+- Total gap count consistency
 
-Sherpy implements a layered verification approach:
+## Development
 
-> Models optimize locally; enforce global constraints with layered verification (prompt → IDE → commit → CI → runtime).
+### Build from Source
 
-Key principles:
+```bash
+# Build binary
+make build
 
-1. **Style Anchors**: Always include concrete examples
-2. **Task Sizing**: Small, atomic tasks for better control
-3. **TDD**: Tests drive implementation
-4. **Drift Handling**: Stop and revert immediately on unexpected patterns
+# Run tests
+make test
 
-## Contributing
+# Run linters
+make lint
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
+# Run integration tests
+make integration-test
+
+# Clean build artifacts
+make clean
+```
+
+### Run Tests
+
+```bash
+# Unit tests
+go test ./... -v
+
+# Integration tests
+go test ./integration -v
+
+# With coverage
+go test ./... -cover
+```
+
+### Project Structure
+
+```
+sherpy/
+├── cmd/              # CLI command implementations
+│   ├── root.go       # Root command and flags
+│   ├── validate.go   # Validate command
+│   └── to-markdown.go # Markdown conversion command
+├── schema/           # Document schemas and validators
+│   ├── business_requirements.go
+│   ├── technical_requirements.go
+│   ├── milestones.go
+│   ├── milestone_tasks.go
+│   ├── timeline.go
+│   ├── qa_test_plan.go
+│   ├── gap_analysis.go
+│   └── registry.go   # Schema registry
+├── markdown/         # Markdown converters
+│   ├── converter.go  # Template engine
+│   ├── business_requirements.go
+│   ├── technical_requirements.go
+│   ├── milestones.go
+│   ├── milestone_tasks.go
+│   ├── timeline.go
+│   ├── qa_test_plan.go
+│   └── gap_analysis.go
+├── integration/      # Integration tests
+│   └── integration_test.go
+├── main.go           # Entry point
+├── Makefile          # Build targets
+└── .goreleaser.yml   # Release configuration
+```
+
+## Exit Codes
+
+- `0` - Success
+- `1` - Validation failed or command error
+- `2` - File not found or read error
+
+## Requirements
+
+- Go 1.26 or later
+
+## Dependencies
+
+- [cobra](https://github.com/spf13/cobra) - CLI framework
+- [yaml.v3](https://github.com/go-yaml/yaml) - YAML parsing
 
 ## License
 
 MIT License - see [LICENSE](./LICENSE) for details.
 
-## Credits
+## Contributing
 
-Sherpy was developed based on proven software development methodology patterns for AI-assisted coding workflows.
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+## Related Projects
+
+This CLI tool is part of the Sherpy ecosystem:
+
+- **[Sherpy Skills](https://github.com/validkeys/sherpy)** - Claude Code skills for structured requirements gathering and planning
+- **Sherpy CLI** (this project) - Validation and conversion tools for Sherpy documents
+
+## Authors
+
+Developed by [Valid Keys](https://github.com/validkeys)

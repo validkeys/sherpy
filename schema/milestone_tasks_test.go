@@ -1,0 +1,220 @@
+package schema
+
+import (
+	"os"
+	"testing"
+)
+
+func mustReadMilestoneTasksExample(t *testing.T) []byte {
+	t.Helper()
+	data, err := os.ReadFile("../docs/specifications/milestone-tasks/example.yaml")
+	if err != nil {
+		t.Fatalf("failed to read milestone-tasks example.yaml: %v", err)
+	}
+	return data
+}
+
+func TestMilestoneTasksExamplePasses(t *testing.T) {
+	data := mustReadMilestoneTasksExample(t)
+	result, err := ValidateMilestoneTasks(data, false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	if !result.Valid() {
+		t.Errorf("milestone-tasks example.yaml should pass validation, got errors:\n%v", result.Errors)
+	}
+}
+
+func TestMilestoneTasksNonSequentialIDs(t *testing.T) {
+	yaml := `milestone: m1
+name: "User Authentication Service"
+generated: "2026-01-01T00:00:00Z"
+global_constraints:
+  allowed_patterns: ["use Effect"]
+  forbidden_patterns: ["no async/await"]
+  tdd_required: true
+  max_task_duration_minutes: 120
+  commit_strategy: "commit after each task"
+quality_gates:
+  - stage: pre-commit
+    commands: ["npm run lint"]
+tasks:
+  - id: m1-001
+    name: "Create User model with Schema"
+    description: "Define User data model using Effect Schema.Class with validation for the system"
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create: ["src/models/user.ts"]
+    instructions: "Create the User model following the Schema.Class pattern with full validation rules and type inference"
+  - id: m1-005
+    name: "Create UserService business logic"
+    description: "Implement service layer coordinating user operations with validation and business rules"
+    estimate_minutes: 60
+    type: code
+    dependencies: [m1-001]
+    files:
+      create: ["src/services/user-service.ts"]
+    instructions: "Create UserService with all business logic methods following the Effect.Service pattern with proper error handling"
+`
+	result, err := ValidateMilestoneTasks([]byte(yaml), false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if contains(e, "sequential") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected error about sequential IDs, got: %v", result.Errors)
+	}
+}
+
+func TestMilestoneTasksInvalidTaskType(t *testing.T) {
+	yaml := `milestone: m0
+name: "Setup and scaffolding task"
+generated: "2026-01-01T00:00:00Z"
+global_constraints:
+  allowed_patterns: ["use stdlib"]
+  forbidden_patterns: ["no external deps"]
+  tdd_required: false
+  max_task_duration_minutes: 120
+  commit_strategy: "commit after each task"
+quality_gates:
+  - stage: pre-commit
+    commands: ["go test"]
+tasks:
+  - id: m0-001
+    name: "Initialize project structure"
+    description: "Set up the Go module with all necessary directories and configuration for the project"
+    estimate_minutes: 30
+    type: invalid
+    dependencies: []
+    files:
+      create: ["main.go"]
+    instructions: "Initialize the Go project module with proper directory structure following Go conventions and standards"
+`
+	result, err := ValidateMilestoneTasks([]byte(yaml), false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	if result.Valid() {
+		t.Fatal("expected failure for invalid task type")
+	}
+}
+
+func TestMilestoneTasksExceedsMaxDuration(t *testing.T) {
+	yaml := `milestone: m0
+name: "Setup and scaffolding task"
+generated: "2026-01-01T00:00:00Z"
+global_constraints:
+  allowed_patterns: ["use stdlib"]
+  forbidden_patterns: ["no external deps"]
+  tdd_required: false
+  max_task_duration_minutes: 60
+  commit_strategy: "commit after each task"
+quality_gates:
+  - stage: pre-commit
+    commands: ["go test"]
+tasks:
+  - id: m0-001
+    name: "Initialize project structure"
+    description: "Set up the Go module with all necessary directories and configuration for the project"
+    estimate_minutes: 120
+    type: code
+    dependencies: []
+    files:
+      create: ["main.go"]
+    instructions: "Initialize the Go project module with proper directory structure following Go conventions and standards"
+`
+	result, err := ValidateMilestoneTasks([]byte(yaml), false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if contains(e, "exceeds") && contains(e, "max_task_duration") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected error about exceeding max duration, got: %v", result.Errors)
+	}
+}
+
+func TestMilestoneTasksEmptyFiles(t *testing.T) {
+	yaml := `milestone: m0
+name: "Setup and scaffolding task"
+generated: "2026-01-01T00:00:00Z"
+global_constraints:
+  allowed_patterns: ["use stdlib"]
+  forbidden_patterns: ["no external deps"]
+  tdd_required: false
+  max_task_duration_minutes: 120
+  commit_strategy: "commit after each task"
+quality_gates:
+  - stage: pre-commit
+    commands: ["go test"]
+tasks:
+  - id: m0-001
+    name: "Initialize project structure"
+    description: "Set up the Go module with all necessary directories and configuration for the project"
+    estimate_minutes: 30
+    type: code
+    dependencies: []
+    files: {}
+    instructions: "Initialize the Go project module with proper directory structure following Go conventions and standards"
+`
+	result, err := ValidateMilestoneTasks([]byte(yaml), false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	if result.Valid() {
+		t.Fatal("expected failure for empty files")
+	}
+}
+
+func TestMilestoneTasksInvalidGateStage(t *testing.T) {
+	yaml := `milestone: m0
+name: "Setup and scaffolding task"
+generated: "2026-01-01T00:00:00Z"
+global_constraints:
+  allowed_patterns: ["use stdlib"]
+  forbidden_patterns: ["no external deps"]
+  tdd_required: false
+  max_task_duration_minutes: 120
+  commit_strategy: "commit after each task"
+quality_gates:
+  - stage: invalid-stage
+    commands: ["go test"]
+tasks:
+  - id: m0-001
+    name: "Initialize project structure"
+    description: "Set up the Go module with all necessary directories and configuration for the project"
+    estimate_minutes: 30
+    type: code
+    dependencies: []
+    files:
+      create: ["main.go"]
+    instructions: "Initialize the Go project module with proper directory structure following Go conventions and standards"
+`
+	result, err := ValidateMilestoneTasks([]byte(yaml), false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if contains(e, "stage") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected error about gate stage, got: %v", result.Errors)
+	}
+}

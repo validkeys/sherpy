@@ -1,0 +1,194 @@
+package integration
+
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+// Test data paths
+var exampleFiles = []struct {
+	docType  string
+	filePath string
+}{
+	{"business-requirements", "../docs/specifications/business-requirements/example.yaml"},
+	{"technical-requirements", "../docs/specifications/technical-requirements/example.yaml"},
+	{"milestones", "../docs/specifications/milestones/example.yaml"},
+	{"milestone-tasks", "../docs/specifications/milestone-tasks/example.yaml"},
+	{"timeline", "../docs/specifications/timeline/example.yaml"},
+	{"qa-test-plan", "../docs/specifications/qa-test-plan/example.yaml"},
+	{"gap-analysis", "../docs/specifications/gap-analysis-worksheet/example.yaml"},
+}
+
+// TestValidateAllExamples validates all example.yaml files end-to-end
+func TestValidateAllExamples(t *testing.T) {
+	// Find sherpy binary
+	binary := findBinary(t)
+
+	for _, tc := range exampleFiles {
+		t.Run(tc.docType, func(t *testing.T) {
+			// Check file exists
+			if _, err := os.Stat(tc.filePath); os.IsNotExist(err) {
+				t.Skipf("Example file not found: %s", tc.filePath)
+			}
+
+			// Run validation
+			cmd := exec.Command(binary, "validate", "-t", tc.docType, "-f", tc.filePath)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Errorf("Validation failed for %s:\n%s", tc.docType, string(output))
+			}
+
+			// Check for success message
+			if !strings.Contains(string(output), "✓") && !strings.Contains(string(output), "valid") {
+				t.Errorf("Expected success message in output for %s, got:\n%s", tc.docType, string(output))
+			}
+		})
+	}
+}
+
+// TestConvertAllExamples converts all example.yaml files to markdown end-to-end
+func TestConvertAllExamples(t *testing.T) {
+	// Find sherpy binary
+	binary := findBinary(t)
+
+	// Create temp directory for output
+	tmpDir := t.TempDir()
+
+	for _, tc := range exampleFiles {
+		t.Run(tc.docType, func(t *testing.T) {
+			// Check file exists
+			if _, err := os.Stat(tc.filePath); os.IsNotExist(err) {
+				t.Skipf("Example file not found: %s", tc.filePath)
+			}
+
+			// Run conversion to stdout
+			cmd := exec.Command(binary, "to-markdown", "-t", tc.docType, "-f", tc.filePath)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Errorf("Conversion to stdout failed for %s:\n%s", tc.docType, string(output))
+			}
+
+			// Check for markdown headers
+			if !strings.Contains(string(output), "# ") {
+				t.Errorf("Expected markdown headers in output for %s", tc.docType)
+			}
+
+			// Run conversion to file
+			outFile := filepath.Join(tmpDir, tc.docType+".md")
+			cmd = exec.Command(binary, "to-markdown", "-t", tc.docType, "-f", tc.filePath, "-o", outFile)
+			output, err = cmd.CombinedOutput()
+			if err != nil {
+				t.Errorf("Conversion to file failed for %s:\n%s", tc.docType, string(output))
+			}
+
+			// Check file was created
+			if _, err := os.Stat(outFile); os.IsNotExist(err) {
+				t.Errorf("Output file not created: %s", outFile)
+			}
+
+			// Read file and check for markdown content
+			content, err := os.ReadFile(outFile)
+			if err != nil {
+				t.Fatalf("Failed to read output file: %v", err)
+			}
+			if !strings.Contains(string(content), "# ") {
+				t.Errorf("Expected markdown headers in file output for %s", tc.docType)
+			}
+		})
+	}
+}
+
+// TestTypesCommand tests the types command
+func TestTypesCommand(t *testing.T) {
+	binary := findBinary(t)
+
+	cmd := exec.Command(binary, "types")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("types command failed: %v\n%s", err, string(output))
+	}
+
+	// Check all document types are listed
+	expectedTypes := []string{
+		"business-requirements",
+		"technical-requirements",
+		"milestones",
+		"milestone-tasks",
+		"timeline",
+		"qa-test-plan",
+		"gap-analysis",
+	}
+
+	for _, docType := range expectedTypes {
+		if !strings.Contains(string(output), docType) {
+			t.Errorf("Expected %s in types output", docType)
+		}
+	}
+}
+
+// TestValidateErrors tests that validation properly reports errors
+func TestValidateErrors(t *testing.T) {
+	binary := findBinary(t)
+
+	tests := []struct {
+		name        string
+		args        []string
+		expectError bool
+	}{
+		{
+			name:        "missing file",
+			args:        []string{"validate", "-t", "business-requirements", "-f", "nonexistent.yaml"},
+			expectError: true,
+		},
+		{
+			name:        "missing type flag",
+			args:        []string{"validate", "-f", "test.yaml"},
+			expectError: true,
+		},
+		{
+			name:        "unknown type",
+			args:        []string{"validate", "-t", "unknown-type", "-f", "test.yaml"},
+			expectError: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := exec.Command(binary, tc.args...)
+			output, err := cmd.CombinedOutput()
+
+			if tc.expectError && err == nil {
+				t.Errorf("Expected error but command succeeded:\n%s", string(output))
+			}
+			if !tc.expectError && err != nil {
+				t.Errorf("Expected success but got error:\n%s", string(output))
+			}
+		})
+	}
+}
+
+// findBinary locates the sherpy binary to test
+func findBinary(t *testing.T) string {
+	t.Helper()
+
+	// Try current directory
+	if _, err := os.Stat("./sherpy"); err == nil {
+		return "./sherpy"
+	}
+
+	// Try parent directory
+	if _, err := os.Stat("../sherpy"); err == nil {
+		return "../sherpy"
+	}
+
+	// Try building it
+	cmd := exec.Command("go", "build", "-o", "sherpy", "..")
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to build sherpy binary: %v", err)
+	}
+
+	return "./sherpy"
+}
