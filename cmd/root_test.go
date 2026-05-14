@@ -97,7 +97,7 @@ func TestValidatePathTraversal(t *testing.T) {
 		{
 			name:    "path with parent directory (one level allowed)",
 			path:    "../test.yaml",
-			wantErr: false,  // One level of ".." is allowed
+			wantErr: false, // One level of ".." is allowed
 		},
 		{
 			name:    "path with multiple parent directories",
@@ -107,7 +107,7 @@ func TestValidatePathTraversal(t *testing.T) {
 		{
 			name:    "absolute path with traversal (cleans to valid path)",
 			path:    "/tmp/../etc/passwd",
-			wantErr: false,  // filepath.Clean resolves this to /etc/passwd, which has no ".."
+			wantErr: false, // filepath.Clean resolves this to /etc/passwd, which has no ".."
 		},
 		{
 			name:    "subdirectory path",

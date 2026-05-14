@@ -9,12 +9,12 @@ import (
 )
 
 type QATestPlan struct {
-	Version     string       `yaml:"version"`
-	Project     string       `yaml:"project"`
-	Generated   string       `yaml:"generated"`
-	Sources     QASources    `yaml:"sources"`
-	Summary     QASummary    `yaml:"summary"`
-	TestSuites  []QATestSuite `yaml:"test_suites"`
+	Version    string        `yaml:"version"`
+	Project    string        `yaml:"project"`
+	Generated  string        `yaml:"generated"`
+	Sources    QASources     `yaml:"sources"`
+	Summary    QASummary     `yaml:"summary"`
+	TestSuites []QATestSuite `yaml:"test_suites"`
 }
 
 type QASources struct {
@@ -23,10 +23,10 @@ type QASources struct {
 }
 
 type QASummary struct {
-	TotalTestSuites int          `yaml:"total_test_suites"`
-	TotalTestCases  int          `yaml:"total_test_cases"`
-	ByPriority      QAPriority   `yaml:"by_priority"`
-	Coverage        QACoverage   `yaml:"coverage"`
+	TotalTestSuites int        `yaml:"total_test_suites"`
+	TotalTestCases  int        `yaml:"total_test_cases"`
+	ByPriority      QAPriority `yaml:"by_priority"`
+	Coverage        QACoverage `yaml:"coverage"`
 }
 
 type QAPriority struct {
@@ -43,23 +43,23 @@ type QACoverage struct {
 }
 
 type QATestSuite struct {
-	ID              string        `yaml:"id"`
-	Name            string        `yaml:"name"`
-	Description     string        `yaml:"description"`
-	RequirementRefs []string      `yaml:"requirement_refs"`
-	TestCases       []QATestCase  `yaml:"test_cases"`
+	ID              string       `yaml:"id"`
+	Name            string       `yaml:"name"`
+	Description     string       `yaml:"description"`
+	RequirementRefs []string     `yaml:"requirement_refs"`
+	TestCases       []QATestCase `yaml:"test_cases"`
 }
 
 type QATestCase struct {
-	ID             string   `yaml:"id"`
-	Name           string   `yaml:"name"`
-	Type           string   `yaml:"type"`
-	Priority       string   `yaml:"priority"`
-	Preconditions  []string `yaml:"preconditions"`
-	Steps          []string `yaml:"steps"`
-	ExpectedResult string   `yaml:"expected_result"`
+	ID              string   `yaml:"id"`
+	Name            string   `yaml:"name"`
+	Type            string   `yaml:"type"`
+	Priority        string   `yaml:"priority"`
+	Preconditions   []string `yaml:"preconditions"`
+	Steps           []string `yaml:"steps"`
+	ExpectedResult  string   `yaml:"expected_result"`
 	RequirementRefs []string `yaml:"requirement_refs"`
-	Tags           []string `yaml:"tags,omitempty"`
+	Tags            []string `yaml:"tags,omitempty"`
 }
 
 var qaSuiteIDPattern = regexp.MustCompile(`^ts-[a-z0-9-]+$`)

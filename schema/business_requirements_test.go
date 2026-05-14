@@ -480,7 +480,7 @@ func TestBusinessRequirementsWithFixtures(t *testing.T) {
 }
 
 func TestBusinessRequirementsEdgeCases(t *testing.T) {
-	t.Run("unicode characters",  func(t *testing.T) {
+	t.Run("unicode characters", func(t *testing.T) {
 		// Test that unicode characters are parsed without crashing
 		yaml := `
 project: "Test 日本語 🚀"
