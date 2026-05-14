@@ -1,0 +1,15 @@
+project: Test Project
+version: 1.0
+generated: "2024-01-01"
+architecture:
+  components:
+    - name: Test Component
+      responsibility: Test responsibility
+technology_stack:
+  languages:
+    - name: Go
+      version: "1.26"
+project_structure:
+  directories:
+    - path: /test
+      purpose: Testing

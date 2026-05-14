@@ -1,0 +1,44 @@
+project: "Test 日本語 Проект 🚀"
+version: "1.0"
+generated: "2024-01-01"
+overview:
+  problem: "Problem with émojis 🎯 and special chars: <>&\"' that meets minimum length requirement of at least fifty characters."
+  value_proposition: "Unicode support αβγ with minimum thirty characters requirement."
+  scope:
+    in_scope:
+      - "Feature with émojis"
+    out_of_scope:
+      - "Other features"
+personas:
+  - id: P-001
+    name: "用户 (User)"
+    role: "Tester тестировщик"
+    description: "Description with 中文字符 and минимум length."
+    goals:
+      - "Goal with αβγ characters"
+    pain_points:
+      - "Pain point with special chars"
+use_cases:
+  - id: UC-001
+    name: "Use Case ユースケース"
+    actor: "用户 (User)"
+    description: "Test with special characters: café, naïve, Zürich"
+    outcome: "Outcome with unicode"
+    flow:
+      - "Step 1: λ function"
+functional_requirements:
+  - id: FR-001
+    description: "Requirement with ñ and ü characters and minimum length"
+    category: "Unicode"
+    priority: high
+    rationale: "Test rationale"
+success_criteria:
+  - criterion: "Criterion with 中文"
+    metric: "Metric"
+    target: "100%"
+timeline:
+  phases:
+    - phase: "Phase αβγ"
+      duration: "1 week"
+assumptions:
+  - "Assumption with émoji 🎯"
