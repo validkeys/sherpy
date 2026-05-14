@@ -127,6 +127,15 @@ check_skill() {
     fi
 }
 
+# Check if npx is available
+check_npx() {
+    if command -v npx &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Ask about skill removal
 prompt_skill_removal() {
     echo ""
@@ -148,9 +157,36 @@ prompt_skill_removal() {
     remove_skill
 }
 
+# Remove skill using npx skills
+remove_skill_with_npx() {
+    info "Removing $SKILL_NAME skill using npx skills..."
+    echo ""
+
+    if npx skills remove sherpy-cli-planner; then
+        echo ""
+        success "Removed $SKILL_NAME skill"
+        return 0
+    else
+        echo ""
+        error "Failed to remove skill using npx skills"
+        return 1
+    fi
+}
+
 # Remove skill
 remove_skill() {
-    info "Removing $SKILL_NAME skill..."
+    # Try npx skills first if available
+    if check_npx; then
+        if remove_skill_with_npx; then
+            return
+        fi
+        warn "Falling back to manual removal"
+    else
+        info "npx not found, using manual removal"
+    fi
+
+    # Manual removal fallback
+    info "Removing $SKILL_NAME skill manually..."
 
     if rm -rf "$SKILLS_DIR/$SKILL_NAME"; then
         success "Removed $SKILL_NAME skill"

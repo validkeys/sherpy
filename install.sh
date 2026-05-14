@@ -248,6 +248,15 @@ check_claude_code() {
     fi
 }
 
+# Check if npx is available
+check_npx() {
+    if command -v npx &> /dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 # Ask about skill installation
 prompt_skill_installation() {
     echo ""
@@ -263,6 +272,20 @@ prompt_skill_installation() {
     fi
 
     success "Claude Code detected"
+
+    if ! check_npx; then
+        warn "npx not found (required for skill installation)"
+        echo ""
+        info "To install skills manually after sherpy is installed:"
+        echo "  npx skills add validkeys/sherpy -s sherpy-cli-planner"
+        echo ""
+        info "Or install Node.js/npm to get npx:"
+        echo "  - macOS: brew install node"
+        echo "  - Linux: apt-get install nodejs npm / yum install nodejs npm"
+        return
+    fi
+
+    success "npx detected"
     echo ""
     info "The sherpy-cli-planner skill orchestrates the full planning pipeline"
     info "using sherpy CLI commands. Would you like to install it?"
@@ -284,47 +307,23 @@ prompt_skill_installation() {
 
 # Install skill
 install_skill() {
-    info "Installing $SKILL_NAME skill..."
+    info "Installing $SKILL_NAME skill using npx skills..."
+    echo ""
 
-    # Create skills directory if it doesn't exist
-    if [ ! -d "$SKILLS_DIR" ]; then
-        if mkdir -p "$SKILLS_DIR"; then
-            success "Created skills directory: $SKILLS_DIR"
-        else
-            error "Failed to create skills directory"
-            warn "You can install the skill manually later"
-            return
-        fi
-    fi
-
-    # Copy skill files
-    SKILL_SOURCE="$TEMP_DIR/skills/$SKILL_NAME"
-    SKILL_DEST="$SKILLS_DIR/$SKILL_NAME"
-
-    if [ ! -d "$SKILL_SOURCE" ]; then
-        error "Skill source not found: $SKILL_SOURCE"
-        warn "You can install the skill manually from the repository"
-        return
-    fi
-
-    # Remove existing skill if present
-    if [ -d "$SKILL_DEST" ]; then
-        warn "Existing $SKILL_NAME installation found"
-        info "Removing old version"
-        rm -rf "$SKILL_DEST"
-    fi
-
-    # Copy skill directory
-    if cp -r "$SKILL_SOURCE" "$SKILL_DEST"; then
-        success "Installed $SKILL_NAME skill to $SKILLS_DIR"
+    # Use the official skills CLI to install
+    if npx skills add validkeys/sherpy -s sherpy-cli-planner; then
+        echo ""
+        success "Installed $SKILL_NAME skill"
         echo ""
         info "Usage in Claude Code:"
         echo "  /sherpy-cli-planner [output-directory]"
         echo ""
     else
-        error "Failed to install skill"
+        echo ""
+        error "Failed to install skill using npx skills"
         warn "You can install the skill manually:"
-        echo "  cp -r $SKILL_SOURCE $SKILLS_DIR/"
+        echo "  npx skills add validkeys/sherpy -s sherpy-cli-planner"
+        echo ""
     fi
 }
 

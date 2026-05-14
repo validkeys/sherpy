@@ -47,6 +47,7 @@ This script will:
 - Go 1.26 or later
 - Git
 - Make
+- Node.js/npm (optional, for Claude Code skill installation via `npx skills`)
 
 ### From Source (Manual)
 
