@@ -51,6 +51,33 @@ var funcMap = template.FuncMap{
 	},
 	"joinComma": func(items []string) string { return strings.Join(items, ", ") },
 	"add":      func(a, b int) int { return a + b },
+	"escapeMarkdown": func(s string) string {
+		// Escape markdown special characters to prevent injection
+		replacer := strings.NewReplacer(
+			`\`, `\\`,
+			`[`, `\[`,
+			`]`, `\]`,
+			`(`, `\(`,
+			`)`, `\)`,
+			`*`, `\*`,
+			`_`, `\_`,
+			"`", "\\`",
+			`#`, `\#`,
+			`!`, `\!`,
+		)
+		return replacer.Replace(s)
+	},
+	"escapeHTML": func(s string) string {
+		// Escape HTML special characters to prevent XSS in markdown viewers
+		replacer := strings.NewReplacer(
+			`&`, `&amp;`,
+			`<`, `&lt;`,
+			`>`, `&gt;`,
+			`"`, `&quot;`,
+			`'`, `&#39;`,
+		)
+		return replacer.Replace(s)
+	},
 }
 
 func execTemplate(name, text string, data interface{}) (result string, err error) {

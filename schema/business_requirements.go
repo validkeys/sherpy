@@ -233,6 +233,12 @@ func validateBRFunctionalRequirements(doc BusinessRequirements, r *ValidationRes
 
 	seenIDs := map[int]bool{}
 	for i, fr := range doc.FunctionalRequirements {
+		// Check length before regex to prevent ReDoS
+		if len(fr.ID) > MaxIDLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.id exceeds maximum length of %d characters", i, MaxIDLength))
+			continue
+		}
+
 		matches := frIDPattern.FindStringSubmatch(fr.ID)
 		if matches == nil {
 			r.Errors = append(r.Errors, fmt.Sprintf("functional_requirements.%d.id must match pattern FR-N (got %q)", i, fr.ID))

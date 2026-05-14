@@ -169,7 +169,10 @@ func validateTLTimeline(doc Timeline, r *ValidationResult) {
 		}
 
 		if e.Type == "milestone" {
-			if !tlMilestoneIDPattern.MatchString(e.ID) {
+			// Check length before regex to prevent ReDoS
+			if len(e.ID) > MaxIDLength {
+				r.Errors = append(r.Errors, fmt.Sprintf("timeline.%d.id exceeds maximum length of %d characters", i, MaxIDLength))
+			} else if !tlMilestoneIDPattern.MatchString(e.ID) {
 				r.Errors = append(r.Errors, fmt.Sprintf("timeline.%d.id must match m[0-9]+ for milestones (got %q)", i, e.ID))
 			}
 			if e.CompletionDay != e.StartDay+e.EstimatedDays {

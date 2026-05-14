@@ -7,6 +7,11 @@ import (
 	"strings"
 )
 
+const (
+	// MaxIDLength prevents ReDoS attacks by rejecting overly long IDs before regex evaluation
+	MaxIDLength = 100
+)
+
 // validateRequiredField checks if a string field is non-empty after trimming whitespace
 func validateRequiredField(r *ValidationResult, value, fieldName string) {
 	if strings.TrimSpace(value) == "" {
@@ -42,12 +47,34 @@ func validateEnum(r *ValidationResult, value, fieldName string, allowedValues ma
 	}
 }
 
+// validateIDFormat checks ID length and format to prevent ReDoS attacks
+// Returns true if ID is valid, false otherwise
+func validateIDFormat(r *ValidationResult, id string, pattern *regexp.Regexp, fieldName string) bool {
+	if len(id) > MaxIDLength {
+		r.Errors = append(r.Errors, fmt.Sprintf("%s: ID exceeds maximum length of %d characters: %s",
+			fieldName, MaxIDLength, id))
+		return false
+	}
+
+	if !pattern.MatchString(id) {
+		r.Errors = append(r.Errors, fmt.Sprintf("%s: invalid ID format: %s", fieldName, id))
+		return false
+	}
+
+	return true
+}
+
 // validateSequentialIDs checks that IDs follow sequential pattern (e.g., FR-001, FR-002, FR-003)
 func validateSequentialIDs(r *ValidationResult, ids []string, pattern *regexp.Regexp, typeName string) {
 	for i, id := range ids {
+		// Check length before regex to prevent ReDoS
+		if !validateIDFormat(r, id, pattern, typeName) {
+			continue
+		}
+
 		matches := pattern.FindStringSubmatch(id)
 		if len(matches) != 2 {
-			r.Errors = append(r.Errors, fmt.Sprintf("%s: invalid ID format: %s", typeName, id))
+			// Already reported by validateIDFormat
 			continue
 		}
 

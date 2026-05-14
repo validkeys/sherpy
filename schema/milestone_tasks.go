@@ -82,7 +82,10 @@ func ValidateMilestoneTasks(data []byte, strict bool) (*ValidationResult, error)
 }
 
 func validateMTMetadata(doc MilestoneTasks, r *ValidationResult) {
-	if !mtMilestonePattern.MatchString(doc.Milestone) {
+	// Check length before regex to prevent ReDoS
+	if len(doc.Milestone) > MaxIDLength {
+		r.Errors = append(r.Errors, fmt.Sprintf("milestone exceeds maximum length of %d characters", MaxIDLength))
+	} else if !mtMilestonePattern.MatchString(doc.Milestone) {
 		r.Errors = append(r.Errors, fmt.Sprintf("milestone must match m[0-9]+ pattern (got %q)", doc.Milestone))
 	}
 	if len(strings.TrimSpace(doc.Name)) < 10 {
@@ -132,7 +135,10 @@ func validateMTTasks(doc MilestoneTasks, r *ValidationResult) {
 
 	validTaskIDs := map[string]bool{}
 	for i, t := range doc.Tasks {
-		if !mtTaskIDPattern.MatchString(t.ID) {
+		// Check length before regex to prevent ReDoS
+		if len(t.ID) > MaxIDLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("tasks.%d.id exceeds maximum length of %d characters", i, MaxIDLength))
+		} else if !mtTaskIDPattern.MatchString(t.ID) {
 			r.Errors = append(r.Errors, fmt.Sprintf("tasks.%d.id must match mN-NNN pattern (got %q)", i, t.ID))
 		}
 

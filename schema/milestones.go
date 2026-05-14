@@ -96,7 +96,10 @@ func validateMSMilestones(doc Milestones, r *ValidationResult) {
 
 	validIDs := map[string]bool{}
 	for i, m := range doc.Milestones {
-		if !msIDPattern.MatchString(m.ID) {
+		// Check length before regex to prevent ReDoS
+		if len(m.ID) > MaxIDLength {
+			r.Errors = append(r.Errors, fmt.Sprintf("milestones.%d.id exceeds maximum length of %d characters", i, MaxIDLength))
+		} else if !msIDPattern.MatchString(m.ID) {
 			r.Errors = append(r.Errors, fmt.Sprintf("milestones.%d.id must match m[0-9]+ pattern (got %q)", i, m.ID))
 		}
 
