@@ -34,6 +34,29 @@ func main() {
 		names = append(names, entry.Name())
 	}
 
+	// Only embed pipeline step skills in the binary. Orchestrator skills
+	// (sherpy-cli-planner, sherpy-flow) and meta skills reference the
+	// pipeline steps but are not themselves pipeline steps, so they
+	// don't need to be embedded. This prevents "orphaned content" warnings
+	// during test runs.
+	skipList := map[string]bool{
+		"sherpy-cli-planner":              true, // Orchestrator skill
+		"sherpy-cli":                      true, // Meta skill
+		"sherpy-flow":                     true, // Orchestrator skill
+		"implementation-plan-best-practices": true, // Meta/reference skill
+		"create-continuation-prompt":      true, // Utility skill
+		"contracted":                      true, // Non-pipeline skill
+	}
+
+	// Filter names
+	var filtered []string
+	for _, name := range names {
+		if !skipList[name] {
+			filtered = append(filtered, name)
+		}
+	}
+	names = filtered
+
 	sort.Strings(names)
 
 	// Build the generated file
@@ -65,6 +88,9 @@ func main() {
 	fmt.Printf("Generated content_generated.go with %d prompts\n", len(names))
 }
 
+// stripFrontmatter removes YAML frontmatter from the beginning of content.
+// This is a copy of prompt.StripFrontmatter - we can't import the prompt
+// package here because this generator runs before the package is built.
 func stripFrontmatter(content string) string {
 	content = strings.TrimSpace(content)
 
