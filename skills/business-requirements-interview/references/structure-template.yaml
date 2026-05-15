@@ -1,0 +1,213 @@
+# Business Requirements Structure Template
+# Copy this structure and replace placeholders with your content
+#
+# CRITICAL RULES:
+# - Fields marked "OBJECT" must have nested keys, NOT pipe (|) syntax
+# - Fields marked "ARRAY" must use dash (-) list format
+# - Multiline strings use pipe (|) syntax
+# - Sequential IDs: FR-1, FR-2, FR-3 (no gaps, no leading zeros)
+
+project: "[Project Name]"
+version: "1.0.0"
+generated: "[ISO 8601 timestamp - YYYY-MM-DDTHH:MM:SSZ]"
+
+overview:
+  # Multiline strings use pipe (|) syntax - minimum 50 characters
+  problem: |
+    [Multi-line problem statement describing the issue being solved.
+    Must be at least 50 characters. Include specific pain points and context.]
+
+  # Multiline string - minimum 30 characters
+  value_proposition: |
+    [Multi-line value proposition explaining what value this delivers.
+    Must be at least 30 characters.]
+
+  # CRITICAL: scope is an OBJECT with arrays, NOT a string
+  # ❌ WRONG: scope: | "MVP focused on..."
+  # ✅ CORRECT: scope: (with nested keys below)
+  scope:
+    in_scope:  # Array of strings - minimum 1 item required
+      - "[In scope item 1]"
+      - "[In scope item 2]"
+      - "[In scope item 3]"
+    out_of_scope:  # Optional array
+      - "[Out of scope item 1]"
+      - "[Out of scope item 2]"
+
+# Array of persona objects - minimum 1 required
+personas:
+  - name: "[Persona Name]"  # 2-50 characters
+    description: |
+      [Multi-line persona description. Minimum 20 characters.
+      Who they are, their role, responsibilities, and context.]
+    goals:  # Array - minimum 1 item required
+      - "[Goal 1 - what they want to achieve]"
+      - "[Goal 2 - another goal]"
+    pain_points:  # Array - minimum 1 item required
+      - "[Pain point 1 - current frustration or blocker]"
+      - "[Pain point 2 - another pain point]"
+
+  # Add more personas as needed
+  - name: "[Second Persona Name]"
+    description: |
+      [Description of second persona]
+    goals:
+      - "[Goal 1]"
+    pain_points:
+      - "[Pain point 1]"
+
+# Array of use case objects - minimum 1 required
+use_cases:
+  - name: "[Use Case Name]"  # 5-100 characters
+    actor: "[Persona Name]"  # MUST match a persona name exactly or be "System"
+    description: |
+      [Multi-line description of what the actor does in this scenario.
+      Minimum 20 characters. Describe the actions step by step.]
+    outcome: "[Expected outcome - minimum 10 characters]"
+
+  - name: "[Second Use Case]"
+    actor: "[Second Persona Name]"
+    description: |
+      [Description of second use case - minimum 20 characters]
+    outcome: "[What they achieve]"
+
+# Array of functional requirement objects - minimum 1 required
+functional_requirements:
+  # CRITICAL: IDs must be sequential starting from FR-1
+  # ❌ WRONG: FR-001, FR-01, FR-1.1
+  # ✅ CORRECT: FR-1, FR-2, FR-3
+  - id: FR-1
+    category: "[Category Name]"  # e.g., "Authentication", "Data Management", "User Interface"
+    description: |
+      [Detailed requirement description. Minimum 20 characters.
+      Must be specific, testable, and implementable.]
+    priority: high  # Enum: high, medium, low (lowercase only)
+    rationale: |
+      [Why this requirement is needed. Minimum 10 characters.
+      Explain the business or technical reason.]
+
+  - id: FR-2  # Next sequential ID
+    category: "[Category Name]"
+    description: |
+      [Description of second requirement]
+    priority: medium
+    rationale: |
+      [Rationale for second requirement]
+
+  - id: FR-3
+    category: "[Category Name]"
+    description: |
+      [Description of third requirement - minimum 20 characters]
+    priority: low
+    rationale: |
+      [Rationale for third requirement]
+
+# Optional - but recommended
+non_functional_requirements:
+  performance:  # Optional array - include if you have performance requirements
+    - "[Performance requirement 1 - e.g., 'API response time < 200ms at p95']"
+    - "[Performance requirement 2]"
+  security:  # Optional array
+    - "[Security requirement 1 - e.g., 'OWASP Top 10 compliance']"
+    - "[Security requirement 2]"
+  usability:  # Optional array
+    - "[Usability requirement 1 - e.g., 'WCAG 2.1 Level AA compliance']"
+  reliability:  # Optional array
+    - "[Reliability requirement 1 - e.g., '99.5% uptime SLA']"
+  maintainability:  # Optional array
+    - "[Maintainability requirement 1 - e.g., 'Code coverage >80%']"
+  observability:  # Optional array
+    - "[Observability requirement 1 - e.g., 'Structured logging for all operations']"
+
+# Array of success criterion objects - minimum 1 required (3 recommended)
+success_criteria:
+  - criterion: "[Success criterion description - what defines success]"
+    metric: "[How to measure it - the measurement method]"
+    target: "[Specific target value - e.g., '85%+ WAU' or '$1M ARR']"
+
+  - criterion: "[Second criterion]"
+    metric: "[Measurement method]"
+    target: "[Target value]"
+
+  - criterion: "[Third criterion]"
+    metric: "[Measurement method]"
+    target: "[Target value]"
+
+# Optional - but recommended
+constraints:
+  technical:  # Optional array
+    - "[Technical constraint 1 - e.g., 'Must use PostgreSQL', 'Cloud-native architecture']"
+    - "[Technical constraint 2]"
+  business:  # Optional array
+    - "[Business constraint 1 - e.g., 'Ship within 16 weeks', 'Team of 4 engineers']"
+  timeline:  # Optional array
+    - "[Timeline constraint 1 - e.g., 'Beta by Week 14']"
+  budget:  # Optional array
+    - "[Budget constraint 1 - e.g., 'Total MVP budget $400K']"
+  operational:  # Optional array
+    - "[Operational constraint 1 - e.g., 'Deploy to AWS us-east-1']"
+
+# Optional
+dependencies:
+  internal:  # Optional array
+    - "[Internal dependency 1 - e.g., 'Design system from UX team (due Week 2)']"
+    - "[Internal dependency 2]"
+  external:  # Optional array
+    - "[External dependency 1 - e.g., 'OpenAI API access for GPT-4']"
+    - "[External dependency 2]"
+
+# CRITICAL: timeline is an OBJECT, NOT a string
+# ❌ WRONG: timeline: | "16 weeks"
+# ✅ CORRECT: timeline: (with nested keys below)
+timeline:
+  phase: "[Phase name - e.g., MVP, Beta, v1.0, Phase 1]"
+  duration: "[Duration - e.g., 8 weeks, 3 months, Q2 2026]"
+  milestones:  # Array - minimum 1 item required
+    - "[Milestone 1 - e.g., 'Week 4: Core features complete']"
+    - "[Milestone 2 - e.g., 'Week 8: Integration testing']"
+    - "[Milestone 3 - e.g., 'Week 16: Public launch']"
+
+# Array of strings - minimum 1 required (3 recommended)
+assumptions:
+  - "[Assumption 1 - what you're assuming to be true]"
+  - "[Assumption 2 - another assumption]"
+  - "[Assumption 3 - a third assumption]"
+
+# Optional array - 3 recommended
+risks:
+  - risk: "[Risk description - 20-300 characters. What could go wrong?]"
+    probability: high  # Enum: high, medium, low (lowercase only)
+    impact: high  # Enum: high, medium, low (lowercase only)
+    mitigation: |
+      [Mitigation strategy - actionable steps to prevent or reduce the risk.
+      Minimum 20 characters, maximum 500 characters.]
+
+  - risk: "[Second risk description]"
+    probability: medium
+    impact: medium
+    mitigation: |
+      [Mitigation for second risk]
+
+  - risk: "[Third risk description - 20-300 characters]"
+    probability: low
+    impact: medium
+    mitigation: |
+      [Mitigation for third risk]
+
+# Optional array - for future roadmap planning
+future_enhancements:
+  - "[Future enhancement 1 - feature deferred until after MVP]"
+  - "[Future enhancement 2]"
+
+# Optional map of key-value pairs for linking to other documents
+documentation_references:
+  field_mapping: "[path/to/field-mapping.md]"
+  field_mapping_description: "[What this document contains - e.g., 'Database field mapping']"
+  api_schema: "[path/to/api-schema.yaml]"
+  api_schema_description: "[What this document contains - e.g., 'OpenAPI 3.0 spec']"
+
+# Optional multiline string for additional context
+notes: |
+  [Additional notes, context, or implementation guidance.
+  Use this for patterns, conventions, or cross-cutting concerns that don't
+  fit in other sections. Keep focused and relevant.]

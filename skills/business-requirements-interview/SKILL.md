@@ -64,6 +64,18 @@ Each answer shapes next question:
 
 **Success:** "How will you know it's working? What metrics matter?"
 
+## Structure Template
+
+**BEFORE generating, review:** [references/structure-template.yaml](references/structure-template.yaml)
+
+This shows the exact YAML structure required. Use it as your template.
+
+**Critical structural rules:**
+- `overview.scope` → OBJECT with `in_scope` and `out_of_scope` arrays (NOT a string with `|`)
+- `timeline` → OBJECT with `phase`, `duration`, `milestones` (NOT a string)
+- `functional_requirements[].id` → Sequential: FR-1, FR-2, FR-3 (no gaps, no FR-001)
+- `use_cases[].actor` → Must match a `personas[].name` exactly or be "System"
+
 ## Required Coverage
 
 Gather detail for:
@@ -98,7 +110,9 @@ Save to `{base_directory}/artifacts/business-interview.jsonl`:
 
 Generate `{base_directory}/requirements/business-requirements.yaml` when complete.
 
-**CRITICAL:** Follow the exact YAML structure defined in **[references/output-spec.md](references/output-spec.md)**.
+**CRITICAL:** Follow the exact YAML structure in **[references/structure-template.yaml](references/structure-template.yaml)**.
+
+For detailed schema documentation, see **[references/output-spec.md](references/output-spec.md)**.
 
 The output MUST include:
 - `project`, `version`, `generated` (root fields)

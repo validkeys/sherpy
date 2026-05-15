@@ -20,9 +20,11 @@ NC='\033[0m' # No Color
 # Configuration
 BINARY_NAME="sherpy"
 INSTALL_DIR="/usr/local/bin"
+USER_INSTALL_DIR="$HOME/.local/bin"
 MIN_GO_VERSION="1.26"
 SKILLS_DIR="$HOME/.claude/skills"
 SKILL_NAME="sherpy-cli-planner"
+USED_USER_INSTALL=false
 
 # Platform detection
 OS="$(uname -s)"
@@ -190,40 +192,60 @@ build_binary() {
 install_binary() {
     info "Installing $BINARY_NAME to $INSTALL_DIR"
 
+    # Try global installation first
+    local install_success=false
+
     # Create install directory if it doesn't exist
     if [ ! -d "$INSTALL_DIR" ]; then
-        if sudo mkdir -p "$INSTALL_DIR" 2>/dev/null; then
+        if sudo -n mkdir -p "$INSTALL_DIR" 2>/dev/null; then
             success "Created install directory"
         else
-            error "Failed to create install directory"
+            warn "Cannot create $INSTALL_DIR (sudo not available or requires password)"
+        fi
+    fi
+
+    # Attempt to install to global location
+    if [ -d "$INSTALL_DIR" ]; then
+        if [ -w "$INSTALL_DIR" ]; then
+            # No sudo needed
+            if cp "$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME" 2>/dev/null && chmod +x "$INSTALL_DIR/$BINARY_NAME" 2>/dev/null; then
+                success "Installed $BINARY_NAME to $INSTALL_DIR"
+                install_success=true
+            fi
+        else
+            # Try with sudo (non-interactive)
+            if sudo -n cp "$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME" 2>/dev/null && sudo -n chmod +x "$INSTALL_DIR/$BINARY_NAME" 2>/dev/null; then
+                success "Installed $BINARY_NAME to $INSTALL_DIR (with sudo)"
+                install_success=true
+            fi
+        fi
+    fi
+
+    # Fall back to user installation if global failed
+    if [ "$install_success" = false ]; then
+        warn "Cannot install to $INSTALL_DIR, falling back to user installation"
+        info "Installing to $USER_INSTALL_DIR instead"
+
+        # Create user install directory
+        if mkdir -p "$USER_INSTALL_DIR" 2>/dev/null; then
+            if cp "$BINARY_NAME" "$USER_INSTALL_DIR/$BINARY_NAME" && chmod +x "$USER_INSTALL_DIR/$BINARY_NAME"; then
+                success "Installed $BINARY_NAME to $USER_INSTALL_DIR"
+                INSTALL_DIR="$USER_INSTALL_DIR"
+                USED_USER_INSTALL=true
+                install_success=true
+            else
+                error "Failed to install to $USER_INSTALL_DIR"
+                exit 1
+            fi
+        else
+            error "Failed to create $USER_INSTALL_DIR"
             exit 1
         fi
     fi
 
-    # Install binary
-    if [ -w "$INSTALL_DIR" ]; then
-        # No sudo needed
-        if cp "$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"; then
-            success "Installed $BINARY_NAME to $INSTALL_DIR"
-        else
-            error "Failed to install binary"
-            exit 1
-        fi
-    else
-        # Sudo needed
-        if sudo cp "$BINARY_NAME" "$INSTALL_DIR/$BINARY_NAME"; then
-            success "Installed $BINARY_NAME to $INSTALL_DIR (with sudo)"
-        else
-            error "Failed to install binary (sudo required)"
-            exit 1
-        fi
-    fi
-
-    # Make binary executable
-    if [ -w "$INSTALL_DIR/$BINARY_NAME" ]; then
-        chmod +x "$INSTALL_DIR/$BINARY_NAME"
-    else
-        sudo chmod +x "$INSTALL_DIR/$BINARY_NAME"
+    if [ "$install_success" = false ]; then
+        error "Installation failed"
+        exit 1
     fi
 }
 
@@ -239,8 +261,32 @@ verify_installation() {
     else
         error "$BINARY_NAME is not in your PATH"
         echo ""
-        echo "Add $INSTALL_DIR to your PATH by adding this line to your shell config:"
-        echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+
+        if [ "$USED_USER_INSTALL" = true ]; then
+            warn "You need to add $INSTALL_DIR to your PATH"
+            echo ""
+            info "Add this line to your shell configuration file:"
+            echo ""
+
+            # Detect shell and provide appropriate instruction
+            if [ -n "$BASH_VERSION" ]; then
+                echo "  echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.bashrc"
+                echo "  source ~/.bashrc"
+            elif [ -n "$ZSH_VERSION" ]; then
+                echo "  echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.zshrc"
+                echo "  source ~/.zshrc"
+            else
+                echo "  For bash: echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.bashrc"
+                echo "  For zsh:  echo 'export PATH=\"$INSTALL_DIR:\$PATH\"' >> ~/.zshrc"
+            fi
+
+            echo ""
+            info "Or run this now to add it to your current session:"
+            echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+        else
+            echo "Add $INSTALL_DIR to your PATH by adding this line to your shell config:"
+            echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+        fi
         exit 1
     fi
 
@@ -391,6 +437,15 @@ main() {
     echo "╚═══════════════════════════════════════╝"
     echo ""
     success "$BINARY_NAME is installed and ready to use"
+
+    # Show PATH setup reminder if user install was used
+    if [ "$USED_USER_INSTALL" = true ]; then
+        echo ""
+        warn "Remember to add $INSTALL_DIR to your PATH"
+        info "Run this command or add it to your shell config:"
+        echo "  export PATH=\"$INSTALL_DIR:\$PATH\""
+    fi
+
     echo ""
     info "Quick start:"
     echo "  $BINARY_NAME types                    # List document types"
