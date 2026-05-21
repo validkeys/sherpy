@@ -1,4 +1,4 @@
-.PHONY: help build install uninstall test lint clean vet staticcheck generate
+.PHONY: help build install uninstall test lint clean vet staticcheck generate sherpy-to-jira
 
 # Default target
 .DEFAULT_GOAL := help
@@ -48,7 +48,10 @@ lint: vet staticcheck ## Run all linters (vet + staticcheck)
 
 clean: ## Remove binary and clean build cache
 	$(GOCLEAN)
-	rm -f $(BINARY_NAME)
+	rm -f $(BINARY_NAME) sherpy-to-jira
 
 integration-test: build ## Run integration tests with the built binary
 	$(GOTEST) ./integration -v -count=1
+
+sherpy-to-jira: ## Build the sherpy-to-jira binary
+	$(GOBUILD) -o sherpy-to-jira ./cmd/sherpy-to-jira
