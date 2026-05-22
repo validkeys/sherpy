@@ -55,3 +55,6 @@ integration-test: build ## Run integration tests with the built binary
 
 sherpy-to-jira: ## Build the sherpy-to-jira binary
 	$(GOBUILD) -o sherpy-to-jira ./cmd/sherpy-to-jira
+
+test-jira: ## Run jira integration tests
+	$(GOTEST) ./jira/... -v

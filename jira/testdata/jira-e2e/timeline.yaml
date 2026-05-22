@@ -1,0 +1,12 @@
+project: test-e2e-project
+generated: "2026-05-20T10:00:00Z"
+workback:
+  schedule:
+    - milestone: m0
+      start_date: "2026-06-01"
+      end_date: "2026-06-05"
+      duration: "5 days"
+    - milestone: m1
+      start_date: "2026-06-08"
+      end_date: "2026-06-15"
+      duration: "8 days"
