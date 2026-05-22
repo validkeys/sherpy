@@ -258,6 +258,66 @@ func RunSetup(workingDir, globalConfigPath string) error {
 	return nil
 }
 
+// RunSyncCommand implements the sync command that syncs Sherpy planning documents to Jira.
+func RunSyncCommand(workingDir, globalConfigPath string, dryRun bool) error {
+	// Load local config
+	localConfigPath := filepath.Join(workingDir, "sherpy-jira.yaml")
+	localCfg, err := LoadLocalConfig(localConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to load sherpy-jira.yaml: %w (run 'sherpy-to-jira init' first)", err)
+	}
+
+	// Determine global config path
+	if globalConfigPath == "" {
+		globalConfigPath = GlobalConfigPath()
+	}
+
+	// Load global config
+	globalCfg, err := LoadGlobalConfig(globalConfigPath)
+	if err != nil {
+		return fmt.Errorf("failed to load global config: %w (run 'sherpy-to-jira setup' first)", err)
+	}
+
+	// Verify env vars
+	email := os.Getenv("JIRA_EMAIL")
+	token := os.Getenv("JIRA_TOKEN")
+	if email == "" || token == "" {
+		return fmt.Errorf("JIRA_EMAIL and JIRA_TOKEN environment variables must be set")
+	}
+
+	// Create Jira client
+	client := NewJiraClient(globalCfg.Jira.Domain, email, token)
+
+	// Run sync
+	result, err := RunSync(client, localCfg, globalCfg, dryRun)
+	if err != nil {
+		return fmt.Errorf("sync failed: %w", err)
+	}
+
+	// Print summary
+	if dryRun {
+		fmt.Println("=== DRY RUN ===")
+	}
+
+	fmt.Printf("Epics:     %d created, %d updated, %d skipped\n", result.EpicsCreated, result.EpicsUpdated, result.EpicsSkipped)
+	fmt.Printf("Stories:   %d created, %d updated, %d skipped\n", result.StoriesCreated, result.StoriesUpdated, result.StoriesSkipped)
+	fmt.Printf("Sub-tasks: %d created, %d updated, %d skipped\n", result.SubTasksCreated, result.SubTasksUpdated, result.SubTasksSkipped)
+	fmt.Printf("Links:     %d created, %d skipped\n", result.LinksCreated, result.LinksSkipped)
+
+	if len(result.Errors) > 0 {
+		fmt.Printf("\nErrors: %d\n", len(result.Errors))
+		for _, e := range result.Errors {
+			fmt.Printf("  %s (%s): %v\n", e.EntityID, e.Operation, e.Error)
+		}
+	}
+
+	if !dryRun {
+		fmt.Println("\n✓ Sync complete!")
+	}
+
+	return nil
+}
+
 // RunStatus displays a summary of the current sync state.
 func RunStatus(workingDir string) error {
 	// Load local config
