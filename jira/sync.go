@@ -184,7 +184,12 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 		}
 
 		// Convert DryRunResult to SyncResult for return
-		result := &SyncResult{}
+		result := &SyncResult{
+			EpicsCreated:    dryResult.Totals.Epics,
+			StoriesCreated:  dryResult.Totals.Stories,
+			SubTasksCreated: dryResult.Totals.SubTasks,
+			LinksCreated:    dryResult.Totals.Links,
+		}
 		return result, nil
 	}
 
