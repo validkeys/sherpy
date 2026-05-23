@@ -1,0 +1,272 @@
+milestone: m4
+name: "Integration Testing & Error Handling"
+generated: "2026-05-21T12:00:00Z"
+
+style_anchors:
+  - code: jira/integration_test.go
+    pattern: "Integration test with httptest.Server and real fixture files"
+    description: |
+      Follow the integration test pattern from m3-008: use httptest.Server as mock
+      Jira API, t.TempDir for filesystem fixtures, and verify the full workflow
+      produces correct side effects (config files written, API calls made, state saved).
+
+global_constraints:
+  allowed_patterns:
+    - "Use httptest.Server for mock Jira API in all tests"
+    - "Use t.TempDir for filesystem tests"
+  forbidden_patterns:
+    - "Tests that call real Jira API"
+  tdd_required: true
+  max_task_duration_minutes: 90
+
+quality_gates:
+  - stage: pre-commit
+    commands:
+      - go build ./cmd/sherpy-to-jira/...
+      - go test ./jira/...
+      - go vet ./jira/...
+  - stage: milestone-completion
+    criteria:
+      - All tests pass
+      - No vet errors
+      - Binary builds and runs
+      - E2E flow works with mock server
+
+tasks:
+  - id: m4-001
+    name: "E2E test: init → setup → sync → status"
+    description: |
+      End-to-end integration test that exercises the complete workflow with
+      a mock Jira server and real sherpy YAML fixtures.
+    estimate_minutes: 60
+    type: test
+    dependencies: []
+    files:
+      create:
+        - jira/e2e_test.go
+    instructions: |
+      **Objective:**
+      Test complete workflow end-to-end.
+
+      **Style Anchors:**
+      - **jira/integration_test.go** — Follow integration test pattern with httptest.Server
+
+      **TDD Workflow:**
+      1. Create test fixtures in testdata/jira-e2e/:
+         - developer-summary.md
+         - milestones.yaml (2 milestones, 4 tasks)
+         - tasks/milestone-m0.tasks.yaml
+         - tasks/milestone-m1.tasks.yaml
+         - timeline.yaml (with workback.schedule)
+      2. Write failing test: TestE2E_InitDiscoversFiles — run init in fixture dir,
+         verify sherpy-jira.yaml created with correct relative paths
+      3. Write failing test: TestE2E_SetupCreatesProject — mock Jira API (myself, create project,
+         createmeta), run setup, verify global config written with type IDs
+      4. Write failing test: TestE2E_SyncCreatesAllIssues — mock all API endpoints,
+         run sync, verify: 1 Epic, 2 Stories, 4 Sub-tasks created in dependency order,
+         parent relationships correct, dependency links created, sync state written
+      5. Write failing test: TestE2E_SyncIdempotent — run sync twice, verify second run
+         all issues skipped (no CreateIssue/UpdateIssue calls)
+      6. Write failing test: TestE2E_SyncUpdate — modify a milestone description, run sync,
+         verify exactly 1 UpdateIssue call for the changed milestone
+      7. Write failing test: TestE2E_StatusOutput — run status, verify output matches
+         expected counts (project, epic, milestones, tasks, links)
+
+      **Implementation Steps:**
+      1. Create test fixtures in testdata/jira-e2e/:
+         - developer-summary.md
+         - milestones.yaml (2 milestones, 4 tasks)
+         - tasks/milestone-m0.tasks.yaml
+         - tasks/milestone-m1.tasks.yaml
+         - timeline.yaml (with workback.schedule)
+
+      2. Set up mock httptest.Server handling:
+         - GET /rest/api/3/myself → accountId
+         - POST /rest/api/3/project → project
+         - GET /rest/api/3/issue/createmeta → issue types
+         - POST /rest/api/3/issue → issue (track call count)
+         - PUT /rest/api/3/issue/{key} → 204
+         - POST /rest/api/3/issueLink → 200
+
+      **Success Criteria:**
+      - Full workflow completes without errors
+      - All issues created in dependency order
+      - Second sync is all skips (idempotent)
+      - Modified content triggers update
+
+  - id: m4-002
+    name: "Error handling tests"
+    description: |
+      Test all error scenarios from the requirements doc: auth failures,
+      network timeouts, rate limiting, missing parents, partial failures,
+      and issue key collisions.
+    estimate_minutes: 60
+    type: test
+    dependencies: [m4-001]
+    files:
+      create:
+        - jira/error_test.go
+    instructions: |
+      **Objective:**
+      Test error handling paths.
+
+      **TDD Workflow:**
+      1. Write failing test: TestError_MissingEmail — verify missing JIRA_EMAIL env var
+         produces clear "Set JIRA_EMAIL" error message
+      2. Verify test passes
+      3. Write failing test: TestError_MissingToken — verify missing JIRA_TOKEN env var
+         produces clear "Set JIRA_TOKEN" error message
+      4. Verify test passes
+      5. Write failing test: TestError_InvalidAuth — mock 401 response, verify
+         "authentication failed" message
+      6. Verify test passes
+      7. Write failing test: TestError_ConnectionRefused — use invalid server URL,
+         verify retry and fail with connection error
+      8. Verify test passes
+      9. Write failing test: TestError_Timeout — mock slow response exceeding client timeout,
+         verify retry with backoff
+      10. Verify test passes
+      11. Write failing test: TestError_500Retry — mock 500 response 3 times, verify
+          exponential backoff and final error
+      12. Verify test passes
+      13. Write failing test: TestError_429RateLimit — mock 429 with Retry-After: 1,
+          verify client waits and retries successfully
+      14. Verify test passes
+      15. Write failing test: TestError_PartialFailure — mock 500 on one issue create,
+          verify other issues succeed, sync state only has successful entries,
+          error summary printed at end
+      16. Verify test passes
+      17. Write failing test: TestError_MissingParent — attempt to sync sub-task before
+          parent Story exists in sync state, verify clear error message
+      18. Verify test passes
+      19. Write failing test: TestError_KeyCollision — mock CreateIssue returning a key
+          that already exists in sync state, verify update-existing behavior
+      20. Verify test passes
+
+      **Implementation Steps:**
+      1. Auth error tests:
+         - Missing JIRA_EMAIL env var → clear error message
+         - Missing JIRA_TOKEN env var → clear error message
+         - Invalid token (mock 401) → "authentication failed" message
+
+      2. Network error tests:
+         - Connection refused → retry and fail
+         - Slow response (simulate timeout) → retry with backoff
+         - 500 Internal Server Error → retry up to 3 times
+
+      3. Rate limit tests:
+         - 429 with Retry-After header → waits and retries
+         - Multiple rapid requests → rate limited to 5/sec
+
+      4. Partial failure tests:
+         - Mock 500 on one issue create → other issues succeed
+         - Verify sync state only updated for successful issues
+         - Verify error summary printed at end
+
+      5. Missing parent test:
+         - Sync tasks before parent Story exists → error with clear message
+
+      6. Key collision test:
+         - Mock CreateIssue returns key matching existing sync state entry
+         - Verify update-existing behavior
+
+      **Success Criteria:**
+      - All error scenarios produce clear messages
+      - Retries work correctly for transient errors
+      - Partial failures don't corrupt sync state
+      - Key collision handled gracefully
+
+  - id: m4-003
+    name: "Edge case tests"
+    description: |
+      Test edge cases: missing timeline, empty milestones, no dependencies,
+      circular dependencies, very large estimates, special characters.
+    estimate_minutes: 45
+    type: test
+    dependencies: [m4-001]
+    files:
+      create:
+        - jira/edge_test.go
+    instructions: |
+      **Objective:**
+      Test edge cases and boundary conditions.
+
+      **TDD Workflow:**
+      1. Write failing test: TestEdge_MissingTimeline — no timeline path in config,
+         verify sync succeeds with no duedate on Stories
+      2. Verify test passes
+      3. Write failing test: TestEdge_EmptyProject — milestones.yaml with zero milestones,
+         verify sync creates Epic only (no Stories or Sub-tasks)
+      4. Verify test passes
+      5. Write failing test: TestEdge_NoDependencies — all milestones/tasks have empty
+         dependencies, verify no links created
+      6. Verify test passes
+      7. Write failing test: TestEdge_CircularDependency — m1 depends on m2, m2 depends on m1,
+         verify error reported with descriptive message
+      8. Verify test passes
+      9. Write failing test: TestEdge_LargeEstimates — task with 999 minutes → 13 SP (capped),
+         milestone with "10-12 days" → correct SP
+      10. Verify test passes
+      11. Write failing test: TestEdge_SpecialCharacters — description with unicode,
+          markdown formatting, labels from task.type enum
+      12. Verify test passes
+
+      **Implementation Steps:**
+      1. Missing timeline test:
+         - No timeline path in config → sync succeeds, no duedate on Stories
+
+      2. Empty project test:
+         - milestones.yaml with zero milestones → sync creates Epic only
+
+      3. No dependencies test:
+         - All milestones/tasks have empty dependencies → no links created
+
+      4. Circular dependency test:
+         - m1 depends on m2, m2 depends on m1 → error reported
+
+      5. Large estimates test:
+         - Task with estimate_minutes: 999 → 13 SP (capped)
+         - Milestone with "10-12 days" duration → correct SP
+
+      6. Special characters test:
+         - Description with unicode, markdown formatting
+         - Labels with special characters (only from task.type enum)
+
+      **Success Criteria:**
+      - All edge cases handled without panics
+      - Missing timeline produces warning but sync succeeds
+      - Circular dependencies detected
+
+  - id: m4-004
+    name: "Verify build and add usage docs"
+    description: |
+      Verify the build works, add a Makefile target, and add basic usage
+      documentation to the jira-integration directory.
+    estimate_minutes: 30
+    type: config
+    dependencies: [m4-002, m4-003]
+    files:
+      modify:
+        - Makefile
+      create:
+        - docs/jira-integration/usage.md
+    instructions: |
+      **Objective:**
+      Final build verification and usage docs.
+
+      **Implementation Steps:**
+      1. Update Makefile:
+         - Verify sherpy-to-jira target works
+         - Add test-jira target: go test ./jira/...
+
+      2. Create docs/jira-integration/usage.md:
+         - Quick start: init → setup → sync
+         - Command reference for init, setup, sync, status
+         - Config file formats
+         - Environment variables
+         - Common workflows (first sync, incremental sync, dry run)
+
+      **Success Criteria:**
+      - make sherpy-to-jira produces working binary
+      - make test-jira runs all tests
+      - Usage docs cover all commands and config

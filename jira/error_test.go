@@ -260,7 +260,7 @@ func TestError_PartialFailure(t *testing.T) {
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// Run sync (3rd issue will fail with 500 after retries, but sync continues)
-	result, err := RunSync(client, localCfg, globalCfg, false)
+	result, err := RunSync(client, localCfg, globalCfg, false, nil)
 
 	// The sync implementation may continue despite individual failures
 	// Check that we attempted to create issues

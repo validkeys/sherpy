@@ -107,7 +107,7 @@ tasks:
 	client := &JiraClient{}
 
 	// Run sync with dry run to test loading
-	_, err := RunSync(client, localCfg, globalCfg, true)
+	_, err := RunSync(client, localCfg, globalCfg, true, nil)
 	if err != nil {
 		t.Fatalf("RunSync failed: %v", err)
 	}
@@ -213,7 +213,7 @@ tasks:
 	client := &JiraClient{}
 
 	// Run sync in dry run mode
-	_, err := RunSync(client, localCfg, globalCfg, true)
+	_, err := RunSync(client, localCfg, globalCfg, true, nil)
 	if err != nil {
 		t.Fatalf("RunSync failed: %v", err)
 	}
@@ -302,7 +302,7 @@ tasks:
 	client := &JiraClient{}
 
 	// Run sync with dry run
-	result, err := RunSync(client, localCfg, globalCfg, true)
+	result, err := RunSync(client, localCfg, globalCfg, true, nil)
 	if err != nil {
 		t.Fatalf("RunSync failed: %v", err)
 	}

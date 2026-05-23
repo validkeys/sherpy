@@ -181,7 +181,7 @@ func RunSetup(workingDir, globalConfigPath string) error {
 	fmt.Println("Testing connection to Jira...")
 	accountID, err := client.GetSelf()
 	if err != nil {
-		return fmt.Errorf("failed to authenticate with Jira: %w", err)
+		return WrapAuthError(err)
 	}
 	fmt.Printf("✓ Connected as account ID: %s\n", accountID)
 
@@ -228,7 +228,7 @@ func RunSetup(workingDir, globalConfigPath string) error {
 	fmt.Println("Discovering issue types...")
 	epicID, storyID, subTaskID, err := client.GetCreateMeta(projectKey)
 	if err != nil {
-		return fmt.Errorf("failed to get issue types: %w", err)
+		return EnhanceError(err, "failed to discover issue types")
 	}
 	fmt.Printf("✓ Discovered issue types:\n")
 	fmt.Printf("  Epic:     %s\n", epicID)
@@ -264,7 +264,7 @@ func RunSyncCommand(workingDir, globalConfigPath string, dryRun bool) error {
 	localConfigPath := filepath.Join(workingDir, "sherpy-jira.yaml")
 	localCfg, err := LoadLocalConfig(localConfigPath)
 	if err != nil {
-		return fmt.Errorf("failed to load sherpy-jira.yaml: %w (run 'sherpy-to-jira init' first)", err)
+		return WrapConfigError(err, "local")
 	}
 
 	// Determine global config path
@@ -275,45 +275,37 @@ func RunSyncCommand(workingDir, globalConfigPath string, dryRun bool) error {
 	// Load global config
 	globalCfg, err := LoadGlobalConfig(globalConfigPath)
 	if err != nil {
-		return fmt.Errorf("failed to load global config: %w (run 'sherpy-to-jira setup' first)", err)
+		return WrapConfigError(err, "global")
 	}
 
 	// Verify env vars
 	email := os.Getenv("JIRA_EMAIL")
 	token := os.Getenv("JIRA_TOKEN")
 	if email == "" || token == "" {
-		return fmt.Errorf("JIRA_EMAIL and JIRA_TOKEN environment variables must be set")
+		return EnhanceError(fmt.Errorf("JIRA_EMAIL and JIRA_TOKEN environment variables must be set"), "missing credentials")
 	}
 
 	// Create Jira client
 	client := NewJiraClient(globalCfg.Jira.Domain, email, token)
 
-	// Run sync
-	result, err := RunSync(client, localCfg, globalCfg, dryRun)
+	// Run sync with progress reporting
+	progress := func(msg string) {
+		if !dryRun {
+			fmt.Println(msg)
+		}
+	}
+	result, err := RunSync(client, localCfg, globalCfg, dryRun, progress)
 	if err != nil {
-		return fmt.Errorf("sync failed: %w", err)
+		return EnhanceError(err, "sync failed")
+	}
+
+	// Print table view for dry-run, summary for real sync
+	if dryRun && len(result.DryRunPlan) > 0 {
+		fmt.Print(FormatDryRunTable(result.DryRunPlan))
 	}
 
 	// Print summary
-	if dryRun {
-		fmt.Println("=== DRY RUN ===")
-	}
-
-	fmt.Printf("Epics:     %d created, %d updated, %d skipped\n", result.EpicsCreated, result.EpicsUpdated, result.EpicsSkipped)
-	fmt.Printf("Stories:   %d created, %d updated, %d skipped\n", result.StoriesCreated, result.StoriesUpdated, result.StoriesSkipped)
-	fmt.Printf("Sub-tasks: %d created, %d updated, %d skipped\n", result.SubTasksCreated, result.SubTasksUpdated, result.SubTasksSkipped)
-	fmt.Printf("Links:     %d created, %d skipped\n", result.LinksCreated, result.LinksSkipped)
-
-	if len(result.Errors) > 0 {
-		fmt.Printf("\nErrors: %d\n", len(result.Errors))
-		for _, e := range result.Errors {
-			fmt.Printf("  %s (%s): %v\n", e.EntityID, e.Operation, e.Error)
-		}
-	}
-
-	if !dryRun {
-		fmt.Println("\n✓ Sync complete!")
-	}
+	fmt.Print(FormatSyncSummary(result, dryRun))
 
 	return nil
 }

@@ -79,7 +79,7 @@ func TestEdge_MissingTimeline(t *testing.T) {
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// Run sync (should succeed without timeline)
-	result, err := RunSync(client, localCfg, globalCfg, false)
+	result, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("Sync should succeed without timeline: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestEdge_EmptyProject(t *testing.T) {
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// Run sync (should fail due to parser validation requiring at least one milestone)
-	_, err = RunSync(client, localCfg, globalCfg, false)
+	_, err = RunSync(client, localCfg, globalCfg, false, nil)
 	if err == nil {
 		t.Fatal("Expected error for empty milestones, got nil")
 	}
@@ -227,7 +227,7 @@ func TestEdge_NoDependencies(t *testing.T) {
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// Run sync
-	result, err := RunSync(client, localCfg, globalCfg, false)
+	result, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -301,7 +301,7 @@ func TestEdge_CircularDependency(t *testing.T) {
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// Run sync (should fail with circular dependency error or ordering error)
-	_, err = RunSync(client, localCfg, globalCfg, false)
+	_, err = RunSync(client, localCfg, globalCfg, false, nil)
 	if err == nil {
 		t.Fatal("Expected error for circular dependency, got nil")
 	}
@@ -389,7 +389,7 @@ func TestEdge_SpecialCharacters(t *testing.T) {
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// Run sync (should handle special characters)
-	result, err := RunSync(client, localCfg, globalCfg, false)
+	result, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("Sync should handle special characters: %v", err)
 	}

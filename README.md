@@ -1,10 +1,13 @@
 # Sherpy CLI
 
-A Go CLI tool for validating and converting Sherpy YAML documents to Markdown.
+A Go CLI tool for validating and converting Sherpy YAML documents to Markdown, plus syncing plans to Jira Cloud.
 
 ## Overview
 
-Sherpy CLI (`sherpy`) validates structured YAML documents against predefined schemas and converts them to formatted Markdown. It supports seven document types used in software project planning:
+Sherpy CLI provides two main tools:
+
+### `sherpy` - Document Validation & Conversion
+Validates structured YAML documents against predefined schemas and converts them to formatted Markdown. Supports seven document types used in software project planning:
 
 - **business-requirements** - Business requirements with personas, use cases, and functional requirements
 - **technical-requirements** - Technical specifications, architecture, and implementation details
@@ -13,6 +16,27 @@ Sherpy CLI (`sherpy`) validates structured YAML documents against predefined sch
 - **timeline** - Delivery timeline with workback dates and phase breakdowns
 - **qa-test-plan** - QA test suites with test cases and execution steps
 - **gap-analysis** - Gap analysis worksheets with identified gaps and recommendations
+
+### `sherpy-to-jira` - Jira Cloud Sync ✨ NEW
+Automatically syncs Sherpy planning documents to Jira Cloud:
+- Creates Epic from developer summary
+- Creates Stories for milestones
+- Creates Sub-tasks for tasks
+- Handles dependencies, story points, and timelines
+- Idempotent sync with content hashing
+
+**Quick start:**
+```bash
+make sherpy-to-jira
+export JIRA_EMAIL="your-email@company.com"
+export JIRA_TOKEN="your-jira-api-token"
+cd your-sherpy-project
+sherpy-to-jira init
+sherpy-to-jira setup
+sherpy-to-jira sync --dry-run
+```
+
+See [docs/jira-integration/README.md](./docs/jira-integration/README.md) for full documentation.
 
 ## Installation
 

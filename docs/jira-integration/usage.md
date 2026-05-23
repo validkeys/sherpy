@@ -124,7 +124,7 @@ sherpy-to-jira sync [--dry-run]
 ```
 
 **Options:**
-- `--dry-run`: Preview changes without making API calls
+- `--dry-run`: Preview changes without making API calls (displays table view)
 
 **What it does:**
 - Reads Sherpy files (developer summary, milestones, tasks, timeline)
@@ -136,9 +136,31 @@ sherpy-to-jira sync [--dry-run]
 - Sets due dates from timeline
 - Updates existing issues if content changed (based on content hashing)
 - Skips unchanged issues (idempotent)
+- Shows progress indicators during sync ("Creating Story 2/5...")
 
 **Output:**
-- Summary of created/updated/skipped issues
+
+Dry-run mode displays a structured table:
+```
+=== DRY RUN - Planned Changes ===
+
+OPERATION  TYPE       KEY         SP   SUMMARY
+--------------------------------------------------------------------------------
+CREATE     Epic       SHERPY-?    -    Test Project
+CREATE     Story      SHERPY-?    3      Milestone 0
+UPDATE     Sub-task   SHERPY-10   2        Task A [code]
+
+=== Summary ===
+Epics:     1 created, 0 updated, 0 skipped
+Stories:   1 created, 0 updated, 0 skipped
+Sub-tasks: 0 created, 1 updated, 0 skipped
+Links:     0 created, 0 skipped
+```
+
+Real sync mode shows:
+- Progress messages during operations
+- Final summary of created/updated/skipped issues
+- Enhanced error messages with actionable suggestions
 - `sherpy-jira-sync-state.yaml` (tracks Jira keys and content hashes)
 
 ### `status`

@@ -161,7 +161,7 @@ tasks:
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// Run full sync
-	result, err := RunSync(client, localCfg, globalCfg, false)
+	result, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("RunSync failed: %v", err)
 	}
@@ -319,7 +319,7 @@ tasks:
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// First sync
-	result1, err := RunSync(client, localCfg, globalCfg, false)
+	result1, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("First sync failed: %v", err)
 	}
@@ -378,7 +378,7 @@ tasks:
 	callsBefore := len(calls)
 
 	// Second sync
-	result2, err := RunSync(client, localCfg, globalCfg, false)
+	result2, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("Second sync failed: %v", err)
 	}
@@ -519,7 +519,7 @@ tasks:
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// First sync
-	_, err := RunSync(client, localCfg, globalCfg, false)
+	_, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("First sync failed: %v", err)
 	}
@@ -527,7 +527,7 @@ tasks:
 	firstSyncCalls := len(calls)
 
 	// Second sync (no changes)
-	result2, err := RunSync(client, localCfg, globalCfg, false)
+	result2, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("Second sync failed: %v", err)
 	}
@@ -644,7 +644,7 @@ tasks:
 	client := &JiraClient{} // Nil client for dry run
 
 	// Run dry run
-	result, err := RunSync(client, localCfg, globalCfg, true)
+	result, err := RunSync(client, localCfg, globalCfg, true, nil)
 	if err != nil {
 		t.Fatalf("Dry run failed: %v", err)
 	}
@@ -812,7 +812,7 @@ tasks:
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// Run sync (milestone m0 will fail, but its tasks require m0 parent)
-	result, err := RunSync(client, localCfg, globalCfg, false)
+	result, err := RunSync(client, localCfg, globalCfg, false, nil)
 
 	// Current implementation returns fatal error when milestone fails
 	// because tasks can't be created without parent milestone

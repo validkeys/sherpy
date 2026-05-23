@@ -1,0 +1,374 @@
+milestone: m0
+name: "Scaffolding & Config Layer"
+generated: "2026-05-21T12:00:00Z"
+
+style_anchors:
+  - code: cmd/root.go:107-119
+    pattern: "Cobra root command setup with NewRootCmd function and AddCommand for subcommands"
+    description: |
+      Follow this pattern for sherpy-to-jira main.go: define a root command constructor,
+      add subcommands via AddCommand, and call root.Execute() in main(). Each subcommand
+      uses cmd.Flags() for flags and cmd.RunE for the handler.
+
+  - code: cmd/root.go:82-105
+    pattern: "File I/O with validation: stat → size check → read → return bytes"
+    description: |
+      Use this pattern for config file loading: validate the path, check file exists with os.Stat,
+      read with os.ReadFile, and handle errors with fmt.Errorf wrapping. Note the 0600 permission
+      for writing sensitive config files.
+
+  - code: Makefile:25-29
+    pattern: "Build target with generate dependency: $(GOBUILD) -o $(BINARY_NAME)"
+    description: |
+      Follow the existing Makefile conventions: use the GOCMD/GOBUILD variables, add .PHONY
+      declarations, include ## help comments. New targets should follow the same variable style.
+
+global_constraints:
+  allowed_patterns:
+    - "Use cobra for CLI commands (existing sherpy dependency)"
+    - "Use yaml.v3 for YAML parsing (existing sherpy dependency)"
+    - "Use net/http standard library for HTTP client"
+    - "Use filepath package for cross-platform path handling"
+    - "All paths in config files are relative to CWD"
+  forbidden_patterns:
+    - "External HTTP client libraries (use net/http)"
+    - "External config libraries (use yaml.v3 directly)"
+    - "Absolute paths in config files"
+  tdd_required: true
+  max_task_duration_minutes: 90
+
+quality_gates:
+  - stage: pre-commit
+    commands:
+      - go build ./cmd/sherpy-to-jira/...
+      - go test ./jira/...
+      - go vet ./jira/...
+  - stage: task-completion
+    criteria:
+      - All tests passing
+      - No vet errors
+  - stage: milestone-completion
+    criteria:
+      - sherpy-to-jira init works in a real sherpy project directory
+      - Config types round-trip through YAML correctly
+
+tasks:
+  - id: m0-001
+    name: "Create cmd/sherpy-to-jira/main.go entry point and Makefile target"
+    description: |
+      Create the binary entry point with cobra root command and stub subcommands.
+      Add the Makefile build target for the new binary. Do NOT import the jira
+      package yet — stubs use fmt.Errorf directly. Create jira/doc.go placeholder
+      so the package exists for subsequent tasks.
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create:
+        - cmd/sherpy-to-jira/main.go
+        - jira/doc.go
+      modify:
+        - Makefile
+    instructions: |
+      **Objective:**
+      Bootstrap the sherpy-to-jira binary with cobra and add build target.
+
+      **Style Anchors:**
+      - **cmd/root.go:107-119** — Cobra root command pattern (NewRootCmd + AddCommand)
+      - **Makefile:25-29** — Build target conventions (GOBUILD, .PHONY, ## comments)
+
+      **TDD Workflow:**
+      1. Write a failing test in cmd/sherpy-to-jira/main_test.go that verifies
+         the root command has 4 subcommands (init, setup, sync, status)
+      2. Implement the root command and stubs to make the test pass
+
+      **Implementation Steps:**
+      1. Create jira/doc.go with `package jira` and a package doc comment
+      2. Create cmd/sherpy-to-jira/main.go with package main
+      3. Define root command: Use "sherpy-to-jira", Short "Push Sherpy plans to Jira"
+         — Follow **cmd/root.go:107-119** pattern for root command construction
+      4. Add stub subcommands: init, setup, sync, status
+         — Each stub returns fmt.Errorf("not implemented") — NO jira package imports
+      5. Add --global-config flag to root command (string, default "")
+      6. Call root.Execute() in main()
+      7. Add Makefile target following **Makefile:25-29** conventions:
+         - Add sherpy-to-jira binary name and build target
+         - Add to .PHONY declaration
+         - Add clean entry for the new binary
+         - Include ## help comment
+      8. Verify `go build ./cmd/sherpy-to-jira/...` compiles
+      9. Verify `make sherpy-to-jira` builds the binary
+
+      **Constraints:**
+      - ONLY import: fmt, os, github.com/spf13/cobra
+      - Do NOT import the jira package — stubs are self-contained
+
+      **Success Criteria:**
+      - Binary compiles and runs
+      - sherpy-to-jira --help lists all 4 subcommands
+      - sherpy-to-jira init returns "not implemented" error
+      - make sherpy-to-jira produces working binary
+      - Test passes: root command has exactly 4 subcommands
+
+  - id: m0-002
+    name: "Implement config types and loading"
+    description: |
+      Define Go structs for GlobalConfig, LocalConfig, and SyncState. Implement
+      YAML loading and saving for all three. Handle missing files, invalid YAML,
+      and path resolution.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m0-001]
+    files:
+      create:
+        - jira/config.go
+        - jira/config_test.go
+    instructions: |
+      **Objective:**
+      Implement the config layer with types, loading, and saving.
+
+      **Style Anchors:**
+      - **cmd/root.go:82-105** — File I/O pattern (stat → read → error wrapping)
+
+      **TDD Workflow:**
+      1. Write failing test: TestGlobalConfigRoundTrip — save config to temp file, load it back, verify fields match
+      2. Implement GlobalConfig type, SaveGlobalConfig, LoadGlobalConfig to pass
+      3. Write failing test: TestLoadSyncStateMissing — verify missing file returns nil without error
+      4. Implement LoadSyncState with the missing-file grace case to pass
+      5. Write failing test: TestGlobalConfigPath — verify returns ~/.config/sherpy-to-jira/config.yaml
+      6. Implement GlobalConfigPath to pass
+      7. Write failing test: TestInvalidYAML — verify invalid YAML returns descriptive error
+      8. Verify test passes (handled by yaml.Unmarshal)
+      9. Write failing test: TestLocalConfigDefaultSyncState — verify SyncState defaults when empty
+      10. Implement default in LoadLocalConfig to pass
+
+      **Implementation Steps:**
+      1. Create jira/config.go with the following types:
+
+         GlobalConfig:
+         - Jira.Domain string
+         - Jira.IssueTypes struct { Epic, Story, SubTask string }
+
+         LocalConfig:
+         - ProjectKey string
+         - ProjectName string
+         - DeveloperSummary string
+         - Milestones string
+         - TasksDir string
+         - Timeline string (optional)
+         - SyncState string (default "sherpy-jira-sync-state.yaml")
+
+         SyncState:
+         - Version string
+         - ProjectKey string
+         - ProjectID string
+         - LastSync string (ISO 8601)
+         - Epic struct with JiraKey, JiraID, ContentHash
+         - Milestones map[string]SyncEntry
+         - Tasks map[string]SyncEntry
+         - Links []LinkEntry
+
+         SyncEntry: JiraKey, JiraID, ContentHash strings
+         LinkEntry: Outward, Inward, Type strings
+
+      2. Implement LoadGlobalConfig(path string) (*GlobalConfig, error)
+      3. Implement SaveGlobalConfig(cfg *GlobalConfig, path string) error
+      4. Implement LoadLocalConfig(path string) (*LocalConfig, error)
+         — Set SyncState default if empty
+      5. Implement SaveLocalConfig(cfg *LocalConfig, path string) error
+      6. Implement LoadSyncState(path string) (*SyncState, error)
+         — Return nil, nil if file doesn't exist (not an error)
+      7. Implement SaveSyncState(state *SyncState, path string) error
+      8. Implement GlobalConfigPath() string
+         — Return ~/.config/sherpy-to-jira/config.yaml
+         — Use os.UserHomeDir() + filepath.Join
+
+      **Constraints:**
+      - Use gopkg.in/yaml.v3 for marshaling/unmarshaling
+      - All file saves must create parent directories (os.MkdirAll)
+      - Config file permissions: 0600
+
+      **Success Criteria:**
+      - All config types round-trip through YAML correctly
+      - GlobalConfigPath returns correct XDG path
+      - Missing sync state handled gracefully
+      - All tests pass
+
+  - id: m0-003
+    name: "Implement file discovery for init command"
+    description: |
+      Implement the convention-first file discovery algorithm. Search common
+      sherpy directory patterns first, then fall back to recursive walk.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m0-002]
+    files:
+      create:
+        - jira/discover.go
+        - jira/discover_test.go
+    instructions: |
+      **Objective:**
+      Implement file discovery that finds sherpy source documents in a directory.
+
+      **TDD Workflow:**
+      1. Write failing test: TestDiscoverFiles_ConventionFirst — create temp dir with
+         docs/**/implementation/milestones.yaml structure, verify convention search finds it
+      2. Implement Phase 1 convention search to pass
+      3. Write failing test: TestDiscoverFiles_RecursiveFallback — create temp dir with
+         flat files, verify recursive fallback finds them
+      4. Implement Phase 2 recursive fallback to pass
+      5. Write failing test: TestDiscoverFiles_MissingTimeline — verify timeline missing
+         produces warning in result, not an error
+      6. Add warning logic to pass
+      7. Write failing test: TestDiscoverFiles_EmptyDirectory — verify empty dir returns error
+      8. Verify test passes
+
+      **Implementation Steps:**
+      1. Define DiscoverResult struct:
+         - DeveloperSummary string (path or "" if not found)
+         - Milestones string (path)
+         - TasksDir string (path to directory containing milestone-m*.tasks.yaml)
+         - Timeline string (path or "" if not found)
+         - Warnings []string (e.g., "timeline.yaml not found")
+
+      2. Implement DiscoverFiles(root string) (*DiscoverResult, error):
+         Phase 1 — Convention search:
+         a. Walk root looking for directories containing milestones.yaml
+            Common patterns: docs/**/implementation/milestones.yaml, docs/**/milestones.yaml
+         b. For each milestones.yaml found, check sibling/child dirs for:
+            - developer-summary.md (search parent/relative dirs)
+            - tasks/ or implementation/tasks/ dir with milestone-m*.tasks.yaml files
+            - timeline.yaml (search sibling dirs)
+         c. Score each candidate and pick best match
+
+         Phase 2 — Recursive fallback (if convention search fails):
+         a. filepath.WalkDir from root
+         b. Match exact filenames: milestones.yaml, developer-summary.md, timeline.yaml
+         c. Match glob: milestone-m*.tasks.yaml (extract parent dir as tasks_dir)
+         d. Pick closest matches by directory proximity
+
+      3. Validate discovered files:
+         - milestones.yaml must exist and be parseable
+         - tasks_dir must contain at least one milestone-m*.tasks.yaml file
+         - developer-summary.md is required
+         - timeline.yaml is optional (add warning if missing)
+
+      **Constraints:**
+      - All returned paths must be relative to root
+      - Never follow symlinks outside root
+      - Skip .git, node_modules, vendor directories
+
+      **Success Criteria:**
+      - Discovers files in a real sherpy project (docs/plan/002-pm/ structure)
+      - Convention search finds files faster than recursive walk
+      - Missing timeline produces warning, not error
+      - Empty directory returns clear error message
+
+  - id: m0-004
+    name: "Implement init command"
+    description: |
+      Wire up the init command to call file discovery and generate sherpy-jira.yaml.
+      Print a summary of discovered files and any warnings.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m0-003]
+    files:
+      create:
+        - jira/commands.go
+      modify:
+        - cmd/sherpy-to-jira/main.go
+    instructions: |
+      **Objective:**
+      Implement the init command that discovers files and writes sherpy-jira.yaml.
+
+      **Style Anchors:**
+      - **cmd/root.go:141-169** — Command definition with flags and RunE handler
+
+      **TDD Workflow:**
+      1. Write failing test: TestRunInit_CreatesConfig — use t.TempDir with fixture files,
+         verify sherpy-jira.yaml is created with correct paths
+      2. Implement RunInit to pass (discover files, write config, print summary)
+      3. Write failing test: TestRunInit_AlreadyExists — verify existing sherpy-jira.yaml
+         produces an error or overwrite prompt
+      4. Add existence check to pass
+      5. Write failing test: TestRunInit_MissingFiles — verify missing developer-summary.md
+         produces a clear error
+      6. Add validation to pass
+
+      **Implementation Steps:**
+      1. Create jira/commands.go with RunInit(root string) error:
+         a. Call DiscoverFiles(root)
+         b. Validate result (milestones and developer_summary required)
+         c. Build LocalConfig from DiscoverResult
+         d. Save to sherpy-jira.yaml in root
+         e. Print summary:
+
+            Discovered sherpy source documents:
+              developer-summary.md: docs/plan/002-pm/developer-summary.md
+              milestones.yaml:      docs/plan/002-pm/implementation/milestones.yaml
+              tasks directory:      docs/plan/002-pm/implementation/tasks
+              timeline.yaml:        docs/plan/002-pm/timeline.yaml
+
+            Wrote sherpy-jira.yaml
+
+            Next steps:
+              1. Review sherpy-jira.yaml and adjust paths if needed
+              2. Run sherpy-to-jira setup to create the Jira project
+
+      2. Update cmd/sherpy-to-jira/main.go:
+         — Follow **cmd/root.go:141-169** pattern for command wiring
+         — Wire init command to call jira.RunInit(".")
+         — Wire remaining stubs with TODO comments
+
+      3. Handle errors:
+         — sherpy-jira.yaml already exists: prompt to overwrite or abort
+         — Required files not found: print what was searched, suggest manual config
+
+      **Constraints:**
+      - ONLY modify jira/commands.go and cmd/sherpy-to-jira/main.go
+      - Use fmt.Fprintf for output (no external prompt libraries)
+
+      **Success Criteria:**
+      - sherpy-to-jira init creates sherpy-jira.yaml with correct paths
+      - Summary output shows all discovered files
+      - Handles missing files with clear error messages
+      - Works when run from a sherpy project root
+
+  - id: m0-005
+    name: "Code review, build verification, and milestone acceptance"
+    description: |
+      Review all m0 code for consistency, correctness, and alignment with
+      requirements. Run all quality gates. Verify build and Makefile targets.
+    estimate_minutes: 45
+    type: code-review
+    dependencies: [m0-004]
+    files:
+      modify:
+        - Makefile
+    instructions: |
+      **Objective:**
+      Verify m0 milestone is complete and ready for m1.
+
+      **Implementation Steps:**
+      1. Review all m0 code for consistency:
+         — Config types match the requirements doc structure
+         — File discovery finds files in real sherpy projects
+         — Error messages are clear and actionable
+      2. Run all quality gates:
+         — go test ./jira/... (all tests pass)
+         — go vet ./jira/... (clean)
+         — go build ./cmd/sherpy-to-jira/... (compiles)
+      3. Verify build targets:
+         — make sherpy-to-jira produces working binary
+         — Binary runs and shows help output
+         — make clean removes the binary
+      4. Verify integration:
+         — sherpy-to-jira init discovers files in a real sherpy project directory
+         — Config types round-trip through YAML correctly
+      5. Fix any issues found during review
+
+      **Success Criteria:**
+      - All m0 success criteria met
+      - No vet errors or test failures
+      - make sherpy-to-jira builds and runs
+      - Ready to proceed to m1

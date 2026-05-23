@@ -231,7 +231,7 @@ func TestE2E_SyncCreatesAllIssues(t *testing.T) {
 
 	// Run sync
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
-	result, err := RunSync(client, localCfg, globalCfg, false)
+	result, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}
@@ -351,7 +351,7 @@ func TestE2E_SyncIdempotent(t *testing.T) {
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// First sync
-	result1, err := RunSync(client, localCfg, globalCfg, false)
+	result1, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("First sync failed: %v", err)
 	}
@@ -364,7 +364,7 @@ func TestE2E_SyncIdempotent(t *testing.T) {
 	firstSyncUpdates := atomic.LoadInt32(&updateCalls)
 
 	// Second sync (idempotent)
-	result2, err := RunSync(client, localCfg, globalCfg, false)
+	result2, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("Second sync failed: %v", err)
 	}
@@ -455,7 +455,7 @@ func TestE2E_SyncUpdate(t *testing.T) {
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// First sync
-	_, err = RunSync(client, localCfg, globalCfg, false)
+	_, err = RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("First sync failed: %v", err)
 	}
@@ -473,7 +473,7 @@ func TestE2E_SyncUpdate(t *testing.T) {
 	}
 
 	// Second sync
-	result2, err := RunSync(client, localCfg, globalCfg, false)
+	result2, err := RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("Second sync failed: %v", err)
 	}
@@ -553,7 +553,7 @@ func TestE2E_StatusOutput(t *testing.T) {
 	client := NewJiraClient(server.URL, "test@example.com", "test-token")
 
 	// Run sync to populate state
-	_, err = RunSync(client, localCfg, globalCfg, false)
+	_, err = RunSync(client, localCfg, globalCfg, false, nil)
 	if err != nil {
 		t.Fatalf("Sync failed: %v", err)
 	}

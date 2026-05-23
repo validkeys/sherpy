@@ -1,0 +1,103 @@
+version: "1.0.0"
+milestone: m5
+name: "UX Polish & Error Messages"
+description: |
+  Polish the user experience with improved dry-run output formatting, progress
+  indicators during sync operations, and enhanced error messages with actionable
+  suggestions.
+
+tasks:
+  - id: m5-001
+    name: Add pretty table formatting for dry-run output
+    type: code
+    description: |
+      Replace the simple count summary with a structured table view showing
+      planned operations (CREATE/UPDATE/SKIP), issue types, keys, summaries,
+      story points, and labels. Implement FormatDryRunTable() with proper
+      indentation for Epic/Story/Sub-task hierarchy.
+    estimate_minutes: 45
+    dependencies: []
+    files:
+      - jira/format.go
+      - jira/format_test.go
+      - jira/sync.go
+      - jira/commands.go
+    acceptance_criteria:
+      - Dry-run output displays a table with columns: OPERATION, TYPE, KEY, SP, SUMMARY
+      - Epic/Story/Sub-task hierarchy is visible via indentation
+      - Labels (e.g., [code], [test]) are displayed after task summaries
+      - Empty plan shows "No changes planned" message
+
+  - id: m5-002
+    name: Add progress indicators during sync operations
+    type: code
+    description: |
+      Implement progress callbacks that show current operation status during
+      sync. Display "Creating Story 2/5..." and "Creating Sub-task 3/12..."
+      style messages to inform users of ongoing work. Use ProgressCallback
+      function type with nil support for tests.
+    estimate_minutes: 60
+    dependencies: [m5-001]
+    files:
+      - jira/format.go
+      - jira/sync.go
+      - jira/commands.go
+    acceptance_criteria:
+      - Progress messages show operation type (Creating/Updating)
+      - Progress includes current/total counts (e.g., "2/5")
+      - Epic creation shows simple "Creating Epic..." message
+      - Progress only displays during real sync, not dry-run
+      - Tests can pass nil for progress callback
+
+  - id: m5-003
+    name: Enhance error messages with actionable suggestions
+    type: code
+    description: |
+      Create EnhanceError() function that detects common error patterns (auth,
+      network, config, rate limit, permissions) and appends actionable guidance.
+      Provide specific suggestions like "Set JIRA_EMAIL and JIRA_TOKEN" or
+      "Run sherpy-to-jira setup" based on error type.
+    estimate_minutes: 75
+    dependencies: []
+    files:
+      - jira/errors.go
+      - jira/errors_test.go
+      - jira/commands.go
+    acceptance_criteria:
+      - Auth errors (401) suggest checking JIRA_EMAIL/JIRA_TOKEN and token validity
+      - Rate limit errors (429) explain automatic retry with backoff
+      - Network errors suggest checking connection and domain
+      - Permission errors (403) suggest verifying account permissions
+      - Missing config errors suggest running init/setup commands
+      - Missing env vars include link to Atlassian token creation page
+      - Generic errors pass through without suggestions
+      - All helper functions handle nil errors gracefully
+
+  - id: m5-004
+    name: Update tests and verify coverage
+    type: test
+    description: |
+      Ensure all new formatting and error handling code is tested. Update
+      existing test calls to RunSync() to include nil progress callback.
+      Verify test coverage remains above 77%.
+    estimate_minutes: 30
+    dependencies: [m5-001, m5-002, m5-003]
+    files:
+      - jira/format_test.go
+      - jira/errors_test.go
+      - jira/*_test.go
+    acceptance_criteria:
+      - FormatDryRunTable tests cover empty and populated plans
+      - FormatProgress tests cover with/without counts
+      - EnhanceError tests cover 10+ error scenarios
+      - All existing tests pass with updated RunSync signature
+      - Test coverage >= 77%
+
+metadata:
+  estimated_duration: 210 minutes (3.5 hours)
+  actual_duration: ~180 minutes
+  completion_date: "2026-05-22"
+  test_results:
+    total_tests: 110
+    passing: 110
+    coverage: 79.4%

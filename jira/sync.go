@@ -20,6 +20,7 @@ type SyncResult struct {
 	LinksCreated    int
 	LinksSkipped    int
 	Errors          []SyncError
+	DryRunPlan      []PlanEntry // populated only in dry-run mode
 }
 
 // SyncError represents an error that occurred during sync for a specific entity.
@@ -51,9 +52,13 @@ type PlanEntry struct {
 	Indent    int    // indentation level (0=Epic, 1=Story, 2=Sub-task/Link)
 }
 
+// ProgressCallback is called during sync to report progress.
+type ProgressCallback func(message string)
+
 // RunSync performs the main sync operation: loads source documents, computes
 // changes, and creates/updates Jira issues. The client is injected for testability.
-func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig, dryRun bool) (*SyncResult, error) {
+// The progress callback can be nil.
+func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig, dryRun bool, progress ProgressCallback) (*SyncResult, error) {
 	// Load all source documents
 	devSummary, err := ParseDeveloperSummary(filepath.Join(".", localCfg.DeveloperSummary))
 	if err != nil {
@@ -189,6 +194,7 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 			StoriesCreated:  dryResult.Totals.Stories,
 			SubTasksCreated: dryResult.Totals.SubTasks,
 			LinksCreated:    dryResult.Totals.Links,
+			DryRunPlan:      dryResult.Plan,
 		}
 		return result, nil
 	}
@@ -199,6 +205,9 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 	// Sync Epic first
 	epicOp = determineOperation(state.Epic.JiraKey, state.Epic.ContentHash, devSummaryHash)
 	if epicOp == "create" {
+		if progress != nil {
+			progress(FormatProgress(0, 0, "Epic", "Creating"))
+		}
 		if err := syncEpic(client, localCfg.ProjectKey, globalCfg, devSummary, state, dryRun); err != nil {
 			result.Errors = append(result.Errors, SyncError{EntityID: "epic", Operation: "create", Error: err})
 		} else {
@@ -235,6 +244,15 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 		return nil, fmt.Errorf("failed to order milestones: %w", err)
 	}
 
+	// Count total stories to create/update for progress reporting
+	totalStories := 0
+	for _, m := range milestones.Milestones {
+		if milestoneOps[m.ID] != "skip" {
+			totalStories++
+		}
+	}
+	storyCounter := 0
+
 	// Sync milestones level by level
 	for _, level := range orderedMilestones {
 		for _, m := range level {
@@ -246,6 +264,10 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 
 			op := milestoneOps[m.ID]
 			if op == "create" {
+				storyCounter++
+				if progress != nil {
+					progress(FormatProgress(storyCounter, totalStories, "Story", "Creating"))
+				}
 				if err := syncMilestone(client, localCfg.ProjectKey, state.Epic.JiraKey, globalCfg, &m, dueDate, state, dryRun); err != nil {
 					result.Errors = append(result.Errors, SyncError{EntityID: m.ID, Operation: "create", Error: err})
 				} else {
@@ -257,6 +279,10 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 					}
 				}
 			} else if op == "update" {
+				storyCounter++
+				if progress != nil {
+					progress(FormatProgress(storyCounter, totalStories, "Story", "Updating"))
+				}
 				if err := syncMilestone(client, localCfg.ProjectKey, state.Epic.JiraKey, globalCfg, &m, dueDate, state, dryRun); err != nil {
 					result.Errors = append(result.Errors, SyncError{EntityID: m.ID, Operation: "update", Error: err})
 				} else {
@@ -272,6 +298,17 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 			}
 		}
 	}
+
+	// Count total tasks to create/update for progress reporting
+	totalTasks := 0
+	for _, taskList := range tasks {
+		for _, t := range taskList {
+			if taskOps[t.ID] != "skip" {
+				totalTasks++
+			}
+		}
+	}
+	taskCounter := 0
 
 	// Sync tasks for each milestone
 	for milestoneID, taskList := range tasks {
@@ -292,6 +329,10 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 			for _, t := range level {
 				op := taskOps[t.ID]
 				if op == "create" {
+					taskCounter++
+					if progress != nil {
+						progress(FormatProgress(taskCounter, totalTasks, "Sub-task", "Creating"))
+					}
 					if err := syncTask(client, localCfg.ProjectKey, milestoneEntry.JiraKey, globalCfg, &t, state, dryRun); err != nil {
 						result.Errors = append(result.Errors, SyncError{EntityID: t.ID, Operation: "create", Error: err})
 					} else {
@@ -303,6 +344,10 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 						}
 					}
 				} else if op == "update" {
+					taskCounter++
+					if progress != nil {
+						progress(FormatProgress(taskCounter, totalTasks, "Sub-task", "Updating"))
+					}
 					if err := syncTask(client, localCfg.ProjectKey, milestoneEntry.JiraKey, globalCfg, &t, state, dryRun); err != nil {
 						result.Errors = append(result.Errors, SyncError{EntityID: t.ID, Operation: "update", Error: err})
 					} else {

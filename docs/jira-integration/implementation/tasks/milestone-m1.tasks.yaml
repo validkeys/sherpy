@@ -1,0 +1,296 @@
+milestone: m1
+name: "Jira HTTP Client & Setup Command"
+generated: "2026-05-21T12:00:00Z"
+
+style_anchors:
+  - code: jira/commands.go
+    pattern: "Command implementation in jira package with RunXxx functions"
+    description: |
+      Commands in jira/commands.go are implemented as RunXxx functions called from
+      cmd/sherpy-to-jira/main.go. Follow this pattern for setup and status commands:
+      define RunSetup and RunStatus in jira/commands.go, then wire them in main.go
+      using the cmd/root.go:141-169 AddCommand pattern.
+
+global_constraints:
+  allowed_patterns:
+    - "Use net/http for all HTTP communication"
+    - "Use time.Sleep and context.Context for rate limiting"
+    - "Use fmt.Fprintf for interactive prompts on stdout/stdin"
+  forbidden_patterns:
+    - "External HTTP client libraries"
+    - "External prompt libraries (use fmt.Scanln)"
+  tdd_required: true
+  max_task_duration_minutes: 90
+
+quality_gates:
+  - stage: pre-commit
+    commands:
+      - go build ./cmd/sherpy-to-jira/...
+      - go test ./jira/...
+      - go vet ./jira/...
+
+tasks:
+  - id: m1-001
+    name: "Implement Jira HTTP client with auth and rate limiting"
+    description: |
+      Create the JiraClient that handles authentication via env vars, rate
+      limiting (5 req/s), exponential backoff, and retry logic.
+    estimate_minutes: 90
+    type: code
+    dependencies: []
+    files:
+      create:
+        - jira/client.go
+        - jira/client_test.go
+    instructions: |
+      **Objective:**
+      Implement the HTTP client for Jira REST API v3.
+
+      **TDD Workflow:**
+      1. Write failing test: TestJiraClient_AuthHeader — verify Basic Auth header
+         is set with email:token using httptest.Server
+      2. Implement NewJiraClient and doRequest with auth to pass
+      3. Write failing test: TestJiraClient_RateLimit429 — mock 429 with Retry-After
+         header, verify client waits and retries
+      4. Implement 429 handling in doRequest to pass
+      5. Write failing test: TestJiraClient_5xxRetry — mock 500 response, verify
+         exponential backoff with 3 retries
+      6. Implement 5xx retry logic to pass
+      7. Write failing test: TestJiraClient_SuccessfulGetPost — verify GET and POST
+         succeed with correct request body
+      8. Implement get/post/put helper methods to pass
+      9. Write failing test: TestJiraClient_Timeout — verify context cancellation works
+      10. Verify timeout test passes (handled by http.Client timeout)
+
+      **Implementation Steps:**
+      1. Define JiraClient struct:
+         - domain string
+         - email string
+         - token string
+         - httpClient *http.Client
+         - rateLimiter (channel-based, 5 tokens/sec)
+
+      2. Implement NewJiraClient(domain, email, token string) *JiraClient:
+         - Configure http.Client with 30s timeout
+         - Set up rate limiter: buffered channel of size 5, refill via ticker
+
+      3. Implement doRequest(method, path string, body interface{}) (*http.Response, error):
+         - Wait for rate limiter token
+         - Set Basic Auth header (email:token)
+         - Set Content-Type: application/json
+         - Marshal body if present
+         - Send request with context
+         - Handle 429 Too Many Requests:
+           - Read Retry-After header (seconds)
+           - Sleep Retry-After seconds
+           - Retry the request
+         - Handle 5xx errors:
+           - Exponential backoff: 1s, 2s, 4s, ... max 30s
+           - Retry up to 3 times
+         - Return response or error
+
+      4. Implement helper methods:
+         - get(path string, result interface{}) error
+         - post(path string, body, result interface{}) error
+         - put(path string, body interface{}) error
+         - Each wraps doRequest with unmarshaling
+
+      **Constraints:**
+      - ONLY use net/http, net/http/httptest for HTTP
+      - ONLY use fmt, time, context, encoding/json for supporting code
+      - No external HTTP libraries
+
+      **Success Criteria:**
+      - Client authenticates with Basic Auth
+      - Rate limiting enforces 5 req/s limit
+      - 429 responses trigger Retry-After wait
+      - 5xx responses retry with exponential backoff
+      - All client tests pass with mock server
+
+  - id: m1-002
+    name: "Implement Jira API methods"
+    description: |
+      Add specific Jira REST API methods to the client: GetSelf, CreateProject,
+      GetCreateMeta, CreateIssue, UpdateIssue, CreateLink.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m1-001]
+    files:
+      modify:
+        - jira/client.go
+        - jira/client_test.go
+    instructions: |
+      **Objective:**
+      Add Jira API wrapper methods.
+
+      **TDD Workflow:**
+      1. Write failing test: TestGetSelf — mock GET /rest/api/3/myself, verify
+         accountId extracted from response
+      2. Implement GetSelf to pass
+      3. Write failing test: TestCreateProject — mock POST /rest/api/3/project,
+         verify request body structure (key, name, projectTypeKey, projectTemplateKey, leadAccountId)
+      4. Implement CreateProject to pass
+      5. Write failing test: TestGetCreateMeta — mock GET /rest/api/3/issue/createmeta,
+         verify Epic/Story/Sub-task type IDs parsed correctly
+      6. Implement GetCreateMeta to pass
+      7. Write failing test: TestCreateIssue — mock POST /rest/api/3/issue,
+         verify request body and response key/ID parsed
+      8. Implement CreateIssue to pass
+      9. Write failing test: TestUpdateIssue + TestCreateLink — verify PUT and POST
+         with correct payloads
+      10. Implement UpdateIssue and CreateLink to pass
+
+      **Implementation Steps:**
+      1. Define request/response types:
+         - CreateProjectRequest/Response
+         - CreateMetaResponse (with issue type parsing)
+         - CreateIssueRequest/Response
+         - UpdateIssueRequest
+         - CreateLinkRequest
+
+      2. Implement API methods on JiraClient:
+         - GetSelf() (accountId string, error)
+           GET /rest/api/3/myself → parse accountId
+         - CreateProject(key, name, leadAccountId string) (*CreateProjectResponse, error)
+           POST /rest/api/3/project
+         - GetCreateMeta(projectKey string) (epicID, storyID, subTaskID string, error)
+           GET /rest/api/3/issue/createmeta?projectKeys=KEY&expand=projects.issuetypes
+           Parse to find Epic, Story, Sub-task type IDs
+         - CreateIssue(req *CreateIssueRequest) (*CreateIssueResponse, error)
+           POST /rest/api/3/issue
+         - UpdateIssue(key string, req *UpdateIssueRequest) error
+           PUT /rest/api/3/issue/{key}
+         - CreateLink(req *CreateLinkRequest) error
+           POST /rest/api/3/issueLink
+
+      **Success Criteria:**
+      - All API methods call correct Jira REST endpoints
+      - Request/response types match the requirements doc
+      - Error responses parsed correctly
+      - All tests pass
+
+  - id: m1-003
+    name: "Implement interactive setup command"
+    description: |
+      Implement the setup command that interactively prompts for project key/name,
+      creates the Jira project, discovers issue types, and writes configs.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m1-002]
+    files:
+      modify:
+        - jira/commands.go
+        - cmd/sherpy-to-jira/main.go
+    instructions: |
+      **Objective:**
+      Implement the setup command end-to-end.
+
+      **Style Anchors:**
+      - **jira/commands.go** — Follow RunInit pattern for RunSetup function structure
+
+      **TDD Workflow:**
+      1. Write failing test: TestRunSetup_MissingEnvVars — verify missing JIRA_EMAIL
+         or JIRA_TOKEN produces clear error message
+      2. Implement env var check in RunSetup to pass
+      3. Write failing test: TestRunSetup_MissingInit — verify missing sherpy-jira.yaml
+         suggests running init first
+      4. Implement config loading check to pass
+      5. Write failing test: TestRunSetup_Success — mock entire Jira API flow
+         (myself → create project → createmeta), verify global and local config written
+      6. Implement full RunSetup flow to pass
+      7. Write failing test: TestRunSetup_ProjectExists — mock 400 on create project,
+         verify warning and continuation
+      8. Add "already exists" handling to pass
+
+      **Implementation Steps:**
+      1. Implement RunSetup(globalConfigPath string) error in jira/commands.go:
+         a. Load sherpy-jira.yaml (fail if missing, suggest init)
+         b. Determine global config path:
+            - If --global-config flag set, use that
+            - Otherwise use GlobalConfigPath()
+         c. Load existing global config or create new
+         d. Verify JIRA_EMAIL and JIRA_TOKEN env vars
+            - If missing: print "Set JIRA_EMAIL and JIRA_TOKEN env vars" and exit 1
+         e. Prompt for Jira domain (if not in global config):
+            fmt.Print("Jira domain (e.g., mycompany.atlassian.net): ")
+            fmt.Scanln(&domain)
+         f. Create JiraClient
+         g. Test connection: GetSelf()
+            - If fails: print auth error and exit 1
+         h. Prompt for project key:
+            fmt.Print("Project key (e.g., SHERPY): ")
+            fmt.Scanln(&key)
+         i. Prompt for project name:
+            fmt.Print("Project name (e.g., Sherpy PM): ")
+            fmt.Scanln(&name)
+         j. CreateProject(key, name, accountId)
+            - If already exists: warn and continue
+         k. GetCreateMeta(key) → discover issue type IDs
+         l. Save global config (domain + issue type IDs)
+         m. Update local config (project_key + project_name)
+         n. Print success summary
+
+      2. Wire setup command in cmd/sherpy-to-jira/main.go
+
+      **Constraints:**
+      - ONLY modify jira/commands.go and cmd/sherpy-to-jira/main.go
+      - Use fmt.Print + fmt.Scanln for prompts (no external libraries)
+
+      **Success Criteria:**
+      - setup prompts for project key and name
+      - Creates Jira project and discovers issue types
+      - Writes global config and updates local config
+      - Clear error messages for missing env vars or auth failures
+
+  - id: m1-004
+    name: "Implement status command"
+    description: |
+      Implement the status command that reads sync state and prints a summary.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m1-003]
+    files:
+      modify:
+        - jira/commands.go
+        - cmd/sherpy-to-jira/main.go
+    instructions: |
+      **Objective:**
+      Implement status command to show sync state summary.
+
+      **Style Anchors:**
+      - **jira/commands.go** — Follow RunInit/RunSetup pattern for RunStatus
+
+      **TDD Workflow:**
+      1. Write failing test: TestRunStatus_NoSyncState — verify "No sync state found"
+         message when sync state file doesn't exist
+      2. Implement RunStatus with missing-state check to pass
+      3. Write failing test: TestRunStatus_Success — create sync state file with
+         fixture data, verify formatted output shows correct counts
+      4. Implement full RunStatus to pass
+      5. Write failing test: TestRunStatus_MissingConfig — verify missing local
+         config produces clear error
+      6. Add config check to pass
+
+      **Implementation Steps:**
+      1. Implement RunStatus() error in jira/commands.go:
+         a. Load sherpy-jira.yaml
+         b. Load sync state from configured path
+         c. If no sync state: print "No sync state found. Run sherpy-to-jira sync."
+            and return
+         d. Print summary:
+            Project: {project_key} (ID: {project_id})
+            Epic: {epic.jira_key} "{epic summary or 'N/A'}"
+            Last sync: {last_sync}
+            Milestones synced: {len(milestones)}/{expected from milestones.yaml}
+            Tasks synced: {len(tasks)}/{expected from task files}
+            Links created: {len(links)}
+
+      2. Wire status command in cmd/sherpy-to-jira/main.go
+
+      **Constraints:**
+      - ONLY modify jira/commands.go and cmd/sherpy-to-jira/main.go
+
+      **Success Criteria:**
+      - status reads sync state and prints formatted summary
+      - Handles missing sync state gracefully
+      - Handles missing local config gracefully
