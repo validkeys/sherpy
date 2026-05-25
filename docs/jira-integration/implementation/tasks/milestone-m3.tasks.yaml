@@ -1,0 +1,478 @@
+milestone: m3
+name: "Sync Engine"
+generated: "2026-05-21T12:00:00Z"
+
+style_anchors:
+  - code: jira/client.go
+    pattern: "JiraClient API methods (CreateIssue, UpdateIssue, CreateLink)"
+    description: |
+      All sync engine code must use JiraClient methods for API calls. Never make
+      direct HTTP requests — call client.CreateIssue, client.UpdateIssue, client.CreateLink.
+      The client handles rate limiting, auth, and retries transparently.
+
+  - code: jira/sync_state.go
+    pattern: "Content hashing and SyncState types (SyncEntry, LinkEntry)"
+    description: |
+      The sync engine reads and writes SyncState via jira/sync_state.go. Use HashXxx
+      functions to compute content hashes, and read/write SyncState entries to track
+      what has been synced. Save sync state after EACH successful operation, not at the end.
+
+global_constraints:
+  allowed_patterns:
+    - "Use jira.JiraClient for all Jira API calls"
+    - "Save sync state after each successful operation"
+    - "Continue processing on individual failures"
+  forbidden_patterns:
+    - "Direct HTTP calls outside of JiraClient"
+    - "Saving sync state for failed operations"
+  tdd_required: true
+  max_task_duration_minutes: 120
+
+quality_gates:
+  - stage: pre-commit
+    commands:
+      - go build ./cmd/sherpy-to-jira/...
+      - go test ./jira/...
+      - go vet ./jira/...
+
+tasks:
+  - id: m3-001
+    name: "Implement sync orchestration and data loading"
+    description: |
+      Implement the main sync function that loads all source documents, loads
+      sync state, and orchestrates the create/update/link pipeline.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m2-007]
+    files:
+      create:
+        - jira/sync.go
+    instructions: |
+      **Objective:**
+      Implement sync orchestration.
+
+      **TDD Workflow:**
+      1. Write failing test: TestRunSync_LoadsAllDocuments — use temp dir with all
+         fixture files, verify RunSync loads developer summary, milestones, tasks,
+         and timeline correctly
+      2. Implement document loading in RunSync to pass
+      3. Write failing test: TestRunSync_ClassifiesCreateUpdateSkip — verify RunSync
+         correctly classifies entities as create (not in state), update (in state, hash differs),
+         or skip (in state, hash matches)
+      4. Implement hash comparison logic to pass
+      5. Write failing test: TestRunSync_DryRun — verify dryRun=true builds DryRunResult
+         without making API calls (no httptest.Server needed)
+      6. Implement dry run path to pass
+
+      **Implementation Steps:**
+      1. Define SyncResult struct:
+         - EpicsCreated, EpicsUpdated, EpicsSkipped int
+         - StoriesCreated, StoriesUpdated, StoriesSkipped int
+         - SubTasksCreated, SubTasksUpdated, SubTasksSkipped int
+         - LinksCreated, LinksSkipped int
+         - Errors []SyncError
+
+      2. Define SyncError struct:
+         - EntityID string (e.g., "m0-001")
+         - Operation string ("create", "update", "link")
+         - Error error
+
+      3. Define DryRunResult struct (for --dry-run output):
+         - Plan []PlanEntry (ordered list of operations)
+         - Totals struct { Epics, Stories, SubTasks, Links int }
+
+      4. Implement RunSync with the following signature:
+         RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig, dryRun bool) (*SyncResult, error)
+         The client is injected for testability — callers create it from globalCfg + env vars.
+         a. Load all source documents:
+            - ParseDeveloperSummary
+            - ParseMilestones
+            - ParseTasksDir
+            - ParseTimeline (if configured and file exists)
+         b. Load or create sync state
+         c. Compute content hashes for all entities
+         d. Determine create/update/skip for each entity
+         e. If dryRun: build and return DryRunResult
+         f. Execute creates and updates in order
+         g. Execute link creation
+         h. Save sync state
+         i. Return SyncResult
+
+      **Constraints:**
+      - RunSync MUST receive *JiraClient as parameter (not create it internally)
+      - Save sync state after each successful issue operation (not just at the end)
+
+      **Success Criteria:**
+      - Loads all source documents correctly
+      - Distinguishes create vs update vs skip for each entity
+      - Dry run mode builds plan without API calls
+      - JiraClient is injected via parameter
+
+  - id: m3-002
+    name: "Implement dependency-ordered issue creation"
+    description: |
+      Implement topological sort for milestones and tasks based on their
+      dependencies. Issues must be created in dependency order so that
+      Blocks links can reference existing issues.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-001]
+    files:
+      create:
+        - jira/ordering.go
+        - jira/ordering_test.go
+    instructions: |
+      **Objective:**
+      Order issues by dependencies for correct creation sequence.
+
+      **TDD Workflow:**
+      1. Write failing test: TestOrderMilestones_Linear — verify m0→m1→m2 produces
+         [[m0], [m1], [m2]] (each level has one milestone)
+      2. Implement OrderMilestones with BFS topological sort to pass
+      3. Write failing test: TestOrderMilestones_Diamond — verify m0→{m1,m2}→m3
+         produces [[m0], [m1,m2], [m3]] (parallel level)
+      4. Verify parallel grouping works
+      5. Write failing test: TestOrderMilestones_NoDeps — verify all milestones
+         with no dependencies are in level 0
+      6. Verify test passes
+      7. Write failing test: TestOrderMilestones_Circular — verify circular
+         dependency returns error
+      8. Add cycle detection to pass
+      9. Write failing test: TestOrderTasks — same tests at task level within a milestone
+      10. Implement OrderTasks to pass (same algorithm, different input type)
+
+      **Implementation Steps:**
+      1. Implement OrderMilestones(milestones []Milestone) [][]Milestone:
+         - Group into levels: level 0 = no deps, level 1 = deps all in level 0, etc.
+         - Return as [][]Milestone (each inner slice can be created in parallel)
+
+      2. Implement OrderTasks(tasks []Task) [][]Task:
+         - Same topological sort approach within a single milestone
+
+      **Success Criteria:**
+      - Milestones ordered by dependency depth
+      - Tasks within a milestone ordered by dependency depth
+      - Circular dependencies detected and reported
+
+  - id: m3-003
+    name: "Implement Epic sync (developer summary)"
+    description: |
+      Implement create/update logic for the Epic issue from developer-summary.md.
+      The Epic is always synced first as all Stories are parented to it.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m3-001]
+    files:
+      create:
+        - jira/sync_test.go
+      modify:
+        - jira/sync.go
+    instructions: |
+      **Objective:**
+      Sync the Epic issue from developer summary.
+
+      **Style Anchors:**
+      - **jira/client.go** — Use client.CreateIssue and client.UpdateIssue for API calls
+      - **jira/sync_state.go** — Use HashDeveloperSummary and SyncState.Epic for tracking
+
+      **TDD Workflow:**
+      1. Write failing test: TestSyncEpic_Create — mock server returns issue key/ID,
+         verify CreateIssue called with correct fields (epic type, summary, description,
+         labels ["sherpy-project"])
+      2. Implement syncEpic create path to pass
+      3. Write failing test: TestSyncEpic_Update — seed sync state with existing Epic
+         and old hash, verify UpdateIssue called when hash differs
+      4. Implement syncEpic update path to pass
+      5. Write failing test: TestSyncEpic_Skip — seed sync state with matching hash,
+         verify no API calls made
+      6. Implement skip logic to pass
+
+      **Implementation Steps:**
+      1. Implement syncEpic(client *JiraClient, summary *DeveloperSummary, state *SyncState, dryRun bool) (*SyncResult, error):
+         a. Compute hash of developer summary
+         b. If state.Epic exists and hash matches: skip
+         c. If state.Epic exists and hash differs: update
+            - Build ADF description from summary
+            - Call client.UpdateIssue with summary and description
+         d. If state.Epic doesn't exist: create
+            - Build ADF description from summary
+            - Call client.CreateIssue with:
+              project key, epic issue type, summary title, description, ["sherpy-project"] labels
+            - Record key and ID in state
+         e. Update content hash in state
+
+      **Success Criteria:**
+      - Creates Epic from developer summary on first sync
+      - Updates Epic when content changes
+      - Skips Epic when content unchanged
+
+  - id: m3-004
+    name: "Implement Story sync (milestones)"
+    description: |
+      Implement create/update logic for Story issues from milestones. Each Story
+      is parented to the Epic and receives labels, story points, and optional
+      duedate from timeline.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-003]
+    files:
+      modify:
+        - jira/sync.go
+        - jira/sync_test.go
+    instructions: |
+      **Objective:**
+      Sync Story issues from milestones.
+
+      **TDD Workflow:**
+      1. Write failing test: TestSyncMilestone_Create — mock server, verify CreateIssue
+         called with parent=epicKey, labels=["milestone:m0"], story points from duration,
+         duedate from timeline
+      2. Implement syncMilestone create path to pass
+      3. Write failing test: TestSyncMilestone_Update — seed state, change description,
+         verify UpdateIssue called with updated ADF
+      4. Implement update path to pass
+      5. Write failing test: TestSyncMilestone_Skip — matching hash, verify no API call
+      6. Implement skip to pass
+      7. Write failing test: TestSyncMilestone_NoDueDate — no timeline configured,
+         verify duedate field omitted
+      8. Verify conditional duedate logic passes
+      9. Write failing test: TestSyncMilestone_WithDueDate — timeline has completion_date,
+         verify duedate set correctly
+      10. Verify test passes
+
+      **Implementation Steps:**
+      1. Implement syncMilestone(client *JiraClient, milestone *Milestone, dueDate string, epicKey string, state *SyncState, dryRun bool) error:
+         a. Compute hash
+         b. If in state and hash matches: skip
+         c. If in state and hash differs: update
+            - Build ADF description (description + deliverables + risk + success criteria + deps)
+            - Compute story points from estimated_duration
+            - Call client.UpdateIssue
+         d. If not in state: create
+            - Same fields as update
+            - Set parent to epicKey
+            - Set labels: ["milestone:{id}"]
+            - Set duedate if dueDate is non-empty
+            - Call client.CreateIssue
+            - Record in state
+         e. Update hash in state
+
+      **Success Criteria:**
+      - Creates Stories parented to Epic
+      - Story points computed from estimated_duration
+      - duedate applied from timeline when available
+      - Updates only when content changes
+
+  - id: m3-005
+    name: "Implement Sub-task sync (tasks)"
+    description: |
+      Implement create/update logic for Sub-task issues from tasks. Each Sub-task
+      is parented to its milestone's Story and receives labels from task.type.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m3-004]
+    files:
+      modify:
+        - jira/sync.go
+        - jira/sync_test.go
+    instructions: |
+      **Objective:**
+      Sync Sub-task issues from tasks.
+
+      **TDD Workflow:**
+      1. Write failing test: TestSyncTask_Create — verify CreateIssue called with
+         parent=storyKey (NOT epicKey), labels=[task.Type], story points from MinutesToStoryPoints
+      2. Implement syncTask create path to pass
+      3. Write failing test: TestSyncTask_ParentIsStory — explicitly verify the parent
+         key used is the milestone's Story key, never the Epic key
+      4. Verify parent assignment logic
+      5. Write failing test: TestSyncTask_Update — changed hash triggers UpdateIssue
+      6. Implement update path to pass
+      7. Write failing test: TestSyncTask_Skip — matching hash, no API call
+      8. Implement skip to pass
+      9. Write failing test: TestSyncTask_AllTypes — verify labels for code, test,
+         config, code-review, docs task types
+      10. Verify label assignment passes
+
+      **Implementation Steps:**
+      1. Implement syncTask(client *JiraClient, task *Task, milestoneStoryKey string, state *SyncState, dryRun bool) error:
+         a. Compute hash
+         b. If in state and hash matches: skip
+         c. If in state and hash differs: update
+            - Build ADF description (description + constraints + success criteria)
+            - Compute story points from estimate_minutes
+            - Call client.UpdateIssue
+         d. If not in state: create
+            - Set parent to milestoneStoryKey (NOT the Epic)
+            - Set labels: [task.Type]
+            - Set story points from MinutesToStoryPoints
+            - Call client.CreateIssue
+            - Record in state
+
+      **Constraints:**
+      - Sub-task parent MUST be the Story key, never the Epic key
+      - This is a common mistake — verify in test explicitly
+
+      **Success Criteria:**
+      - Sub-tasks parented to their milestone's Story (not Epic)
+      - Story points from estimate_minutes conversion table
+      - Task type applied as label
+
+  - id: m3-006
+    name: "Implement dependency link creation"
+    description: |
+      Create Blocks links between issues based on dependency arrays. Track
+      created links in sync state to avoid duplicates.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m3-005]
+    files:
+      modify:
+        - jira/sync.go
+        - jira/sync_test.go
+    instructions: |
+      **Objective:**
+      Create Blocks links for dependencies.
+
+      **TDD Workflow:**
+      1. Write failing test: TestSyncLinks_Create — mock server, verify CreateLink
+         called with correct outward/inward keys and type "Blocks"
+      2. Implement syncLinks to pass
+      3. Write failing test: TestSyncLinks_SkipExisting — seed sync state with link
+         entries, verify existing links skipped
+      4. Implement skip logic to pass
+      5. Write failing test: TestSyncLinks_MissingKey — dependency references an
+         entity whose Jira key is not in sync state, verify graceful error (not panic)
+      6. Add key resolution safety check to pass
+
+      **Implementation Steps:**
+      1. Implement syncLinks(client *JiraClient, allDeps []Dependency, state *SyncState, dryRun bool) (int, []error):
+         Dependency struct: { OutwardID, InwardID, Type string }
+
+         a. For each dependency:
+            - Resolve YAML IDs to Jira keys using sync state
+            - Check if link already exists in state.Links
+            - If exists: skip
+            - If not: create via client.CreateLink
+            - Add to state.Links on success
+         b. Return count created and any errors
+
+      2. Build dependency list from milestones and tasks:
+         - For each milestone with dependencies: outward=milestone, inward=each dep
+         - For each task with dependencies: outward=task, inward=each dep
+
+      **Success Criteria:**
+      - Creates Blocks links for all dependencies
+      - Skips links that already exist in sync state
+      - Handles missing issue keys gracefully
+
+  - id: m3-007
+    name: "Implement dry-run mode output"
+    description: |
+      Implement the formatted dry-run output that shows what sync would do
+      without making any API calls.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m3-006]
+    files:
+      modify:
+        - jira/sync.go
+    instructions: |
+      **Objective:**
+      Format dry-run output per the requirements spec.
+
+      **TDD Workflow:**
+      1. Write failing test: TestFormatDryRun_CreateOnly — verify output format matches
+         requirements: indented hierarchy with CREATE Epic/Story/Sub-task lines
+      2. Implement formatDryRun to pass
+      3. Write failing test: TestFormatDryRun_MixedCreateUpdate — verify UPDATE lines
+         include actual Jira key and "SHERPY-?" for creates
+      4. Add update formatting to pass
+      5. Write failing test: TestFormatDryRun_Totals — verify TOTAL line at bottom
+      6. Add totals calculation to pass
+
+      **Implementation Steps:**
+      1. Implement formatDryRun(result *DryRunResult) string:
+         - Format each entry with proper indentation:
+           CREATE Epic {key} "{summary}"
+             CREATE Story {key} "{summary}" ({sp} SP)
+               CREATE Sub-task {key} "{summary}" ({sp} SP) [{type}]
+               LINK {outward} Blocks {inward}
+             UPDATE Story {key} "{summary}" ({sp} SP)
+           ...
+           TOTAL: {n} Epic, {n} Stories, {n} Sub-tasks, {n} links
+         - Use "SHERPY-?" for new issues (unknown key)
+         - Use actual key for updates
+
+      2. Integrate with sync command:
+         - If --dry-run flag: call RunSync with dryRun=true
+         - Print formatted output to stdout
+
+      **Success Criteria:**
+      - Output matches the format from requirements doc
+      - Indentation reflects Epic > Story > Sub-task hierarchy
+      - Links shown inline under their parent issue
+
+  - id: m3-008
+    name: "Wire sync command and integration tests"
+    description: |
+      Wire the sync command into the CLI and write integration tests that
+      exercise the full sync flow with a mock Jira server.
+    estimate_minutes: 60
+    type: code
+    dependencies: [m3-007]
+    files:
+      modify:
+        - jira/commands.go
+        - cmd/sherpy-to-jira/main.go
+      create:
+        - jira/integration_test.go
+    instructions: |
+      **Objective:**
+      Complete sync command and test end-to-end.
+
+      **TDD Workflow:**
+      1. Write failing test: TestIntegration_FullSync — set up mock server + real fixtures,
+         verify 1 Epic + 2 Stories + 4 Sub-tasks created in dependency order
+      2. Wire sync command and verify RunSync flow passes
+      3. Write failing test: TestIntegration_IncrementalSync — add new milestone, verify
+         only new issues created, existing issues skipped
+      4. Verify incremental logic works
+      5. Write failing test: TestIntegration_IdempotentSync — run sync twice, verify second
+         run is all skips with no API calls
+      6. Verify idempotency passes
+      7. Write failing test: TestIntegration_DryRunFormat — verify dry-run output matches
+         expected format string
+      8. Verify dry run output formatting
+      9. Write failing test: TestIntegration_PartialFailure — mock 500 on one issue create,
+         verify other issues succeed and sync state only reflects successful operations
+      10. Verify partial failure handling passes
+
+      **Implementation Steps:**
+      1. Wire sync command in commands.go:
+         - Load local config
+         - Load global config
+         - Verify env vars
+         - Create JiraClient from globalCfg + env vars
+         - Call RunSync(client, localCfg, globalCfg, dryRun)
+         - Print summary
+
+      2. Write integration tests with httptest.Server:
+         - Full sync: Epic + 2 Stories + 4 Sub-tasks + links
+         - Incremental sync: add new milestone, update existing
+         - Idempotent sync: run twice, second run all skips
+         - Dry run: verify output format
+         - Partial failure: mock 500 on one issue, verify others succeed
+
+      3. Update cmd/sherpy-to-jira/main.go with --dry-run flag on sync command
+
+      **Constraints:**
+      - RunSync receives JiraClient as parameter — command wiring creates the client
+      - Integration tests create JiraClient with mock server URL as domain
+
+      **Success Criteria:**
+      - Full sync creates all issues in correct order
+      - Incremental sync creates new and updates changed
+      - Idempotent: second sync all skips
+      - Dry run produces formatted plan
+      - Partial failures handled gracefully

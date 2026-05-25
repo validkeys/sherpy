@@ -1,0 +1,15 @@
+milestone: m0
+name: "Setup"
+tasks:
+  - id: m0-001
+    name: "Initialize project"
+    description: "Set up project structure"
+    estimate_minutes: 30
+    type: config
+    dependencies: []
+  - id: m0-002
+    name: "Configure tools"
+    description: "Configure development tools"
+    estimate_minutes: 45
+    type: config
+    dependencies: [m0-001]

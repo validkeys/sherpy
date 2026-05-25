@@ -37,6 +37,7 @@ yarn-error.log*
 # Testing
 coverage/
 .nyc_output/
+coverage.out
 
 # Temp
 .tmp/
@@ -57,3 +58,4 @@ temp/
 
 # Go binaries
 sherpy
+sherpy-to-jira

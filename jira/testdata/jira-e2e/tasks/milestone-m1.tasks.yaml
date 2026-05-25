@@ -1,0 +1,15 @@
+milestone: m1
+name: "Core"
+tasks:
+  - id: m1-001
+    name: "Implement feature A"
+    description: "Build feature A"
+    estimate_minutes: 60
+    type: feature
+    dependencies: []
+  - id: m1-002
+    name: "Implement feature B"
+    description: "Build feature B"
+    estimate_minutes: 90
+    type: feature
+    dependencies: [m1-001]

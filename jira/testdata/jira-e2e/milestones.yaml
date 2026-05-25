@@ -1,0 +1,10 @@
+project: test-e2e-project
+milestones:
+  - id: m0
+    name: "Setup"
+    description: "Project initialization and configuration"
+    dependencies: []
+  - id: m1
+    name: "Core"
+    description: "Core functionality implementation"
+    dependencies: [m0]

@@ -1,0 +1,226 @@
+version: "1.0.0"
+project: sherpy-to-jira
+generated: "2026-05-21T12:00:00Z"
+
+requirements: ../requirements.md
+
+overview: |
+  sherpy-to-jira — Standalone Go CLI that pushes Sherpy planning YAML files to
+  Jira Cloud as a structured set of issues (Epic, Stories, Sub-tasks).
+
+  **Technical Approach:**
+  - Standalone binary at cmd/sherpy-to-jira/main.go within the sherpy Go module
+  - cobra for CLI commands, yaml.v3 for config/parsing
+  - net/http for Jira REST API v3 client
+  - Convention-first file discovery with recursive fallback
+  - Content hashing (SHA-256) for incremental sync
+  - ADF (Atlassian Document Format) builder for rich descriptions
+
+  **Key Principles:**
+  - Foundation-First: config/client layer → parsing → sync engine → testing
+  - No external dependencies beyond existing sherpy deps (cobra, yaml.v3)
+  - Env vars only for secrets (JIRA_EMAIL, JIRA_TOKEN)
+  - Idempotent sync: running multiple times produces the same end state
+
+meta:
+  ordering_strategy: foundation-first
+  ordering_rationale: |
+    Greenfield CLI tool with clear requirements. Foundation-First ensures the
+    config layer, HTTP client, and YAML parsing are solid before the sync engine
+    is built on top. Each layer is testable independently before integration.
+
+milestones:
+  - id: m0
+    name: Scaffolding & Config Layer
+    description: |
+      Set up the sherpy-to-jira binary entry point, implement config types
+      (global, local, sync state), config loading/saving, and the init command
+      with file discovery.
+
+      Deliverables:
+      - cmd/sherpy-to-jira/main.go entry point with cobra root command
+      - jira/doc.go package placeholder
+      - jira/config.go with GlobalConfig, LocalConfig, SyncState types
+      - jira/discover.go with convention-first file discovery
+      - jira/commands.go with RunInit function
+      - init command that generates sherpy-jira.yaml
+      - Makefile target for building sherpy-to-jira
+      - Unit tests for config loading/saving and file discovery
+    dependencies: []
+    estimated_duration: 1-2 days
+    tasks_file: milestone-m0.tasks.yaml
+    success_criteria:
+      - sherpy-to-jira init discovers files in a real sherpy project directory
+      - sherpy-to-jira init generates valid sherpy-jira.yaml
+      - Config types round-trip through YAML correctly
+      - File discovery finds milestones.yaml, developer-summary.md, tasks dir, timeline.yaml
+      - make sherpy-to-jira builds a working binary
+      - All unit tests pass
+
+  - id: m1
+    name: Jira HTTP Client & Setup Command
+    description: |
+      Implement the Jira REST API client with authentication, rate limiting,
+      and retry logic. Implement the interactive setup command that creates
+      the Jira project and discovers issue type IDs. Implement the status
+      command.
+
+      Deliverables:
+      - jira/client.go with rate-limited HTTP client, retry logic, auth
+      - jira/client.go with API methods: GetSelf, CreateProject, GetCreateMeta
+      - setup command with interactive prompts for project key/name
+      - status command that reads sync state and prints summary
+      - Unit tests with mock HTTP server
+    dependencies: [m0]
+    estimated_duration: 1-2 days
+    tasks_file: milestone-m1.tasks.yaml
+    success_criteria:
+      - HTTP client authenticates with JIRA_EMAIL/JIRA_TOKEN env vars
+      - Rate limiting respects 5 req/s limit with exponential backoff
+      - setup creates a Jira project and discovers Epic/Story/Sub-task type IDs
+      - setup writes global config with discovered type IDs
+      - status prints sync state summary correctly
+      - All HTTP client tests pass with mock server
+
+  - id: m2
+    name: YAML Parsing & ADF Builder
+    description: |
+      Implement parsers for all four sherpy source documents (developer-summary.md,
+      milestones.yaml, milestone-m*.tasks.yaml, timeline.yaml). Build the ADF
+      document builder for rich Jira descriptions. Implement story point
+      conversion and content hashing.
+
+      Deliverables:
+      - jira/parser.go with parser for developer-summary.md
+      - jira/parser.go with parser for milestones.yaml
+      - jira/parser.go with parser for milestone-m*.tasks.yaml
+      - jira/parser.go with parser for timeline.yaml (workback.schedule)
+      - jira/adf.go with ADF document builder
+      - jira/story_points.go with Fibonacci conversion tables
+      - jira/sync_state.go with SHA-256 content hashing
+      - Unit tests for all parsers, ADF output, and conversions
+
+      Risk: Low (well-defined input formats, existing sherpy schema specs)
+    dependencies: [m0]
+    estimated_duration: 1-2 days
+    tasks_file: milestone-m2.tasks.yaml
+    success_criteria:
+      - Developer summary parser extracts title and content correctly
+      - Milestones parser handles all field types including estimated_duration ranges
+      - Tasks parser loads all milestone-m*.tasks.yaml files from tasks_dir
+      - Timeline parser extracts workback.schedule dates for type: milestone entries
+      - ADF builder produces valid Atlassian Document Format JSON
+      - Story point conversion matches the requirements table exactly
+      - Content hashing is deterministic (same input = same hash)
+      - All parser and conversion tests pass
+
+  - id: m3
+    name: Sync Engine
+    description: |
+      Implement the core sync logic: create/update issues, parent linking,
+      dependency linking, timeline date application, and dry-run mode. Wire
+      everything together into the sync command.
+
+      Deliverables:
+      - jira/sync.go with sync engine (create/update/skip logic)
+      - jira/sync.go with dependency-ordered issue creation
+      - jira/sync.go with Blocks link creation and tracking
+      - jira/sync.go with timeline date application (duedate)
+      - jira/sync.go with dry-run mode (plan output without API calls)
+      - jira/client.go with API methods: CreateIssue, UpdateIssue, CreateLink
+      - sync command wiring in jira/commands.go
+      - Integration tests with mock Jira server
+
+      Risk: Medium (API interaction patterns, ordering logic, link tracking)
+    dependencies: [m1, m2]
+    estimated_duration: 2-3 days
+    tasks_file: milestone-m3.tasks.yaml
+    success_criteria:
+      - sync creates Epic from developer summary
+      - sync creates Stories parented to Epic with correct labels and story points
+      - sync creates Sub-tasks parented to their milestone's Story
+      - sync applies duedate from timeline workback.schedule
+      - sync creates Blocks links for all dependencies
+      - sync skips unchanged issues (content hash match)
+      - sync --dry-run outputs the plan format without API calls
+      - sync is idempotent (running twice produces same result)
+      - All integration tests pass with mock server
+
+  - id: m4
+    name: Integration Testing & Error Handling
+    description: |
+      End-to-end testing of the complete workflow, error handling polish,
+      and edge case coverage. Verify init → setup → sync → status flow
+      works against real project structure.
+
+      Deliverables:
+      - E2E test suite: init → setup → sync → status with mock server
+      - Error handling for all common scenarios (auth, network, rate limit)
+      - Partial failure handling (continue on error, report summary)
+      - Edge case tests (missing timeline, empty milestones, circular deps)
+      - Makefile target for building sherpy-to-jira
+      - README with usage instructions
+
+      Risk: Low (testing and polish)
+    dependencies: [m3]
+    estimated_duration: 1-2 days
+    tasks_file: milestone-m4.tasks.yaml
+    success_criteria:
+      - E2E test: init discovers files → setup creates project → sync pushes all issues
+      - Auth error exits immediately with clear message
+      - Network timeout retries up to 3 times with backoff
+      - Partial failures print success/failure summary
+      - Missing timeline.yaml produces warning but sync succeeds
+      - Empty project (no milestones) handled gracefully
+      - Build produces working sherpy-to-jira binary
+      - All tests pass with zero failures
+
+  - id: m5
+    name: UX Polish & Error Messages
+    description: |
+      Polish the user experience with improved output formatting, progress
+      indicators, and enhanced error messages with actionable suggestions.
+
+      Deliverables:
+      - Pretty table formatting for dry-run output (OPERATION, TYPE, KEY, SP, SUMMARY)
+      - Progress indicators during sync operations (e.g., "Creating Story 2/5...")
+      - Enhanced error messages with actionable guidance for common failures
+      - Comprehensive tests for formatting and error handling
+      - Updated all existing tests to support new RunSync signature
+
+      Risk: Low (UI/UX polish only, no API changes)
+    dependencies: [m4]
+    estimated_duration: 0.5 days
+    tasks_file: milestone-m5.tasks.yaml
+    success_criteria:
+      - Dry-run output displays structured table with hierarchy indentation
+      - Progress messages show current/total counts during sync
+      - Auth errors suggest checking JIRA_EMAIL/JIRA_TOKEN with token URL
+      - Config errors suggest running init/setup commands
+      - Rate limit and network errors include actionable guidance
+      - All 110+ tests pass
+      - Test coverage >= 77%
+
+project_metadata:
+  total_estimated_duration: 6.5-11.5 days
+  parallel_opportunities:
+    - "M1 (HTTP client) and M2 (YAML parsing) can run in parallel after M0 completes"
+  critical_path:
+    - M0 (scaffolding) → M1 (client) → M3 (sync engine) → M4 (testing) → M5 (polish)
+    - M0 (scaffolding) → M2 (parsing) → M3 (sync engine) → M4 (testing) → M5 (polish)
+  risk_mitigation: |
+    M0: Low risk — standard Go scaffolding and config types
+    M1: Low risk — well-documented Jira REST API v3
+    M2: Low risk — sherpy YAML specs are well-defined
+    M3: Medium risk — sync ordering, link tracking, and API interaction patterns
+    M4: Low risk — testing and polish only
+    M5: Low risk — UI/UX improvements, no functional changes
+  success_metrics: |
+    - init discovers all 4 source document types correctly
+    - setup creates Jira project and discovers issue type IDs
+    - sync creates/updates Epic, Stories, and Sub-tasks with correct field mapping
+    - sync --dry-run outputs accurate plan in table format
+    - status reports correct sync state
+    - Idempotent: multiple sync runs produce same Jira state
+    - All error scenarios handled gracefully with actionable guidance
+    - Progress indicators keep users informed during sync operations

@@ -1,0 +1,430 @@
+milestone: m2
+name: "YAML Parsing & ADF Builder"
+generated: "2026-05-21T12:00:00Z"
+
+style_anchors:
+  - code: jira/config.go
+    pattern: "Go struct types with yaml tags and parsing functions"
+    description: |
+      Parser types follow the same pattern as config.go: define structs with yaml tags,
+      implement ParseXxx(path string) (*XxxStruct, error) functions that read the file,
+      unmarshal with yaml.v3, validate required fields, and return the result. All parsers
+      return descriptive errors wrapping the underlying cause.
+
+global_constraints:
+  allowed_patterns:
+    - "Use yaml.v3 for YAML parsing"
+    - "Use encoding/json for ADF output"
+    - "Use crypto/sha256 for content hashing"
+    - "Parse based on sherpy spec documents in docs/specifications/"
+  forbidden_patterns:
+    - "External markdown parsers for developer-summary.md (use string matching)"
+    - "External ADF libraries"
+  tdd_required: true
+  max_task_duration_minutes: 90
+
+quality_gates:
+  - stage: pre-commit
+    commands:
+      - go build ./cmd/sherpy-to-jira/...
+      - go test ./jira/...
+      - go vet ./jira/...
+
+tasks:
+  - id: m2-001
+    name: "Implement developer-summary.md parser"
+    description: |
+      Parse the developer-summary.md markdown file to extract the title (first
+      H1 heading) and the full content body for the Epic description.
+    estimate_minutes: 30
+    type: code
+    dependencies: []
+    files:
+      create:
+        - jira/parser.go
+        - jira/parser_test.go
+    instructions: |
+      **Objective:**
+      Parse developer-summary.md for Epic creation.
+
+      **Style Anchors:**
+      - **jira/config.go** — Follow the struct + ParseXxx function pattern for
+        DeveloperSummary and ParseDeveloperSummary
+
+      **TDD Workflow:**
+      1. Write failing test: TestParseDeveloperSummary_Standard — use test fixture
+         with H1 heading, verify title extracted correctly
+      2. Implement ParseDeveloperSummary to pass (read file, find "# " line, extract title)
+      3. Write failing test: TestParseDeveloperSummary_NoH1 — verify file without
+         "# " heading returns descriptive error
+      4. Add heading validation to pass
+      5. Write failing test: TestParseDeveloperSummary_EmptyFile — verify empty file
+         returns descriptive error
+      6. Add empty file check to pass
+
+      **Implementation Steps:**
+      1. Define DeveloperSummary struct:
+         - Title string (from first # heading line)
+         - Content string (full file content)
+
+      2. Implement ParseDeveloperSummary(path string) (*DeveloperSummary, error):
+         a. Read file content
+         b. Find first line starting with "# "
+         c. Extract title (strip "# " prefix)
+         d. Content is the full file content (for ADF conversion)
+
+      **Constraints:**
+      - ONLY use string matching (strings.HasPrefix, strings.TrimPrefix) — no markdown parsers
+      - Follow jira/config.go pattern for error wrapping
+
+      **Success Criteria:**
+      - Extracts title from first "# " line
+      - Returns full content for ADF conversion
+      - Handles missing/empty files with clear errors
+
+  - id: m2-002
+    name: "Implement milestones.yaml parser"
+    description: |
+      Parse milestones.yaml to extract milestone definitions with all fields
+      needed for Story creation (id, name, description, dependencies,
+      estimated_duration, success_criteria, tasks_file).
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      modify:
+        - jira/parser.go
+        - jira/parser_test.go
+    instructions: |
+      **Objective:**
+      Parse milestones.yaml for Story creation.
+
+      **TDD Workflow:**
+      1. Write failing test: TestParseMilestones_Standard — use test fixture with
+         2 milestones, verify all fields extracted (id, name, description, dependencies,
+         estimated_duration, tasks_file, success_criteria)
+      2. Implement Milestone struct and ParseMilestones to pass
+      3. Write failing test: TestParseMilestones_MissingRequiredFields — verify
+         milestone without ID or name returns validation error
+      4. Add validation logic to pass
+      5. Write failing test: TestParseMilestones_DurationRange — verify "1-2 days"
+         and "3-4 days" strings preserved as-is for story point conversion
+      6. Verify test passes (string field, no parsing needed here)
+
+      **Implementation Steps:**
+      1. Define Milestone struct matching the sherpy spec:
+         - ID string (e.g., "m0")
+         - Name string
+         - Description string
+         - Dependencies []string
+         - EstimatedDuration string (e.g., "1-2 days", "3-4 days")
+         - TasksFile string
+         - SuccessCriteria []string
+
+      2. Define MilestonesFile struct (root YAML structure):
+         - Version string
+         - Project string
+         - Milestones []Milestone
+
+      3. Implement ParseMilestones(path string) (*MilestonesFile, error):
+         a. Read and unmarshal YAML
+         b. Validate: at least one milestone, all have IDs and names
+         c. Return parsed struct
+
+      **Success Criteria:**
+      - Parses milestones.yaml with all required fields
+      - Handles estimated_duration range strings (e.g., "1-2 days")
+      - Returns all milestones in order
+
+  - id: m2-003
+    name: "Implement milestone-m*.tasks.yaml parser"
+    description: |
+      Parse all milestone task files from the tasks directory. Extract task
+      definitions with id, name, description, estimate_minutes, type, and
+      dependencies.
+    estimate_minutes: 45
+    type: code
+    dependencies: [m2-002]
+    files:
+      modify:
+        - jira/parser.go
+        - jira/parser_test.go
+    instructions: |
+      **Objective:**
+      Parse task files for Sub-task creation.
+
+      **TDD Workflow:**
+      1. Write failing test: TestParseTasksDir_MultipleFiles — create temp dir with
+         2 task files, verify all tasks loaded keyed by milestone ID
+      2. Implement ParseTasksDir to pass (glob, parse each, build map)
+      3. Write failing test: TestParseTasksDir_EmptyDir — verify empty directory
+         returns error
+      4. Add empty dir check to pass
+      5. Write failing test: TestParseTasksDir_AllFields — verify all task fields
+         (id, name, description, estimate_minutes, type, dependencies) parsed
+      6. Verify test passes
+
+      **Implementation Steps:**
+      1. Define Task struct:
+         - ID string (e.g., "m0-001")
+         - Name string
+         - Description string
+         - EstimateMinutes int
+         - Type string (code, test, config, code-review, docs)
+         - Dependencies []string
+
+      2. Define TasksFile struct (root YAML structure):
+         - Milestone string (e.g., "m0")
+         - Name string
+         - Tasks []Task
+
+      3. Implement ParseTasksDir(tasksDir string) (map[string][]Task, error):
+         a. Glob for milestone-m*.tasks.yaml files in tasksDir
+         b. Parse each file
+         c. Return map keyed by milestone ID
+         d. Error if no task files found
+
+      **Success Criteria:**
+      - Loads all milestone-m*.tasks.yaml files from directory
+      - Returns tasks keyed by milestone ID
+      - All task fields parsed correctly
+
+  - id: m2-004
+    name: "Implement timeline.yaml parser"
+    description: |
+      Parse timeline.yaml to extract workback.schedule entries with type: milestone,
+      returning their completion_date values for duedate assignment on Stories.
+    estimate_minutes: 30
+    type: code
+    dependencies: []
+    files:
+      modify:
+        - jira/parser.go
+        - jira/parser_test.go
+    instructions: |
+      **Objective:**
+      Parse timeline.yaml for duedate assignment.
+
+      **TDD Workflow:**
+      1. Write failing test: TestParseTimeline_MilestoneOnly — verify only
+         type: milestone entries returned, delivery/deploy entries excluded
+      2. Implement ParseTimeline to pass (filter by type == "milestone")
+      3. Write failing test: TestParseTimeline_PostEntriesExcluded — verify
+         entries with id starting with "post-" are excluded
+      4. Add post-* exclusion to pass
+      5. Write failing test: TestParseTimeline_MissingWorkback — verify missing
+         workback section returns empty map (not error)
+      6. Add nil check to pass
+
+      **Implementation Steps:**
+      1. Define TimelineEntry struct:
+         - ID string (e.g., "m0")
+         - Name string
+         - Type string (milestone, delivery, deploy)
+         - StartDate string (YYYY-MM-DD)
+         - CompletionDate string (YYYY-MM-DD)
+
+      2. Define TimelineFile struct (root YAML structure):
+         - Workback struct { Schedule []TimelineEntry }
+
+      3. Implement ParseTimeline(path string) (map[string]string, error):
+         a. Read and unmarshal YAML
+         b. Filter workback.schedule for entries with type == "milestone"
+         c. Return map[string]string: milestone ID → completion_date
+         d. Skip entries with type "delivery" or "deploy"
+         e. Skip entries with id starting with "post-"
+
+      4. Handle optional timeline:
+         - Handle gracefully if workback section is missing
+
+      **Success Criteria:**
+      - Extracts completion_date for each milestone from workback.schedule
+      - Filters out delivery and deploy entries correctly
+      - Returns map of milestone ID → completion date string
+
+  - id: m2-005
+    name: "Implement ADF document builder"
+    description: |
+      Build Atlassian Document Format (ADF) JSON structures for Jira issue
+      descriptions. Support paragraphs, headings, bullet lists, checklists,
+      and horizontal rules.
+    estimate_minutes: 60
+    type: code
+    dependencies: []
+    files:
+      create:
+        - jira/adf.go
+        - jira/adf_test.go
+    instructions: |
+      **Objective:**
+      Build valid ADF JSON for Jira descriptions.
+
+      **TDD Workflow:**
+      1. Write failing test: TestADFDoc_Paragraph — verify NewADFDoc().AddParagraph("text")
+         produces valid ADF JSON with paragraph node
+      2. Implement ADFDoc, AddParagraph, ToJSON to pass
+      3. Write failing test: TestADFDoc_Heading — verify AddHeading("text", 2) produces
+         heading node with level attribute
+      4. Implement AddHeading to pass
+      5. Write failing test: TestADFDoc_BulletList — verify AddBulletList with 3 items
+         produces bulletList > listItem structure
+      6. Implement AddBulletList to pass
+      7. Write failing test: TestADFDoc_Checklist — verify AddChecklist produces
+         checkbox nodes (extension:taskList > extension:taskItem)
+      8. Implement AddChecklist to pass
+      9. Write failing test: TestBuildEpicDescription — verify high-level builder
+         converts markdown content into correct ADF nodes
+      10. Implement BuildEpicDescription markdown-to-ADF conversion to pass
+      11. Write failing test: TestBuildMilestoneDescription — verify milestone
+          description assembles all sections (description + HR + deliverables + risk + criteria + deps)
+      12. Implement BuildMilestoneDescription to pass
+      13. Write failing test: TestBuildTaskDescription — verify task description
+          assembles (description + HR + constraints + criteria)
+      14. Implement BuildTaskDescription to pass
+
+      **Implementation Steps:**
+      1. Define ADF builder types:
+         - ADFDoc struct with Version int, Type string, Content []ADFNode
+         - ADFNode struct with Type string, Content []ADFNode, Text string, Marks []ADFMark, Attrs map[string]interface{}
+
+      2. Implement builder functions:
+         - NewADFDoc() *ADFDoc
+         - doc.AddParagraph(text string)
+         - doc.AddHeading(text string, level int)
+         - doc.AddBulletList(items []string)
+         - doc.AddChecklist(items []string) (checkbox items)
+         - doc.AddHorizontalRule()
+         - doc.AddBoldParagraph(label, text string) (e.g., "**Risk:** Low")
+         - doc.ToJSON() ([]byte, error)
+
+      3. Implement high-level builders:
+         - BuildEpicDescription(summary *DeveloperSummary) ([]byte, error)
+           Converts markdown content to ADF (paragraphs, headings, lists)
+         - BuildMilestoneDescription(m *Milestone) ([]byte, error)
+           Assembles: description + HR + Deliverables + Risk + Success Criteria + Dependencies
+         - BuildTaskDescription(t *Task) ([]byte, error)
+           Assembles: description + HR + Constraints (from instructions) + Success Criteria
+
+      4. Markdown-to-ADF conversion rules for description text:
+         Process input line-by-line with the following rules:
+         - Double newline ("\n\n"): paragraph boundary separator
+         - Lines starting with "- ": bullet list item (collect consecutive items into one bulletList node)
+         - Lines matching "**Label:** ...": bold paragraph node with bold mark on the label portion
+         - Lines starting with "## " or "### ": heading node (extract level from # count, strip prefix)
+         - Lines matching "---" or "***": horizontalRule node
+         - Lines matching "- [ ] " or "- [x] ": checklist item (taskItem with state checked/unchecked)
+         - All other lines: plain paragraph node
+         Fallback: any unrecognized pattern becomes a plain paragraph node.
+
+      **Constraints:**
+      - ONLY use encoding/json for JSON serialization
+      - No external ADF or markdown libraries
+      - All ADF nodes must have Type field set
+
+      **Success Criteria:**
+      - ADF JSON is valid Atlassian Document Format
+      - Epic, milestone, and task descriptions built correctly
+      - Paragraphs, headings, lists, and checklists all render properly
+
+  - id: m2-006
+    name: "Implement story point conversion"
+    description: |
+      Implement the Fibonacci story point conversion for tasks (from
+      estimate_minutes) and milestones (from estimated_duration string).
+    estimate_minutes: 30
+    type: code
+    dependencies: []
+    files:
+      create:
+        - jira/story_points.go
+        - jira/story_points_test.go
+    instructions: |
+      **Objective:**
+      Convert estimates to Fibonacci story points.
+
+      **TDD Workflow:**
+      1. Write failing test: TestMinutesToStoryPoints_Table — test every boundary
+         in the conversion table (0, 30, 31, 60, 61, 90, 91, 120, 121, 180, 181, 240, 241, 360, 361, 480, 481)
+      2. Implement MinutesToStoryPoints with the conversion table to pass
+      3. Write failing test: TestMinutesToStoryPoints_ZeroAndLarge — verify 0 → 1 and 999 → 13
+      4. Verify boundary handling passes
+      5. Write failing test: TestDurationToStoryPoints_Ranges — verify "1-2 days" → 8 SP,
+         "2-3 days" → 13 SP, "3-4 days" → 21 SP (exact for >13)
+      6. Implement DurationToStoryPoints to pass (parse range, midpoint, ×6h, round to Fibonacci)
+      7. Write failing test: TestDurationToStoryPoints_SingleAndWeek — verify "1 day" → 5 SP,
+         "1 week" → 40 SP
+      8. Add single-value and week parsing to pass
+
+      **Implementation Steps:**
+      1. Implement MinutesToStoryPoints(minutes int) int:
+         Use the conversion table:
+         0-30 → 1, 31-60 → 1, 61-90 → 2, 91-120 → 2,
+         121-180 → 3, 181-240 → 5, 241-360 → 5,
+         361-480 → 8, 481+ → 13
+
+      2. Implement DurationToStoryPoints(duration string) int:
+         a. Parse duration string: "1-2 days", "3-4 days", "5 days"
+         b. For ranges: take midpoint (e.g., "3-4 days" → 3.5)
+         c. For single values: use as-is
+         d. Convert days to hours: days × 6 productive hours
+         e. Round to Fibonacci: 1, 2, 3, 5, 8, 13
+         f. For milestones > 13: use exact value (e.g., 21 SP)
+
+      **Success Criteria:**
+      - Minutes conversion matches the requirements table exactly
+      - Duration parsing handles all common formats
+      - Fibonacci rounding is correct
+
+  - id: m2-007
+    name: "Implement content hashing"
+    description: |
+      Implement SHA-256 content hashing for sync state change detection.
+      Hash selected fields from each entity type.
+    estimate_minutes: 30
+    type: code
+    dependencies: [m2-002]
+    files:
+      create:
+        - jira/sync_state.go
+        - jira/sync_state_test.go
+    instructions: |
+      **Objective:**
+      Content hashing for incremental sync.
+
+      **TDD Workflow:**
+      1. Write failing test: TestHashDeveloperSummary_Deterministic — verify same
+         input produces same hash across multiple calls
+      2. Implement HashDeveloperSummary to pass (sha256 of title + content)
+      3. Write failing test: TestHashDeveloperSummary_DifferentInput — verify
+         different title produces different hash
+      4. Verify test passes
+      5. Write failing test: TestHashMilestone_Deterministic — verify deterministic
+         even when dependencies slice order differs
+      6. Implement HashMilestone with sorted serialization to pass
+      7. Write failing test: TestHashTask_FieldChange — verify changing any single
+         field (name, description, estimate_minutes, type, dependencies) produces
+         different hash
+      8. Implement HashTask to pass
+
+      **Implementation Steps:**
+      1. Implement HashDeveloperSummary(summary *DeveloperSummary) string:
+         - Hash title + content
+
+      2. Implement HashMilestone(m *Milestone) string:
+         - Hash: name, description, estimated_duration, success_criteria, dependencies
+         - Serialize fields deterministically (sorted keys, consistent YAML)
+
+      3. Implement HashTask(t *Task) string:
+         - Hash: name, description, estimate_minutes, type, dependencies
+
+      4. Use crypto/sha256 for all hashing
+      5. Return hex-encoded string prefixed with "sha256:"
+
+      **Constraints:**
+      - ONLY use crypto/sha256, encoding/hex, fmt, sort
+      - Dependencies order must not affect hash (sort before hashing)
+
+      **Success Criteria:**
+      - Hashing is deterministic
+      - Same content always produces same hash
+      - Any field change produces different hash
