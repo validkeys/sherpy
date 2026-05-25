@@ -7,6 +7,16 @@ import (
 	"strings"
 )
 
+// FileStatus represents the discovery status of a file
+type FileStatus struct {
+	Name        string   // Human-readable name (e.g., "developer-summary.md")
+	Required    bool     // Whether this file is required
+	Found       bool     // Whether the file was found
+	Path        string   // Relative path if found, empty if not
+	Searched    []string // Paths that were checked for this file
+	Suggestions []string // Remediation suggestions if not found
+}
+
 // DiscoverResult contains the paths to discovered sherpy source documents.
 // All paths are relative to the root directory passed to DiscoverFiles.
 type DiscoverResult struct {
@@ -15,15 +25,19 @@ type DiscoverResult struct {
 	TasksDir         string   // Path to directory containing milestone-m*.tasks.yaml files (required)
 	Timeline         string   // Path to timeline.yaml (optional, empty if not found)
 	Warnings         []string // Non-fatal warnings (e.g., missing timeline)
+
+	// Search tracking fields for enhanced reporting
+	FileStatuses []FileStatus // Detailed status of each file searched
 }
 
 // DiscoverFiles searches for sherpy source documents starting from root.
 // It uses a convention-first search, then falls back to recursive walk.
-// Returns an error only if required files (developer-summary.md, milestones.yaml, tasks) are missing.
+// Returns a result with detailed file status information, even if some required files are missing.
 func DiscoverFiles(root string) (*DiscoverResult, error) {
 	// Phase 1: Convention-first search
 	// Look for standard patterns: docs/**/implementation/milestones.yaml
 	conventionResult := searchConvention(root)
+	conventionResult.buildFileStatuses(root)
 	if conventionResult.isComplete() {
 		return conventionResult, nil
 	}
@@ -31,8 +45,10 @@ func DiscoverFiles(root string) (*DiscoverResult, error) {
 	// Phase 2: Recursive fallback
 	// Walk the entire tree looking for exact filename matches
 	fallbackResult := searchRecursive(root)
+	fallbackResult.buildFileStatuses(root)
+
 	if !fallbackResult.isComplete() {
-		return nil, fmt.Errorf("could not find required files")
+		return fallbackResult, fmt.Errorf("could not find required files")
 	}
 
 	return fallbackResult, nil
@@ -90,12 +106,19 @@ func searchConvention(root string) *DiscoverResult {
 			result.TasksDir = relTasksDir
 		}
 
-		// Look for timeline.yaml in parent directory
-		timelinePath := filepath.Join(parentDir, "timeline.yaml")
-		if _, err := os.Stat(timelinePath); err == nil {
-			relTimeline, _ := filepath.Rel(root, timelinePath)
-			result.Timeline = relTimeline
-		} else {
+		// Look for timeline.yaml in common locations
+		timelineLocations := []string{
+			filepath.Join(parentDir, "timeline.yaml"),
+			filepath.Join(parentDir, "delivery", "timeline.yaml"),
+		}
+		for _, timelinePath := range timelineLocations {
+			if _, err := os.Stat(timelinePath); err == nil {
+				relTimeline, _ := filepath.Rel(root, timelinePath)
+				result.Timeline = relTimeline
+				break
+			}
+		}
+		if result.Timeline == "" {
 			result.Warnings = append(result.Warnings, "timeline.yaml not found (optional)")
 		}
 
@@ -209,4 +232,126 @@ func contains(slice []string, val string) bool {
 		}
 	}
 	return false
+}
+
+// Note: We keep this simple implementation instead of using slices.Contains
+// to maintain compatibility with Go 1.20 and avoid additional dependencies.
+
+// buildFileStatuses populates the FileStatuses field with detailed information
+// about what files were searched for and found.
+func (r *DiscoverResult) buildFileStatuses(root string) {
+	r.FileStatuses = []FileStatus{
+		{
+			Name:        "developer-summary.md",
+			Required:    true,
+			Found:       r.DeveloperSummary != "",
+			Path:        r.DeveloperSummary,
+			Searched:    r.buildSearchedPaths(root, "developer-summary.md"),
+			Suggestions: r.buildSuggestions(root, "developer-summary.md", r.DeveloperSummary == ""),
+		},
+		{
+			Name:        "milestones.yaml",
+			Required:    true,
+			Found:       r.Milestones != "",
+			Path:        r.Milestones,
+			Searched:    r.buildSearchedPaths(root, "milestones.yaml"),
+			Suggestions: r.buildSuggestions(root, "milestones.yaml", r.Milestones == ""),
+		},
+		{
+			Name:        "milestone task files",
+			Required:    true,
+			Found:       r.TasksDir != "",
+			Path:        r.TasksDir,
+			Searched:    r.buildSearchedPaths(root, "milestone-m*.tasks.yaml"),
+			Suggestions: r.buildSuggestions(root, "milestone-m*.tasks.yaml", r.TasksDir == ""),
+		},
+		{
+			Name:        "timeline.yaml",
+			Required:    false,
+			Found:       r.Timeline != "",
+			Path:        r.Timeline,
+			Searched:    r.buildSearchedPaths(root, "timeline.yaml"),
+			Suggestions: r.buildSuggestions(root, "timeline.yaml", r.Timeline == ""),
+		},
+	}
+}
+
+// buildSearchedPaths returns common paths that were likely searched for a given filename
+func (r *DiscoverResult) buildSearchedPaths(root, filename string) []string {
+	if filename == "milestone-m*.tasks.yaml" {
+		return []string{
+			"./implementation/tasks/",
+			"./tasks/",
+			"./**/implementation/tasks/",
+		}
+	}
+
+	commonPaths := []string{
+		"./" + filename,
+	}
+
+	if filename == "developer-summary.md" {
+		commonPaths = append(commonPaths,
+			"./docs/"+filename,
+			"./**/"+filename,
+		)
+	} else if filename == "milestones.yaml" {
+		commonPaths = append(commonPaths,
+			"./implementation/"+filename,
+			"./docs/implementation/"+filename,
+			"./**/implementation/"+filename,
+		)
+	} else if filename == "timeline.yaml" {
+		commonPaths = append(commonPaths,
+			"./delivery/"+filename,
+			"./docs/delivery/"+filename,
+			"./**/"+filename,
+		)
+	}
+
+	return commonPaths
+}
+
+// buildSuggestions returns actionable remediation suggestions when a file is missing
+func (r *DiscoverResult) buildSuggestions(root, filename string, missing bool) []string {
+	if !missing {
+		return nil
+	}
+
+	var suggestions []string
+
+	switch filename {
+	case "developer-summary.md":
+		// Check for alternative names
+		alternativeNames := []string{"PROJECT-SUMMARY.md", "project-summary.md", "README.md"}
+		for _, altName := range alternativeNames {
+			if fileExists(filepath.Join(root, altName)) {
+				suggestions = append(suggestions, fmt.Sprintf("Found %s - try: mv %s developer-summary.md", altName, altName))
+				break
+			}
+		}
+		if len(suggestions) == 0 {
+			suggestions = append(suggestions, "Create developer-summary.md with project overview and deliverables")
+		}
+
+	case "milestones.yaml":
+		suggestions = append(suggestions, "Expected location: ./implementation/milestones.yaml")
+		suggestions = append(suggestions, "Run 'sherpy plan' to generate implementation artifacts")
+
+	case "milestone-m*.tasks.yaml":
+		suggestions = append(suggestions, "Expected location: ./implementation/tasks/milestone-m*.tasks.yaml")
+		suggestions = append(suggestions, "Task files should follow pattern: milestone-m1.tasks.yaml, milestone-m2.tasks.yaml, etc.")
+
+	case "timeline.yaml":
+		suggestions = append(suggestions, "timeline.yaml is optional but recommended")
+		suggestions = append(suggestions, "Expected location: ./delivery/timeline.yaml or ./timeline.yaml")
+	}
+
+	return suggestions
+}
+
+// fileExists checks if a file exists at the given path
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }

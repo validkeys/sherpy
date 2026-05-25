@@ -18,9 +18,30 @@ func RunInit(root string) error {
 		return fmt.Errorf("sherpy-jira.yaml already exists (use --force to overwrite)")
 	}
 
+	fmt.Println("Discovering Sherpy planning files...")
+
 	// Discover sherpy files
 	result, err := DiscoverFiles(root)
+
+	// Always display the discovery report, even on error
+	fmt.Print(FormatDiscoveryReport(result))
+
+	// Display remediation suggestions if any files are missing
+	if remediations := FormatRemediations(result); remediations != "" {
+		fmt.Print(remediations)
+	}
+
+	// If discovery failed, provide enhanced error message
 	if err != nil {
+		var missingFiles []string
+		for _, fs := range result.FileStatuses {
+			if !fs.Found && fs.Required {
+				missingFiles = append(missingFiles, fs.Name)
+			}
+		}
+		if len(missingFiles) > 0 {
+			return fmt.Errorf("missing required files: %s", strings.Join(missingFiles, ", "))
+		}
 		return fmt.Errorf("failed to discover files: %w", err)
 	}
 
@@ -50,20 +71,9 @@ func RunInit(root string) error {
 
 	// Print success summary
 	fmt.Println("✓ Created sherpy-jira.yaml")
-	fmt.Printf("  Developer Summary: %s\n", cfg.DeveloperSummary)
-	fmt.Printf("  Milestones:        %s\n", cfg.Milestones)
-	fmt.Printf("  Tasks Directory:   %s\n", cfg.TasksDir)
-	if cfg.Timeline != "" {
-		fmt.Printf("  Timeline:          %s\n", cfg.Timeline)
-	}
 	if cfg.ProjectName != "" {
-		fmt.Printf("  Project Name:      %s\n", cfg.ProjectName)
-		fmt.Printf("  Project Key:       %s\n", cfg.ProjectKey)
-	}
-
-	// Print warnings
-	for _, warning := range result.Warnings {
-		fmt.Printf("  ⚠ %s\n", warning)
+		fmt.Printf("  Project Name: %s\n", cfg.ProjectName)
+		fmt.Printf("  Project Key:  %s\n", cfg.ProjectKey)
 	}
 
 	return nil
@@ -131,7 +141,8 @@ func generateProjectKey(projectName string) string {
 // RunSetup implements the setup command that creates a Jira project and discovers issue types.
 // workingDir is the directory containing sherpy-jira.yaml.
 // globalConfigPath is the path to the global config file (empty string uses default).
-func RunSetup(workingDir, globalConfigPath string) error {
+// existingProjectKey, if non-empty, skips project creation and uses an existing project.
+func RunSetup(workingDir, globalConfigPath string, existingProjectKey string) error {
 	// Load local config
 	localConfigPath := filepath.Join(workingDir, "sherpy-jira.yaml")
 	localCfg, err := LoadLocalConfig(localConfigPath)
@@ -168,10 +179,10 @@ func RunSetup(workingDir, globalConfigPath string) error {
 		if domain == "" {
 			return fmt.Errorf("domain cannot be empty")
 		}
-		// Ensure domain has https:// prefix
-		if !strings.HasPrefix(domain, "http://") && !strings.HasPrefix(domain, "https://") {
-			domain = "https://" + domain
-		}
+	}
+	// Ensure domain has https:// prefix (regardless of source)
+	if !strings.HasPrefix(domain, "http://") && !strings.HasPrefix(domain, "https://") {
+		domain = "https://" + domain
 	}
 
 	// Create Jira client
@@ -185,8 +196,11 @@ func RunSetup(workingDir, globalConfigPath string) error {
 	}
 	fmt.Printf("✓ Connected as account ID: %s\n", accountID)
 
-	// Prompt for project key if not set
-	projectKey := localCfg.ProjectKey
+	// Determine project key: CLI flag > local config > prompt
+	projectKey := existingProjectKey
+	if projectKey == "" {
+		projectKey = localCfg.ProjectKey
+	}
 	if projectKey == "" {
 		fmt.Print("Project key (e.g., SHERPY): ")
 		fmt.Scanln(&projectKey)
@@ -195,33 +209,35 @@ func RunSetup(workingDir, globalConfigPath string) error {
 		}
 	}
 
-	// Prompt for project name if not set
-	projectName := localCfg.ProjectName
-	if projectName == "" {
-		fmt.Print("Project name (e.g., Sherpy PM): ")
-		// Read full line (may contain spaces)
-		scanner := bufio.NewScanner(os.Stdin)
-		if scanner.Scan() {
-			projectName = scanner.Text()
-		}
-		if projectName == "" {
-			return fmt.Errorf("project name cannot be empty")
-		}
-	}
-
-	// Create project
-	fmt.Printf("Creating Jira project '%s' (%s)...\n", projectName, projectKey)
-	projectResp, err := client.CreateProject(projectKey, projectName, accountID)
-	if err != nil {
-		// Check if project already exists (non-fatal)
-		if strings.Contains(err.Error(), "400") {
-			fmt.Printf("⚠ Project may already exist: %v\n", err)
-			fmt.Println("Continuing with setup...")
-		} else {
-			return fmt.Errorf("failed to create project: %w", err)
-		}
+	if existingProjectKey != "" {
+		fmt.Printf("Using existing project: %s\n", projectKey)
 	} else {
-		fmt.Printf("✓ Created project: %s (ID: %s)\n", projectResp.Key, projectResp.ID)
+		projectName := localCfg.ProjectName
+		if projectName == "" {
+			fmt.Print("Project name (e.g., Sherpy PM): ")
+			scanner := bufio.NewScanner(os.Stdin)
+			if scanner.Scan() {
+				projectName = scanner.Text()
+			}
+			if projectName == "" {
+				return fmt.Errorf("project name cannot be empty")
+			}
+		}
+
+		fmt.Printf("Creating Jira project '%s' (%s)...\n", projectName, projectKey)
+		projectResp, err := client.CreateProject(projectKey, projectName, accountID)
+		if err != nil {
+			if strings.Contains(err.Error(), "400") {
+				fmt.Printf("⚠ Project may already exist: %v\n", err)
+				fmt.Println("Continuing with setup...")
+			} else {
+				return fmt.Errorf("failed to create project: %w", err)
+			}
+		} else {
+			fmt.Printf("✓ Created project: %s (ID: %s)\n", projectResp.Key, projectResp.ID)
+		}
+
+		localCfg.ProjectName = projectName
 	}
 
 	// Discover issue types
@@ -248,7 +264,6 @@ func RunSetup(workingDir, globalConfigPath string) error {
 
 	// Update local config
 	localCfg.ProjectKey = projectKey
-	localCfg.ProjectName = projectName
 	if err := SaveLocalConfig(localCfg, localConfigPath); err != nil {
 		return fmt.Errorf("failed to update local config: %w", err)
 	}

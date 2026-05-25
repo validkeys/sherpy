@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -21,7 +22,15 @@ type JiraClient struct {
 }
 
 // NewJiraClient creates a new Jira API client with rate limiting.
+func normalizeDomain(domain string) string {
+	if !strings.HasPrefix(domain, "http://") && !strings.HasPrefix(domain, "https://") {
+		return "https://" + domain
+	}
+	return domain
+}
+
 func NewJiraClient(domain, email, token string) *JiraClient {
+	domain = normalizeDomain(domain)
 	// Create rate limiter: buffered channel with 5 tokens
 	rateLimiter := make(chan struct{}, 5)
 
@@ -311,19 +320,21 @@ func (c *JiraClient) GetCreateMeta(projectKey string) (epicID, storyID, subTaskI
 	}
 
 	issueTypes := resp.Projects[0].IssueTypes
+	var available []string
 	for _, it := range issueTypes {
-		switch it.Name {
-		case "Epic":
+		available = append(available, fmt.Sprintf("%s (%s)", it.Name, it.ID))
+		switch strings.ToLower(it.Name) {
+		case "epic":
 			epicID = it.ID
-		case "Story":
+		case "story":
 			storyID = it.ID
-		case "Sub-task":
+		case "sub-task", "subtask":
 			subTaskID = it.ID
 		}
 	}
 
 	if epicID == "" || storyID == "" || subTaskID == "" {
-		return "", "", "", fmt.Errorf("missing required issue types (Epic=%s, Story=%s, Sub-task=%s)", epicID, storyID, subTaskID)
+		return "", "", "", fmt.Errorf("missing required issue types (Epic=%s, Story=%s, Sub-task=%s); available types: %s", epicID, storyID, subTaskID, strings.Join(available, ", "))
 	}
 
 	return epicID, storyID, subTaskID, nil

@@ -115,3 +115,154 @@ func TestFormatProgress(t *testing.T) {
 		})
 	}
 }
+
+func TestFormatDiscoveryReport(t *testing.T) {
+	result := &DiscoverResult{
+		DeveloperSummary: "developer-summary.md",
+		Milestones:       "implementation/milestones.yaml",
+		TasksDir:         "implementation/tasks",
+		Timeline:         "",
+		FileStatuses: []FileStatus{
+			{
+				Name:     "developer-summary.md",
+				Required: true,
+				Found:    true,
+				Path:     "developer-summary.md",
+			},
+			{
+				Name:     "milestones.yaml",
+				Required: true,
+				Found:    true,
+				Path:     "implementation/milestones.yaml",
+			},
+			{
+				Name:     "milestone task files",
+				Required: true,
+				Found:    true,
+				Path:     "implementation/tasks",
+			},
+			{
+				Name:     "timeline.yaml",
+				Required: false,
+				Found:    false,
+				Path:     "",
+			},
+		},
+	}
+
+	output := FormatDiscoveryReport(result)
+
+	// Verify header
+	if !strings.Contains(output, "File Discovery Report") {
+		t.Errorf("Expected header, got: %s", output)
+	}
+
+	// Verify found files show checkmark and path
+	if !strings.Contains(output, "✓") {
+		t.Errorf("Expected checkmark for found files, got: %s", output)
+	}
+	if !strings.Contains(output, "found at:") {
+		t.Errorf("Expected 'found at:' for found files, got: %s", output)
+	}
+	if !strings.Contains(output, "implementation/milestones.yaml") {
+		t.Errorf("Expected milestone path, got: %s", output)
+	}
+
+	// Verify missing files show X and (optional)
+	if !strings.Contains(output, "✗") {
+		t.Errorf("Expected X mark for missing files, got: %s", output)
+	}
+	if !strings.Contains(output, "not found (optional)") {
+		t.Errorf("Expected '(optional)' for timeline, got: %s", output)
+	}
+}
+
+func TestFormatDiscoveryReport_AllMissing(t *testing.T) {
+	result := &DiscoverResult{
+		FileStatuses: []FileStatus{
+			{
+				Name:     "developer-summary.md",
+				Required: true,
+				Found:    false,
+			},
+			{
+				Name:     "milestones.yaml",
+				Required: true,
+				Found:    false,
+			},
+		},
+	}
+
+	output := FormatDiscoveryReport(result)
+
+	// All should show X mark
+	xCount := strings.Count(output, "✗")
+	if xCount != 2 {
+		t.Errorf("Expected 2 X marks, got %d in: %s", xCount, output)
+	}
+
+	// Should show (required) for required files
+	if !strings.Contains(output, "not found (required)") {
+		t.Errorf("Expected '(required)' for missing required files, got: %s", output)
+	}
+}
+
+func TestFormatRemediations(t *testing.T) {
+	result := &DiscoverResult{
+		FileStatuses: []FileStatus{
+			{
+				Name:        "developer-summary.md",
+				Required:    true,
+				Found:       false,
+				Suggestions: []string{"Found PROJECT-SUMMARY.md - try: mv PROJECT-SUMMARY.md developer-summary.md"},
+			},
+			{
+				Name:        "milestones.yaml",
+				Required:    true,
+				Found:       false,
+				Suggestions: []string{"Expected location: ./implementation/milestones.yaml", "Run 'sherpy plan' to generate implementation artifacts"},
+			},
+		},
+	}
+
+	output := FormatRemediations(result)
+
+	// Verify header
+	if !strings.Contains(output, "Suggestions:") {
+		t.Errorf("Expected Suggestions header, got: %s", output)
+	}
+
+	// Verify bullets
+	bulletCount := strings.Count(output, "•")
+	if bulletCount != 3 {
+		t.Errorf("Expected 3 bullet points, got %d in: %s", bulletCount, output)
+	}
+
+	// Verify specific suggestions
+	if !strings.Contains(output, "mv PROJECT-SUMMARY.md") {
+		t.Errorf("Expected rename suggestion, got: %s", output)
+	}
+	if !strings.Contains(output, "Expected location:") {
+		t.Errorf("Expected location suggestion, got: %s", output)
+	}
+}
+
+func TestFormatRemediations_NoSuggestions(t *testing.T) {
+	result := &DiscoverResult{
+		FileStatuses: []FileStatus{
+			{
+				Name:        "developer-summary.md",
+				Required:    true,
+				Found:       true,
+				Suggestions: nil,
+			},
+		},
+	}
+
+	output := FormatRemediations(result)
+
+	// Should return empty string when all files are found
+	if output != "" {
+		t.Errorf("Expected empty output for complete discovery, got: %s", output)
+	}
+}

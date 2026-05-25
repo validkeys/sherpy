@@ -109,15 +109,50 @@ type Task struct {
 	Name            string   `yaml:"name"`
 	Description     string   `yaml:"description"`
 	EstimateMinutes int      `yaml:"estimate_minutes"`
+	DurationMinutes int      `yaml:"duration_minutes"`
 	Type            string   `yaml:"type"`
 	Dependencies    []string `yaml:"dependencies"`
+	DependsOn       []string `yaml:"depends_on"`
+}
+
+// GetSummary returns the task name, falling back to description if name is empty.
+func (t *Task) GetSummary() string {
+	if t.Name != "" {
+		return t.Name
+	}
+	return t.Description
+}
+
+// GetDependencies returns the dependencies list, trying both field names.
+func (t *Task) GetDependencies() []string {
+	if len(t.Dependencies) > 0 {
+		return t.Dependencies
+	}
+	return t.DependsOn
+}
+
+// GetEstimate returns the estimate in minutes, trying both field names.
+func (t *Task) GetEstimate() int {
+	if t.EstimateMinutes > 0 {
+		return t.EstimateMinutes
+	}
+	return t.DurationMinutes
 }
 
 // TasksFile represents the root structure of a milestone-m*.tasks.yaml file.
 type TasksFile struct {
-	Milestone string `yaml:"milestone"`
-	Name      string `yaml:"name"`
-	Tasks     []Task `yaml:"tasks"`
+	Milestone    string `yaml:"milestone"`
+	MilestoneID  string `yaml:"milestone_id"`
+	Name         string `yaml:"name"`
+	Tasks        []Task `yaml:"tasks"`
+}
+
+// GetMilestoneID returns the milestone ID, trying both field names.
+func (tf *TasksFile) GetMilestoneID() string {
+	if tf.Milestone != "" {
+		return tf.Milestone
+	}
+	return tf.MilestoneID
 }
 
 // ParseTasksDir parses all milestone-m*.tasks.yaml files in the given directory
@@ -151,7 +186,7 @@ func ParseTasksDir(tasksDir string) (map[string][]Task, error) {
 		}
 
 		// Add tasks to map keyed by milestone ID
-		tasksMap[tf.Milestone] = tf.Tasks
+		tasksMap[tf.GetMilestoneID()] = tf.Tasks
 	}
 
 	return tasksMap, nil
@@ -173,45 +208,73 @@ type TimelineFile struct {
 	Workback struct {
 		Schedule []TimelineEntry `yaml:"schedule"`
 	} `yaml:"workback"`
+	Phases []TimelinePhase `yaml:"phases"`
 }
 
-// ParseTimeline parses timeline.yaml and returns a map of milestone ID to completion date.
-// Only entries with type "milestone" are included, and entries with IDs starting with "post-"
-// are excluded.
-func ParseTimeline(path string) (map[string]string, error) {
-	// Read file
+// TimelinePhase represents a phase entry in timeline.yaml.
+type TimelinePhase struct {
+	ID          string `yaml:"id"`
+	Name        string `yaml:"name"`
+	MilestoneID string `yaml:"milestone_id"`
+	StartDate   string `yaml:"start_date"`
+	EndDate     string `yaml:"end_date"`
+}
+
+// TimelineDateRange holds start and end dates for a milestone.
+type TimelineDateRange struct {
+	StartDate string
+	EndDate   string
+}
+
+// ParseTimeline parses timeline.yaml and returns a map of milestone ID to date range.
+// Supports both workback.schedule format and phases format.
+func ParseTimeline(path string) (map[string]*TimelineDateRange, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read timeline file: %w", err)
 	}
 
-	// Unmarshal YAML
 	var tf TimelineFile
 	if err := yaml.Unmarshal(data, &tf); err != nil {
 		return nil, fmt.Errorf("failed to parse timeline YAML: %w", err)
 	}
 
-	// Build map of milestone ID to completion date
-	dueDates := make(map[string]string)
+	dueDates := make(map[string]*TimelineDateRange)
 
-	// Handle missing workback section gracefully
-	if tf.Workback.Schedule == nil {
-		return dueDates, nil
+	if len(tf.Phases) > 0 {
+		for _, phase := range tf.Phases {
+			mid := normalizeMilestoneID(phase.MilestoneID)
+			if mid != "" && (phase.StartDate != "" || phase.EndDate != "") {
+				dueDates[mid] = &TimelineDateRange{
+					StartDate: phase.StartDate,
+					EndDate:   phase.EndDate,
+				}
+			}
+		}
 	}
 
-	for _, entry := range tf.Workback.Schedule {
-		// Only include milestone entries
-		if entry.Type != "milestone" {
-			continue
+	if tf.Workback.Schedule != nil {
+		for _, entry := range tf.Workback.Schedule {
+			if entry.Type != "milestone" {
+				continue
+			}
+			if strings.HasPrefix(entry.ID, "post-") {
+				continue
+			}
+			mid := normalizeMilestoneID(entry.ID)
+			if mid != "" && entry.CompletionDate != "" {
+				if _, exists := dueDates[mid]; !exists {
+					dueDates[mid] = &TimelineDateRange{}
+				}
+				dueDates[mid].EndDate = entry.CompletionDate
+			}
 		}
-
-		// Skip post-* entries
-		if strings.HasPrefix(entry.ID, "post-") {
-			continue
-		}
-
-		dueDates[entry.ID] = entry.CompletionDate
 	}
 
 	return dueDates, nil
+}
+
+// normalizeMilestoneID converts milestone IDs like "M0", "M1" to "m0", "m1".
+func normalizeMilestoneID(id string) string {
+	return strings.ToLower(id)
 }

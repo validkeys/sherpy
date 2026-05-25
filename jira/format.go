@@ -107,3 +107,70 @@ func FormatProgress(current, total int, entityType, operation string) string {
 	}
 	return fmt.Sprintf("%s %s %d/%d...", operation, entityType, current, total)
 }
+
+// FormatDiscoveryReport renders a detailed report of file discovery results.
+func FormatDiscoveryReport(result *DiscoverResult) string {
+	var b strings.Builder
+
+	b.WriteString("\nFile Discovery Report:\n")
+
+	// Find the longest file name for alignment
+	maxNameLen := 0
+	for _, fs := range result.FileStatuses {
+		if len(fs.Name) > maxNameLen {
+			maxNameLen = len(fs.Name)
+		}
+	}
+
+	// Display each file status
+	for _, fs := range result.FileStatuses {
+		// Status indicator
+		status := "✗"
+		if fs.Found {
+			status = "✓"
+		}
+
+		// Pad name for alignment
+		paddedName := fs.Name + strings.Repeat(" ", maxNameLen-len(fs.Name))
+
+		// Required/optional indicator
+		reqStatus := "required"
+		if !fs.Required {
+			reqStatus = "optional"
+		}
+
+		// Build the line
+		if fs.Found {
+			fmt.Fprintf(&b, "  %s %-"+fmt.Sprintf("%d", maxNameLen+2)+"s found at: %s\n", status, paddedName, fs.Path)
+		} else {
+			fmt.Fprintf(&b, "  %s %-"+fmt.Sprintf("%d", maxNameLen+2)+"s not found (%s)\n", status, paddedName, reqStatus)
+		}
+	}
+
+	b.WriteString("\n")
+	return b.String()
+}
+
+// FormatRemediations renders actionable suggestions for missing files.
+func FormatRemediations(result *DiscoverResult) string {
+	var suggestions []string
+
+	for _, fs := range result.FileStatuses {
+		if !fs.Found && len(fs.Suggestions) > 0 {
+			suggestions = append(suggestions, fs.Suggestions...)
+		}
+	}
+
+	if len(suggestions) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString("Suggestions:\n")
+	for _, suggestion := range suggestions {
+		fmt.Fprintf(&b, "  • %s\n", suggestion)
+	}
+	b.WriteString("\n")
+
+	return b.String()
+}

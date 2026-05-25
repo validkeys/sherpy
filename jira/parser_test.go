@@ -401,13 +401,13 @@ workback:
 	}
 
 	// Verify m0 date
-	if dueDates["m0"] != "2026-05-10" {
-		t.Errorf("expected m0 completion_date '2026-05-10', got %q", dueDates["m0"])
+	if dueDates["m0"].EndDate != "2026-05-10" {
+		t.Errorf("expected m0 completion_date '2026-05-10', got %q", dueDates["m0"].EndDate)
 	}
 
 	// Verify m1 date
-	if dueDates["m1"] != "2026-05-25" {
-		t.Errorf("expected m1 completion_date '2026-05-25', got %q", dueDates["m1"])
+	if dueDates["m1"].EndDate != "2026-05-25" {
+		t.Errorf("expected m1 completion_date '2026-05-25', got %q", dueDates["m1"].EndDate)
 	}
 
 	// Verify delivery entry is excluded

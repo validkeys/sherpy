@@ -821,8 +821,9 @@ tasks:
 		t.Fatal("Expected error when milestone creation fails and tasks depend on it")
 	}
 
-	if !strings.Contains(err.Error(), "milestone m0 must be synced") {
-		t.Errorf("Expected error about milestone dependency, got: %v", err)
+	// Should get an error about milestone creation failure
+	if !strings.Contains(err.Error(), "failed to create milestone m0") {
+		t.Errorf("Expected error about milestone m0 creation failure, got: %v", err)
 	}
 
 	// Verify Epic was created successfully before the failure

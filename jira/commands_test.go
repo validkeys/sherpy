@@ -284,7 +284,7 @@ func TestRunSetup_MissingEnvVars(t *testing.T) {
 		}
 	}()
 
-	err := RunSetup(tempDir, "")
+	err := RunSetup(tempDir, "", "")
 	if err == nil {
 		t.Fatal("Expected error for missing env vars, got nil")
 	}
@@ -317,7 +317,7 @@ func TestRunSetup_MissingInit(t *testing.T) {
 		}
 	}()
 
-	err := RunSetup(tempDir, "")
+	err := RunSetup(tempDir, "", "")
 	if err == nil {
 		t.Fatal("Expected error for missing sherpy-jira.yaml, got nil")
 	}

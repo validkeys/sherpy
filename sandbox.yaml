@@ -29,6 +29,7 @@ env:
   NODE_OPTIONS: "--max-old-space-size=4096"
   GOPROXY: "direct"
   GOSUMDB: "off"
+  JIRA_EMAIL: "kydavis@ci.com"
   # MY_API_KEY: "from-your-dotenv"
 
 # --- Environment from host ----------------------------------------------------
@@ -61,6 +62,9 @@ envFromKeychain:
   - env: GH_TOKEN
     service: "kdev:sherpy"
     account: "validkeys"
+  - env: JIRA_TOKEN
+    service: "jira-cloud:pario-tech"
+    account: "kydavis"
 
 # --- Port forwarding ----------------------------------------------------------
 # Host-to-container port mappings (1:1). Only listed ports are accessible

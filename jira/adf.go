@@ -95,31 +95,33 @@ func (doc *ADFDoc) AddBulletList(items []string) {
 	doc.Content = append(doc.Content, bulletList)
 }
 
-// AddChecklist adds a task list (checklist) with the given items.
+// AddChecklist adds a bullet list with checkbox-style items (☐/✓).
+// Uses bulletList instead of taskList for broader Jira compatibility.
 func (doc *ADFDoc) AddChecklist(items []string) {
-	taskItems := make([]ADFNode, 0, len(items))
+	listItems := make([]ADFNode, 0, len(items))
 	for _, item := range items {
-		taskItem := ADFNode{
-			Type: "taskItem",
-			Attrs: map[string]any{
-				"state": "TODO",
-			},
+		listItem := ADFNode{
+			Type: "listItem",
 			Content: []ADFNode{
 				{
-					Type: "text",
-					Text: item,
+					Type: "paragraph",
+					Content: []ADFNode{
+						{
+							Type: "text",
+							Text: "☐ " + item,
+						},
+					},
 				},
 			},
 		}
-		taskItems = append(taskItems, taskItem)
+		listItems = append(listItems, listItem)
 	}
 
-	taskList := ADFNode{
-		Type:    "taskList",
-		Attrs:   map[string]any{"localId": "checklist"},
-		Content: taskItems,
+	bulletList := ADFNode{
+		Type:    "bulletList",
+		Content: listItems,
 	}
-	doc.Content = append(doc.Content, taskList)
+	doc.Content = append(doc.Content, bulletList)
 }
 
 // AddHorizontalRule adds a horizontal rule (divider).
@@ -150,6 +152,24 @@ func (doc *ADFDoc) AddBoldParagraph(label, text string) {
 		},
 	}
 	doc.Content = append(doc.Content, para)
+}
+
+// AddCodeBlock adds a code block with the given language and lines.
+func (doc *ADFDoc) AddCodeBlock(language string, lines []string) {
+	block := ADFNode{
+		Type: "codeBlock",
+		Content: []ADFNode{
+			{
+				Type:    "text",
+				Text:    strings.Join(lines, "\n"),
+				Marks:   nil,
+			},
+		},
+	}
+	if language != "" {
+		block.Attrs = map[string]any{"language": language}
+	}
+	doc.Content = append(doc.Content, block)
 }
 
 // ToJSON serializes the ADF document to JSON.
@@ -198,6 +218,23 @@ func BuildEpicDescription(summary *DeveloperSummary) ([]byte, error) {
 		if trimmed == "---" || trimmed == "***" {
 			doc.AddHorizontalRule()
 			i++
+			continue
+		}
+
+		// Fenced code block (``` or ```lang)
+		if strings.HasPrefix(trimmed, "```") {
+			lang := strings.TrimPrefix(trimmed, "```")
+			var codeLines []string
+			i++
+			for i < len(lines) {
+				if strings.TrimSpace(lines[i]) == "```" {
+					i++
+					break
+				}
+				codeLines = append(codeLines, lines[i])
+				i++
+			}
+			doc.AddCodeBlock(lang, codeLines)
 			continue
 		}
 
@@ -306,12 +343,13 @@ func BuildTaskDescription(t *Task) ([]byte, error) {
 
 	// Add task metadata
 	doc.AddBoldParagraph("Type:", t.Type)
-	doc.AddBoldParagraph("Estimate:", fmt.Sprintf("%d minutes", t.EstimateMinutes))
+	doc.AddBoldParagraph("Estimate:", fmt.Sprintf("%d minutes", t.GetEstimate()))
 
 	// Add dependencies
-	if len(t.Dependencies) > 0 {
+	deps := t.GetDependencies()
+	if len(deps) > 0 {
 		doc.AddHeading("Dependencies", 3)
-		doc.AddBulletList(t.Dependencies)
+		doc.AddBulletList(deps)
 	}
 
 	return doc.ToJSON()

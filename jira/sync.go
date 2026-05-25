@@ -1,6 +1,7 @@
 package jira
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -76,7 +77,7 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 	}
 
 	// Parse timeline if configured
-	var timeline map[string]string
+	var timeline map[string]*TimelineDateRange
 	if localCfg.Timeline != "" {
 		timeline, err = ParseTimeline(filepath.Join(".", localCfg.Timeline))
 		if err != nil {
@@ -173,12 +174,12 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 			for _, t := range taskList {
 				if taskOps[t.ID] != "skip" {
 					entry := state.Tasks[t.ID]
-					sp := MinutesToStoryPoints(t.EstimateMinutes)
+					sp := MinutesToStoryPoints(t.GetEstimate())
 					dryResult.Plan = append(dryResult.Plan, PlanEntry{
 						Operation: taskOps[t.ID],
 						Type:      "Sub-task",
 						Key:       ifElse(entry.JiraKey != "", entry.JiraKey, "SHERPY-?"),
-						Summary:   t.Name,
+						Summary:   t.GetSummary(),
 						SP:        sp,
 						Labels:    fmt.Sprintf("[%s]", t.Type),
 						Indent:    2,
@@ -235,6 +236,9 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 
 	// Epic must exist before syncing Stories
 	if state.Epic.JiraKey == "" {
+		if len(result.Errors) > 0 {
+			return nil, fmt.Errorf("epic creation failed: %w", result.Errors[0].Error)
+		}
 		return nil, fmt.Errorf("epic must be created before syncing milestones")
 	}
 
@@ -256,26 +260,26 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 	// Sync milestones level by level
 	for _, level := range orderedMilestones {
 		for _, m := range level {
-			// Get due date from timeline if available
-			dueDate := ""
+			var dueDate, startDate string
 			if timeline != nil {
-				dueDate = timeline[m.ID]
+				if dr, ok := timeline[m.ID]; ok && dr != nil {
+					dueDate = dr.EndDate
+					startDate = dr.StartDate
+				}
 			}
-
 			op := milestoneOps[m.ID]
 			if op == "create" {
 				storyCounter++
 				if progress != nil {
 					progress(FormatProgress(storyCounter, totalStories, "Story", "Creating"))
 				}
-				if err := syncMilestone(client, localCfg.ProjectKey, state.Epic.JiraKey, globalCfg, &m, dueDate, state, dryRun); err != nil {
-					result.Errors = append(result.Errors, SyncError{EntityID: m.ID, Operation: "create", Error: err})
-				} else {
-					result.StoriesCreated++
-					if !dryRun {
-						if err := saveSyncState(state, syncStatePath); err != nil {
-							return nil, fmt.Errorf("failed to save sync state after milestone %s creation: %w", m.ID, err)
-						}
+				if err := syncMilestone(client, localCfg.ProjectKey, state.Epic.JiraKey, globalCfg, &m, startDate, dueDate, state, dryRun); err != nil {
+					return nil, fmt.Errorf("failed to create milestone %s: %w", m.ID, err)
+				}
+				result.StoriesCreated++
+				if !dryRun {
+					if err := saveSyncState(state, syncStatePath); err != nil {
+						return nil, fmt.Errorf("failed to save sync state after milestone %s creation: %w", m.ID, err)
 					}
 				}
 			} else if op == "update" {
@@ -283,14 +287,13 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 				if progress != nil {
 					progress(FormatProgress(storyCounter, totalStories, "Story", "Updating"))
 				}
-				if err := syncMilestone(client, localCfg.ProjectKey, state.Epic.JiraKey, globalCfg, &m, dueDate, state, dryRun); err != nil {
-					result.Errors = append(result.Errors, SyncError{EntityID: m.ID, Operation: "update", Error: err})
-				} else {
-					result.StoriesUpdated++
-					if !dryRun {
-						if err := saveSyncState(state, syncStatePath); err != nil {
-							return nil, fmt.Errorf("failed to save sync state after milestone %s update: %w", m.ID, err)
-						}
+				if err := syncMilestone(client, localCfg.ProjectKey, state.Epic.JiraKey, globalCfg, &m, startDate, dueDate, state, dryRun); err != nil {
+					return nil, fmt.Errorf("failed to update milestone %s: %w", m.ID, err)
+				}
+				result.StoriesUpdated++
+				if !dryRun {
+					if err := saveSyncState(state, syncStatePath); err != nil {
+						return nil, fmt.Errorf("failed to save sync state after milestone %s update: %w", m.ID, err)
 					}
 				}
 			} else {
@@ -378,7 +381,7 @@ func RunSync(client *JiraClient, localCfg *LocalConfig, globalCfg *GlobalConfig,
 	}
 	for _, taskList := range tasks {
 		for _, t := range taskList {
-			for _, depID := range t.Dependencies {
+			for _, depID := range t.GetDependencies() {
 				allDeps = append(allDeps, Dependency{
 					OutwardID: t.ID,
 					InwardID:  depID,
@@ -506,6 +509,17 @@ func determineOperation(jiraKey, oldHash, newHash string) string {
 	return "skip"
 }
 
+// maybeStoryPoints returns a map entry for the story points field if configured,
+// or nil if not. Returns a single-entry map to be merged into fields.
+func maybeStoryPoints(globalCfg *GlobalConfig, sp int) map[string]interface{} {
+	if globalCfg.Jira.StoryPointsField == "" {
+		return nil
+	}
+	return map[string]interface{}{
+		globalCfg.Jira.StoryPointsField: sp,
+	}
+}
+
 // ifElse is a helper for ternary-like logic.
 func ifElse(cond bool, a, b string) string {
 	if cond {
@@ -546,7 +560,7 @@ func syncEpic(client *JiraClient, projectKey string, globalCfg *GlobalConfig, su
 		req := &UpdateIssueRequest{
 			Fields: map[string]interface{}{
 				"summary":     summary.Title,
-				"description": adfBytes,
+				"description": json.RawMessage(adfBytes),
 			},
 		}
 
@@ -567,7 +581,7 @@ func syncEpic(client *JiraClient, projectKey string, globalCfg *GlobalConfig, su
 				Project:     map[string]string{"key": projectKey},
 				IssueType:   map[string]string{"id": globalCfg.Jira.IssueTypes.Epic},
 				Summary:     summary.Title,
-				Description: adfBytes,
+				Description: json.RawMessage(adfBytes),
 				Labels:      []string{"sherpy-project"},
 			},
 		}
@@ -590,7 +604,7 @@ func syncEpic(client *JiraClient, projectKey string, globalCfg *GlobalConfig, su
 }
 
 // syncMilestone creates or updates a Story issue from a milestone.
-func syncMilestone(client *JiraClient, projectKey, epicKey string, globalCfg *GlobalConfig, milestone *Milestone, dueDate string, state *SyncState, dryRun bool) error {
+func syncMilestone(client *JiraClient, projectKey, epicKey string, globalCfg *GlobalConfig, milestone *Milestone, startDate, dueDate string, state *SyncState, dryRun bool) error {
 	// Compute hash
 	newHash := HashMilestone(milestone)
 
@@ -617,13 +631,24 @@ func syncMilestone(client *JiraClient, projectKey, epicKey string, globalCfg *Gl
 		}
 
 		fields := map[string]interface{}{
-			"summary":           milestone.Name,
-			"description":       adfBytes,
-			"customfield_10016": sp, // Story points
+			"summary":     milestone.Name,
+			"description": json.RawMessage(adfBytes),
+		}
+
+		if spField := maybeStoryPoints(globalCfg, sp); spField != nil {
+			for k, v := range spField {
+				fields[k] = v
+			}
 		}
 
 		if dueDate != "" {
 			fields["duedate"] = dueDate
+		}
+		if startDate != "" && globalCfg.Jira.StartDateField != "" {
+			fields[globalCfg.Jira.StartDateField] = startDate
+		}
+		if dueDate != "" && globalCfg.Jira.EndDateField != "" {
+			fields[globalCfg.Jira.EndDateField] = dueDate
 		}
 
 		req := &UpdateIssueRequest{Fields: fields}
@@ -642,17 +667,28 @@ func syncMilestone(client *JiraClient, projectKey, epicKey string, globalCfg *Gl
 
 		// Build fields map with custom field for story points
 		fieldsMap := map[string]interface{}{
-			"project":           map[string]string{"key": projectKey},
-			"parent":            map[string]string{"key": epicKey},
-			"summary":           milestone.Name,
-			"issuetype":         map[string]string{"id": globalCfg.Jira.IssueTypes.Story},
-			"description":       adfBytes,
-			"labels":            []string{fmt.Sprintf("milestone:%s", milestone.ID)},
-			"customfield_10016": sp, // Story points
+			"project":     map[string]string{"key": projectKey},
+			"parent":      map[string]string{"key": epicKey},
+			"summary":     milestone.Name,
+			"issuetype":   map[string]string{"id": globalCfg.Jira.IssueTypes.Story},
+			"description": json.RawMessage(adfBytes),
+			"labels":      []string{fmt.Sprintf("milestone:%s", milestone.ID)},
+		}
+
+		if spField := maybeStoryPoints(globalCfg, sp); spField != nil {
+			for k, v := range spField {
+				fieldsMap[k] = v
+			}
 		}
 
 		if dueDate != "" {
 			fieldsMap["duedate"] = dueDate
+		}
+		if startDate != "" && globalCfg.Jira.StartDateField != "" {
+			fieldsMap[globalCfg.Jira.StartDateField] = startDate
+		}
+		if dueDate != "" && globalCfg.Jira.EndDateField != "" {
+			fieldsMap[globalCfg.Jira.EndDateField] = dueDate
 		}
 
 		// Use raw JSON API since we need custom fields
@@ -692,7 +728,7 @@ func syncTask(client *JiraClient, projectKey, milestoneStoryKey string, globalCf
 	}
 
 	// Compute story points
-	sp := MinutesToStoryPoints(task.EstimateMinutes)
+	sp := MinutesToStoryPoints(task.GetEstimate())
 
 	if exists && entry.JiraKey != "" {
 		// Update existing Sub-task
@@ -701,9 +737,14 @@ func syncTask(client *JiraClient, projectKey, milestoneStoryKey string, globalCf
 		}
 
 		fields := map[string]interface{}{
-			"summary":           task.Name,
-			"description":       adfBytes,
-			"customfield_10016": sp, // Story points
+			"summary":     task.GetSummary(),
+			"description": json.RawMessage(adfBytes),
+		}
+
+		if spField := maybeStoryPoints(globalCfg, sp); spField != nil {
+			for k, v := range spField {
+				fields[k] = v
+			}
 		}
 
 		req := &UpdateIssueRequest{Fields: fields}
@@ -722,13 +763,18 @@ func syncTask(client *JiraClient, projectKey, milestoneStoryKey string, globalCf
 
 		// Build fields map with custom field for story points
 		fieldsMap := map[string]interface{}{
-			"project":           map[string]string{"key": projectKey},
-			"parent":            map[string]string{"key": milestoneStoryKey}, // Parent is the Story, NOT the Epic
-			"summary":           task.Name,
-			"issuetype":         map[string]string{"id": globalCfg.Jira.IssueTypes.SubTask},
-			"description":       adfBytes,
-			"labels":            []string{task.Type},
-			"customfield_10016": sp, // Story points
+			"project":     map[string]string{"key": projectKey},
+			"parent":      map[string]string{"key": milestoneStoryKey},
+			"summary":     task.GetSummary(),
+			"issuetype":   map[string]string{"id": globalCfg.Jira.IssueTypes.SubTask},
+			"description": json.RawMessage(adfBytes),
+			"labels":      []string{task.Type},
+		}
+
+		if spField := maybeStoryPoints(globalCfg, sp); spField != nil {
+			for k, v := range spField {
+				fieldsMap[k] = v
+			}
 		}
 
 		// Use raw JSON API since we need custom fields

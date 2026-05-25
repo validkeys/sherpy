@@ -74,8 +74,9 @@ func OrderTasks(tasks []Task) ([][]Task, error) {
 
 	for _, t := range tasks {
 		allIDs[t.ID] = t
-		graph[t.ID] = t.Dependencies
-		inDegree[t.ID] = len(t.Dependencies)
+		deps := t.GetDependencies()
+		graph[t.ID] = deps
+		inDegree[t.ID] = len(deps)
 	}
 
 	// BFS topological sort by levels
@@ -83,16 +84,14 @@ func OrderTasks(tasks []Task) ([][]Task, error) {
 	processed := make(map[string]bool)
 
 	for len(processed) < len(tasks) {
-		// Find all tasks with in-degree 0 (no unprocessed dependencies)
 		var currentLevel []Task
 		for id, t := range allIDs {
 			if processed[id] {
 				continue
 			}
 
-			// Check if all dependencies have been processed
 			allDepsProcessed := true
-			for _, dep := range t.Dependencies {
+			for _, dep := range t.GetDependencies() {
 				if !processed[dep] {
 					allDepsProcessed = false
 					break

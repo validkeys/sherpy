@@ -45,18 +45,17 @@ func HashMilestone(m *Milestone) string {
 // HashTask computes a SHA-256 content hash for a task.
 // Dependencies are sorted to ensure deterministic hashing.
 func HashTask(t *Task) string {
-	// Sort dependencies to ensure deterministic order
-	deps := make([]string, len(t.Dependencies))
-	copy(deps, t.Dependencies)
-	sort.Strings(deps)
+	deps := t.GetDependencies()
+	sortedDeps := make([]string, len(deps))
+	copy(sortedDeps, deps)
+	sort.Strings(sortedDeps)
 
-	// Build canonical representation
 	var parts []string
-	parts = append(parts, "name:"+t.Name)
+	parts = append(parts, "name:"+t.GetSummary())
 	parts = append(parts, "description:"+t.Description)
-	parts = append(parts, fmt.Sprintf("estimate_minutes:%d", t.EstimateMinutes))
+	parts = append(parts, fmt.Sprintf("estimate_minutes:%d", t.GetEstimate()))
 	parts = append(parts, "type:"+t.Type)
-	parts = append(parts, "dependencies:"+strings.Join(deps, ","))
+	parts = append(parts, "dependencies:"+strings.Join(sortedDeps, ","))
 
 	data := strings.Join(parts, "\n")
 	hash := sha256.Sum256([]byte(data))

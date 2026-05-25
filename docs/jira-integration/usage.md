@@ -27,6 +27,11 @@ This creates a `sherpy-to-jira` binary in the project root.
 sudo cp sherpy-to-jira /usr/local/bin/
 ```
 
+**For development**: Use a symlink instead to automatically use the latest build:
+```bash
+sudo ln -s $(pwd)/sherpy-to-jira /usr/local/bin/
+```
+
 ## Quick Start
 
 1. **Navigate to your Sherpy project**

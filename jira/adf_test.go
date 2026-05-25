@@ -149,14 +149,14 @@ func TestADFDoc_Checklist(t *testing.T) {
 		t.Fatal("expected 1 taskList in content")
 	}
 
-	taskList, ok := content[0].(map[string]any)
+	bulletList, ok := content[0].(map[string]any)
 	if !ok {
-		t.Fatal("expected taskList to be object")
+		t.Fatal("expected bulletList to be object")
 	}
 
-	// Jira uses taskList extension
-	if taskList["type"] != "taskList" {
-		t.Errorf("expected type 'taskList', got %v", taskList["type"])
+	// AddChecklist uses bulletList for broader Jira compatibility
+	if bulletList["type"] != "bulletList" {
+		t.Errorf("expected type 'bulletList', got %v", bulletList["type"])
 	}
 }
 

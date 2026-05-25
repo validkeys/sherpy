@@ -15,8 +15,11 @@ type GlobalConfig struct {
 }
 
 type GlobalJiraConfig struct {
-	Domain     string     `yaml:"domain"`
-	IssueTypes IssueTypes `yaml:"issue_types"`
+	Domain            string     `yaml:"domain"`
+	IssueTypes        IssueTypes `yaml:"issue_types"`
+	StoryPointsField  string     `yaml:"story_points_field,omitempty"`
+	StartDateField    string     `yaml:"start_date_field,omitempty"`
+	EndDateField      string     `yaml:"end_date_field,omitempty"`
 }
 
 type IssueTypes struct {

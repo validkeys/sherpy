@@ -37,14 +37,20 @@ func newInitCmd() *cobra.Command {
 }
 
 func newSetupCmd() *cobra.Command {
-	return &cobra.Command{
+	var projectKey string
+
+	cmd := &cobra.Command{
 		Use:   "setup",
 		Short: "Create Jira project and discover issue type IDs",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			globalConfig, _ := cmd.Flags().GetString("global-config")
-			return jira.RunSetup(".", globalConfig)
+			return jira.RunSetup(".", globalConfig, projectKey)
 		},
 	}
+
+	cmd.Flags().StringVarP(&projectKey, "project-key", "p", "", "use an existing Jira project key instead of creating a new project")
+
+	return cmd
 }
 
 func newSyncCmd() *cobra.Command {
