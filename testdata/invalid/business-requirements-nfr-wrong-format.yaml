@@ -1,0 +1,53 @@
+project: Test Project
+version: "1.0.0"
+generated: "2026-06-04T00:00:00Z"
+
+overview:
+  problem: |
+    This is a test problem statement that is at least fifty characters long
+    for testing the validation of the non_functional_requirements field.
+  value_proposition: |
+    This is a value proposition that meets the minimum thirty character requirement.
+  scope:
+    in_scope:
+      - Core functionality
+      - Basic features
+
+personas:
+  - name: Test User
+    description: A test persona description that is at least twenty characters long
+    goals:
+      - Complete tasks efficiently
+    pain_points:
+      - Current system is slow
+
+use_cases:
+  - name: Basic Use Case
+    actor: Test User
+    description: A description that is at least twenty characters minimum
+    outcome: Task completed successfully
+
+functional_requirements:
+  - id: FR-1
+    category: Test
+    description: A test requirement description that is twenty characters min
+    priority: high
+    rationale: Testing purposes
+
+non_functional_requirements: "Performance requirements text"
+
+success_criteria:
+  - criterion: Users complete tasks
+    metric: task completion rate
+    target: "90%"
+
+timeline:
+  phase: MVP
+  duration: 12 weeks
+  milestones:
+    - Week 6: Core features complete
+
+assumptions:
+  - assumption one that is twenty chars
+  - assumption two that is twenty chars
+  - assumption three that is twenty chars

@@ -171,6 +171,18 @@ func enhanceYAMLError(err error, data []byte, docType string) error {
 	problematicLine := string(lines[lineNum-1])
 	fieldName := extractFieldName(problematicLine)
 
+	// If the problematic line is an array item or doesn't have a field name,
+	// look at the previous line for the field name
+	if fieldName == "" || strings.HasPrefix(strings.TrimSpace(problematicLine), "-") {
+		if lineNum > 1 {
+			prevLine := string(lines[lineNum-2])
+			prevFieldName := extractFieldName(prevLine)
+			if prevFieldName != "" {
+				fieldName = prevFieldName
+			}
+		}
+	}
+
 	// Build enhanced error message
 	var msg strings.Builder
 	msg.WriteString(fmt.Sprintf("YAML parsing error at line %d", lineNum))
@@ -202,7 +214,54 @@ func enhanceYAMLError(err error, data []byte, docType string) error {
 	msg.WriteString("\n")
 
 	// Provide specific suggestions based on error type
-	if strings.Contains(errMsg, "cannot unmarshal !!map into string") {
+	// Check for struct type mismatches first (most specific)
+	if strings.Contains(errMsg, "cannot unmarshal !!str") && (strings.Contains(errMsg, "into schema.BR") || strings.Contains(errMsg, "into schema.TR") || strings.Contains(errMsg, "into schema.")) {
+		msg.WriteString("Problem: Found a string where a structured object was expected.\n\n")
+		msg.WriteString("Suggestions:\n")
+		msg.WriteString("  • This field expects a structured format with nested key-value pairs\n")
+
+		// Provide field-specific examples
+		if fieldName == "non_functional_requirements" {
+			msg.WriteString("  • Use the correct format:\n")
+			msg.WriteString("      non_functional_requirements:\n")
+			msg.WriteString("        performance:\n")
+			msg.WriteString("          - \"Task views must load within 500ms\"\n")
+			msg.WriteString("        security:\n")
+			msg.WriteString("          - \"All data encrypted in transit (TLS 1.3)\"\n")
+			msg.WriteString("        usability:\n")
+			msg.WriteString("          - \"WCAG 2.1 Level AA accessibility compliance\"\n")
+			msg.WriteString("  • Available categories: performance, security, usability, reliability, maintainability, observability\n")
+		} else {
+			msg.WriteString("  • Use key-value pairs with proper indentation\n")
+			msg.WriteString("  • Check the schema documentation for the expected structure\n")
+		}
+
+		msg.WriteString("  • See example.yaml in the documentation for a complete reference\n")
+		if docType != "" {
+			msg.WriteString(fmt.Sprintf("  • Run: sherpy prompt -t %s-interview for guidance\n", docType))
+		}
+	} else if strings.Contains(errMsg, "cannot unmarshal !!seq") && (strings.Contains(errMsg, "into schema.BR") || strings.Contains(errMsg, "into schema.TR") || strings.Contains(errMsg, "into schema.")) {
+		msg.WriteString("Problem: Found an array where a structured object was expected.\n\n")
+		msg.WriteString("Suggestions:\n")
+		msg.WriteString("  • This field expects a map/object, not a list\n")
+
+		if fieldName == "non_functional_requirements" {
+			msg.WriteString("  • Use the correct format with categories:\n")
+			msg.WriteString("      non_functional_requirements:\n")
+			msg.WriteString("        performance:\n")
+			msg.WriteString("          - \"Task views must load within 500ms\"\n")
+			msg.WriteString("        security:\n")
+			msg.WriteString("          - \"All data encrypted in transit (TLS 1.3)\"\n")
+			msg.WriteString("  • Available categories: performance, security, usability, reliability, maintainability, observability\n")
+		} else {
+			msg.WriteString("  • Use key-value pairs instead of list items\n")
+		}
+
+		msg.WriteString("  • See example.yaml in the documentation for a complete reference\n")
+		if docType != "" {
+			msg.WriteString(fmt.Sprintf("  • Run: sherpy prompt -t %s-interview for guidance\n", docType))
+		}
+	} else if strings.Contains(errMsg, "cannot unmarshal !!map into string") {
 		msg.WriteString("Problem: Found a map/object where a simple string value was expected.\n\n")
 		msg.WriteString("Suggestions:\n")
 		msg.WriteString("  • If this should be a string, remove the nested structure and use a simple value\n")
