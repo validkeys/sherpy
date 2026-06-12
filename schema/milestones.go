@@ -87,6 +87,7 @@ func validateMSMeta(doc Milestones, r *ValidationResult) {
 	}
 
 	// Validate target_audience if present (optional field for backward compatibility)
+	// Empty string is treated as omitted for backward compatibility
 	if doc.Meta.TargetAudience != "" {
 		validAudiences := map[string]bool{
 			"ai": true, "human": true, "hybrid": true,

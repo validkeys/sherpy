@@ -37,7 +37,7 @@ meta:
 
 **Enums:**
 - `ordering_strategy`: `multi-pr` | `single-feature-branch` | `value-first` | `risk-first` | `vertical-slice` | `foundation-first`
-- `target_audience`: `ai` | `human` | `hybrid` (defaults to `ai` if omitted)
+- `target_audience`: `ai` | `human` | `hybrid` (when omitted, behavior matches `ai` audience)
 
 **Strategy Descriptions:**
 - `multi-pr`: Each milestone ships independently as separate PR
@@ -57,7 +57,7 @@ meta:
 - Should reference project constraints, team size, or delivery model
 - `target_audience`: Optional field, backward compatible with existing plans
 - If present, must be one of: `ai`, `human`, `hybrid`
-- If omitted, behavior defaults to `ai` (current standard)
+- If omitted, generated task instructions follow the same detail level as `ai` audience (full prescriptive details)
 
 ### Milestones Array
 
