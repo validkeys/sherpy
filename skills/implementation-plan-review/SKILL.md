@@ -1,6 +1,6 @@
 ---
 name: implementation-plan-review
-description: Reviews generated implementation plans against best practices including task sizing (30m-2.5h), style anchors, TDD requirements, drift prevention, and quality constraints. Validates milestones.yaml and task files for completeness, alignment, and development readiness.
+description: Reviews generated implementation plans against best practices including task sizing (30m-2.5h), style anchors, TDD requirements (AI audience), drift prevention (AI audience), and quality constraints. Validates milestones.yaml and task files for completeness, alignment, and development readiness. Adjusts review criteria based on target audience (AI, human, or hybrid).
 ---
 
 # Implementation Plan Review
@@ -36,7 +36,22 @@ Load and parse all plan files:
 
 ### Phase 2: Best Practices Compliance
 
-Review against embedded best practices:
+Review against embedded best practices. **Note:** Some checks vary by target audience:
+- **AI audience:** Expect full TDD checklists, drift policy, explicit step-by-step instructions
+- **Human audience:** Expect high-level objectives, constraints, and success criteria only
+- **Hybrid audience:** Expect moderate detail with key guidance points
+
+Adjust expectations accordingly when reviewing instruction detail level.
+
+#### Target Audience Validation
+
+- [ ] **Metadata includes target_audience** — milestones.yaml has meta.target_audience field
+- [ ] **Valid audience value** — one of: "ai", "human", "hybrid"
+- [ ] **Instruction detail matches audience** — review sample tasks to verify:
+  - AI: includes implementation steps, TDD checklist, explicit constraints, drift policy
+  - Human: includes objective, style anchors, key requirements, success criteria only
+  - Hybrid: includes objective, style anchors, implementation approach, validation guidance
+- [ ] **Consistency across tasks** — all tasks follow the same detail level
 
 #### Style Anchors
 
@@ -56,28 +71,30 @@ Review against embedded best practices:
 - [ ] **Clear deliverables** for each task
 - [ ] **Acceptance tests** defined
 
-#### TDD Requirements
+#### TDD Requirements (AI audience only)
 
-- [ ] **TDD checklist included** for code tasks
-- [ ] **Test-first approach** specified
-- [ ] **Validation commands** provided
-- [ ] **Expected outputs** documented
-- [ ] **Test modification forbidden** when tests fail
+- [ ] **TDD checklist included** for code tasks — **AI only**
+- [ ] **Test-first approach** specified — **AI only**
+- [ ] **Validation commands** provided — **AI/Hybrid: explicit**, **Human: general guidance**
+- [ ] **Expected outputs** documented — **AI only**
+- [ ] **Test modification forbidden** when tests fail — **AI only**
+
+For Human/Hybrid audiences, verify success criteria include testing requirements without prescriptive TDD checklists.
 
 #### Affirmative Instructions
 
-- [ ] **Permitted actions explicit** (e.g., "ONLY use: X, Y, Z")
-- [ ] **Negative framing avoided**
-- [ ] **Constraints clear and actionable**
-- [ ] **File scopes explicit** ("touch ONLY", "modify ONLY")
+- [ ] **Permitted actions explicit** (e.g., "ONLY use: X, Y, Z") — **AI/Hybrid only**
+- [ ] **Constraints clear and actionable** — **All audiences**
 
-#### Drift Prevention (from drift-policy.md)
+#### Drift Prevention (AI audience only)
 
-- [ ] **Drift policy stated** in task instructions
-- [ ] **Stop criteria clear** (unexpected dependencies, file scope violations)
-- [ ] **Revert instructions** provided
-- [ ] **Incident documentation** process specified
-- [ ] **Allowed deviations** understood (formatting, whitespace)
+- [ ] **Drift policy stated** in task instructions — **AI only**
+- [ ] **Stop criteria clear** (unexpected dependencies, file scope violations) — **AI only**
+- [ ] **Revert instructions** provided — **AI only**
+- [ ] **Incident documentation** process specified — **AI only**
+- [ ] **Allowed deviations** understood (formatting, whitespace) — **AI only**
+
+Human/Hybrid audiences should still have clear constraints but not explicit drift policies.
 
 #### Quality Gates
 
@@ -335,12 +352,14 @@ gaps:
 
 ### Phase 10: Quality Gate Validation
 
-- [ ] Linter commands specified
-- [ ] Type checker commands specified
-- [ ] Test commands specified
-- [ ] Commands are executable
-- [ ] Expected outputs defined
-- [ ] Failure handling documented
+- [ ] Linter commands specified — **AI: explicit**, **Human/Hybrid: general**
+- [ ] Type checker commands specified — **AI: explicit**, **Human/Hybrid: general**
+- [ ] Test commands specified — **AI: explicit**, **Human/Hybrid: general**
+- [ ] Commands are executable (where specified)
+- [ ] Expected outputs defined — **AI only**
+- [ ] Failure handling documented — **AI only**
+
+For Human/Hybrid audiences, verify success criteria mention running tests/lint/typecheck without requiring explicit command text.
 
 ## Review Output
 

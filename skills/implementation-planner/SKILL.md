@@ -1,6 +1,6 @@
 ---
 name: implementation-planner
-description: Generates detailed implementation plans with milestones and tasks from business and technical requirements. Embeds best practices including task sizing (30m-2.5h), style anchors, TDD requirements, and quality constraints. Outputs milestones.yaml and milestone-m*.tasks.yaml files ready for development.
+description: Generates implementation plans with milestones and tasks from business and technical requirements. Supports AI, human, and hybrid audiences with appropriate detail levels. Embeds best practices including task sizing (30m-2.5h), style anchors, TDD requirements, and quality constraints. Outputs milestones.yaml and milestone-m*.tasks.yaml files ready for development.
 ---
 
 # Implementation Planner
@@ -44,6 +44,26 @@ Record the user's selection as `ordering_strategy`. If the user says "recommend 
 - **Risk-First**: Sort milestones by uncertainty/risk score descending. High-risk milestones are m0 or m1; de-risk early.
 - **Vertical Slice**: First milestone spans all architectural layers for one thin feature (e.g., one API endpoint + UI + persistence). Remaining milestones group by feature area.
 - **Foundation-First**: Current default ordering. Infrastructure → core features → advanced features → polish/release.
+
+### Phase 0.5: Target Audience Selection
+
+After the user selects the ordering strategy, ask which audience the plan is being created for:
+
+---
+
+Who is the primary audience for this implementation plan?
+
+1. **AI Agent** — Full implementation details with step-by-step instructions, code examples, and explicit constraints. Ideal for Claude Code or other AI-driven development workflows.
+
+2. **Human Developers** — High-level task descriptions with objectives, style anchor references, and success criteria. Developers determine their own implementation approach. Best for experienced teams who need planning structure without prescriptive steps.
+
+3. **Hybrid** — Moderate detail level. Includes key implementation guidance and pattern references but assumes developer autonomy for routine decisions. Best for mixed teams, pair programming with AI, or as handoff documentation.
+
+---
+
+Record the user's selection as `target_audience: "ai" | "human" | "hybrid"`.
+
+**Default:** If the user is unsure, recommend "ai" for autonomous development sessions or "human" for experienced developer teams.
 
 ### Input Analysis
 
@@ -142,7 +162,7 @@ Record the user's selection as `ordering_strategy`. If the user says "recommend 
 
 ### Milestones Structure
 
-Generate `milestones.yaml` with version, project metadata, ordering strategy, and a `milestones` array. Each milestone has: `id` (m0, m1...), `name`, `description`, `dependencies`, `estimated_duration`, `tasks_file`, and `success_criteria`. Optional fields include `acceptance_criteria` (functional, non_functional, testing, documentation) and `exit_checklist`.
+Generate `milestones.yaml` with version, project metadata, meta section (ordering strategy, target audience), and a `milestones` array. The `meta` section includes `ordering_strategy`, `ordering_rationale`, and `target_audience` (ai/human/hybrid). Each milestone has: `id` (m0, m1...), `name`, `description`, `dependencies`, `estimated_duration`, `tasks_file`, and `success_criteria`. Optional fields include `acceptance_criteria` (functional, non_functional, testing, documentation) and `exit_checklist`.
 
 See **[references/milestones-spec.md](references/milestones-spec.md)** for the complete document specification with all fields, ordering strategies, and optional fields.
 
@@ -228,6 +248,196 @@ See **[references/milestone-tasks-example.yaml](references/milestone-tasks-examp
   estimate_minutes: 60
   dependencies: [m1-004]
 ```
+
+## Task Instruction Detail Levels
+
+Task instructions are generated at different detail levels based on the target audience selected in Phase 0.5:
+
+### AI Agent Audience (Full Detail)
+
+**Structure:**
+- **Objective:** Clear statement of what to build
+- **Style Anchors:** Links to pattern files with line numbers
+- **Reference Files:** Specific examples from codebase
+- **Implementation Steps:** Numbered, prescriptive steps (1, 2, 3...)
+- **Constraints:** Explicit "ONLY use" and "NEVER use" statements
+- **TDD Checklist:** Step-by-step test-first requirements
+- **Validation:** Exact commands with expected outputs
+- **Drift Policy:** When to stop and revert
+
+**Example:**
+```yaml
+instructions: |
+  **Objective:**
+  Define Project and Milestone domain models using Model.Class.
+
+  **Style Anchors:**
+  Follow these established patterns:
+  - See `artifacts/style-anchors/SA-002.md` — Model.Class with makeRepository
+  - See `artifacts/style-anchors/SA-006.md` — Effect Schema domain types
+
+  Reference files:
+  - `~/Sites/ai/effect/packages/sql/src/Model.ts:82-157` — Model.Class definition
+  - `~/Sites/ai/EffectPatterns/packages/pipeline-state/src/schemas.ts:1-234` — domain patterns
+
+  **Implementation Steps:**
+  1. Create `packages/shared/src/schemas/project.ts`:
+     - PipelineStatus: Schema.Literal union of all pipeline stages (intake through archived)
+     - Priority: Schema.Literal("low", "medium", "high", "critical")
+     - Project model using Model.Class with fields:
+       id (Model.Generated), slug, name, description, pipelineStatus,
+       assignedPeople (Model.JsonFromString array), tags (Model.JsonFromString array),
+       priority, createdAt (DateTimeInsert), updatedAt (DateTimeUpdate)
+  2. Create `packages/shared/src/schemas/milestone.ts`:
+     - MilestoneStatus: Schema.Literal("pending", "in-progress", "blocked", "complete")
+     - Milestone model using Model.Class with fields:
+       id, projectId, name, description, status, orderIndex, estimatedDays,
+       acceptanceCriteria, createdAt, updatedAt
+  3. Export all types and schemas from each file
+  4. Update schemas/index.ts barrel export
+
+  **Constraints:**
+  - ONLY use: Model.Class, Schema.Literal, Schema.Struct
+  - Follow **SA-002** for Model.Class structure with variant schemas (insert, update, select)
+  - Follow **SA-006** for Schema.Literal enum patterns
+  - NEVER use: TypeScript enum keyword or plain interfaces
+  - NEVER use: type assertions (as) on external data
+  - Include proper JSDoc comments for all exported types
+
+  **TDD Checklist:**
+  Before writing implementation:
+  - [ ] Write failing test for Project.insert.make() constructor
+  - [ ] Write failing test for Milestone.insert.make() constructor
+  - [ ] Write failing test for Schema.decodeUnknown validation (valid cases)
+  - [ ] Write failing test for Schema.decodeUnknown rejection (invalid cases)
+
+  After implementation:
+  - [ ] All tests pass
+  - [ ] TypeScript inference works without explicit types
+  - [ ] Variant schemas (insert, update, select) generate correctly
+
+  **Validation:**
+  ```bash
+  pnpm test packages/shared/src/schemas/project.test.ts
+  pnpm test packages/shared/src/schemas/milestone.test.ts
+  pnpm run typecheck
+  pnpm run lint
+  ```
+  Expected: All tests pass, no type errors, no lint errors
+
+  **Drift Policy:**
+  STOP immediately if:
+  - Implementation requires dependencies not listed in constraints
+  - Tests fail and you consider modifying the test
+  - More than 3 unexpected files need changes
+  - Type errors cannot be resolved within listed files
+```
+
+### Human Developer Audience (High-Level)
+
+**Structure:**
+- **Objective:** Clear statement of what to build with key requirements
+- **Style Anchors:** Links to pattern files for reference
+- **Key Requirements:** Bullet list of essential features/fields
+- **Constraints:** Technology choices and architectural patterns only
+- **Success Criteria:** Measurable outcomes without prescribing approach
+
+**Example:**
+```yaml
+instructions: |
+  **Objective:**
+  Define Project and Milestone domain models using Model.Class with insert, update,
+  and select variants. Include pipeline status enum, priority levels, and proper
+  field constraints.
+
+  **Style Anchors:**
+  - See `artifacts/style-anchors/SA-002.md` — Model.Class with makeRepository pattern
+  - See `artifacts/style-anchors/SA-006.md` — Effect Schema domain types
+
+  **Key Requirements:**
+
+  *Project Model:*
+  - Fields: id, slug, name, description, pipelineStatus, assignedPeople (JSON array),
+    tags (JSON array), priority, timestamps
+  - PipelineStatus enum: intake → analysis → planning → development → review → qa →
+    deploy → complete → archived
+  - Priority: low, medium, high, critical
+  - Use Model.Generated for id, Model.JsonFromString for JSON arrays
+
+  *Milestone Model:*
+  - Fields: id, projectId, name, description, status, orderIndex, estimatedDays,
+    acceptanceCriteria, timestamps
+  - MilestoneStatus: pending, in-progress, blocked, complete
+
+  **Constraints:**
+  - Use Model.Class, Schema.Literal, Schema.Struct only
+  - Follow SA-002 for variant schemas (insert, update, select)
+  - No TypeScript enums or plain interfaces
+  - All fields must support runtime validation via Effect Schema
+
+  **Success Criteria:**
+  - Models compile with full type inference
+  - insert.make(), update.make() constructors available
+  - Schema.decodeUnknown validates correctly for valid and invalid inputs
+  - Tests pass, no type errors, no lint errors
+```
+
+### Hybrid Audience (Moderate Detail)
+
+**Structure:**
+- **Objective:** Clear statement of what to build
+- **Style Anchors:** Links to pattern files
+- **Implementation Approach:** High-level approach with key decision points
+- **Constraints:** Technology and pattern requirements
+- **Validation:** Commands to verify success
+
+**Example:**
+```yaml
+instructions: |
+  **Objective:**
+  Define Project and Milestone domain models using Model.Class.
+
+  **Style Anchors:**
+  - See `artifacts/style-anchors/SA-002.md` — Model.Class pattern
+  - See `artifacts/style-anchors/SA-006.md` — Schema.Literal patterns
+
+  **Implementation Approach:**
+  1. Create project.ts:
+     - Define PipelineStatus as Schema.Literal union covering all stages
+     - Define Priority as Schema.Literal("low", "medium", "high", "critical")
+     - Define Project using Model.Class with: id (Generated), slug, name, description,
+       pipelineStatus, assignedPeople (JsonFromString), tags (JsonFromString),
+       priority, timestamps
+
+  2. Create milestone.ts:
+     - Define MilestoneStatus as Schema.Literal union
+     - Define Milestone using Model.Class with: id, projectId, name, description,
+       status, orderIndex, estimatedDays, acceptanceCriteria, timestamps
+
+  3. Update schemas/index.ts to export both schemas
+
+  **Constraints:**
+  - Use Model.Class for entities, Schema.Literal for enums
+  - Follow SA-002 variant schema pattern (insert, update, select)
+  - No TypeScript enum keyword
+  - Include JSDoc for exported types
+
+  **Validation:**
+  Run tests and typecheck to verify:
+  - Model constructors (insert.make, update.make) work correctly
+  - Schema.decodeUnknown validates and rejects appropriately
+  - Full type inference without explicit type annotations
+```
+
+### Implementation Logic
+
+When generating tasks, determine instruction detail level based on `target_audience`:
+
+- **AI audience**: Include all sections with maximum detail (steps, TDD, drift policy, explicit validation)
+- **Human audience**: Include only objective, style anchors, key requirements, constraints, and success criteria
+- **Hybrid audience**: Include objective, style anchors, implementation approach (high-level steps), constraints, and validation commands
+
+The same task structure and metadata (id, name, description, estimate, type, dependencies, files, style_anchor_refs) are used for all audiences. Only the `instructions` field content varies based on detail level.
 
 ## Code Review Task Requirement
 

@@ -19,6 +19,7 @@ type Milestones struct {
 type MSMeta struct {
 	OrderingStrategy  string `yaml:"ordering_strategy"`
 	OrderingRationale string `yaml:"ordering_rationale"`
+	TargetAudience    string `yaml:"target_audience"`
 }
 
 type MSMilestone struct {
@@ -83,6 +84,16 @@ func validateMSMeta(doc Milestones, r *ValidationResult) {
 	rationale := strings.TrimSpace(doc.Meta.OrderingRationale)
 	if len(rationale) < 20 {
 		r.Errors = append(r.Errors, fmt.Sprintf("meta.ordering_rationale must be at least 20 characters (got %d)", len(rationale)))
+	}
+
+	// Validate target_audience if present (optional field for backward compatibility)
+	if doc.Meta.TargetAudience != "" {
+		validAudiences := map[string]bool{
+			"ai": true, "human": true, "hybrid": true,
+		}
+		if !validAudiences[doc.Meta.TargetAudience] {
+			r.Warnings = append(r.Warnings, fmt.Sprintf("meta.target_audience should be 'ai', 'human', or 'hybrid' (got %q)", doc.Meta.TargetAudience))
+		}
 	}
 }
 
