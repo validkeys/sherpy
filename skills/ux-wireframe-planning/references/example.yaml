@@ -1,0 +1,117 @@
+metadata:
+  project_name: "TaskFlow"
+  generated_date: "2025-06-12"
+  source_documents:
+    - "requirements/business-requirements.yaml"
+    - "requirements/technical-requirements.yaml"
+    - "implementation/milestones.yaml"
+  has_ui_changes: true
+  detection_summary: >-
+    Tech stack includes React 18 + Next.js 14. Implementation tasks reference
+    .tsx files for dashboard, settings, and auth pages. Business requirements
+    define 3 end-user personas with interactive use cases.
+
+pages:
+  - id: PAGE-001
+    name: "Dashboard"
+    route: "/dashboard"
+    description: "Main task overview showing assigned tasks, progress charts, and recent activity"
+    source_requirement: "FR-001"
+    components:
+      - id: COMP-001
+        name: "Task List"
+        type: list
+        description: "Sortable list of assigned tasks with priority badges"
+        states: [empty, loading, error]
+        interactions:
+          - trigger: "click task row"
+            action: "Navigate to task detail"
+            destination: "PAGE-003"
+          - trigger: "click sort header"
+            action: "Toggle sort direction"
+      - id: COMP-002
+        name: "Progress Chart"
+        type: chart
+        description: "Bar chart showing weekly task completion"
+        states: [empty, loading]
+      - id: COMP-003
+        name: "Quick Actions"
+        type: navigation
+        description: "Buttons for create task, filter, and export"
+        interactions:
+          - trigger: "click create task"
+            action: "Open create task modal"
+            destination: "PAGE-002"
+    user_flows:
+      - name: "View and open task"
+        steps:
+          - from: "Dashboard"
+            to: "Task List"
+            action: "Page loads, tasks displayed"
+          - from: "Task List"
+            to: "Task Detail"
+            action: "User clicks a task row"
+
+  - id: PAGE-002
+    name: "Create Task Modal"
+    route: "/dashboard#create"
+    description: "Modal dialog for creating a new task"
+    source_requirement: "FR-003"
+    components:
+      - id: COMP-001
+        name: "Task Form"
+        type: form
+        description: "Form with title, description, assignee, priority, and due date fields"
+        states: [empty, error, success]
+        interactions:
+          - trigger: "submit"
+            action: "Create task and close modal"
+            destination: "PAGE-001"
+          - trigger: "cancel"
+            action: "Close modal without saving"
+
+  - id: PAGE-003
+    name: "Task Detail"
+    route: "/tasks/:id"
+    description: "Detailed view of a single task with comments and activity log"
+    source_requirement: "FR-002"
+    components:
+      - id: COMP-001
+        name: "Task Header"
+        type: detail
+        description: "Title, status badge, assignee avatar, due date"
+      - id: COMP-002
+        name: "Description"
+        type: detail
+        description: "Rich text description of the task"
+      - id: COMP-003
+        name: "Comments"
+        type: list
+        description: "Threaded comments with author and timestamp"
+        states: [empty, loading]
+        interactions:
+          - trigger: "submit comment"
+            action: "Add comment to thread"
+      - id: COMP-004
+        name: "Activity Log"
+        type: table
+        description: "Chronological log of status changes and updates"
+        states: [empty]
+
+wireframes:
+  - page_id: PAGE-001
+    pen_file: "ux/wireframes.pen"
+    preview_png: "ux/PAGE-001.png"
+    status: generated
+    notes: "Desktop layout with sidebar navigation"
+
+  - page_id: PAGE-002
+    pen_file: "ux/wireframes.pen"
+    preview_png: "ux/PAGE-002.png"
+    status: generated
+    notes: "Modal overlay on dashboard"
+
+  - page_id: PAGE-003
+    pen_file: "ux/wireframes.pen"
+    preview_png: "ux/PAGE-003.png"
+    status: generated

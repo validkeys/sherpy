@@ -16,6 +16,7 @@ Validates structured YAML documents against predefined schemas and converts them
 - **timeline** - Delivery timeline with workback dates and phase breakdowns
 - **qa-test-plan** - QA test suites with test cases and execution steps
 - **gap-analysis** - Gap analysis worksheets with identified gaps and recommendations
+- **wireframe-spec** - UX wireframe specifications with pages, components, and visual wireframes
 
 ### `sherpy-to-jira` - Jira Cloud Sync ✨ NEW
 Automatically syncs Sherpy planning documents to Jira Cloud:
@@ -152,6 +153,7 @@ Available document types:
   timeline                timeline.yaml
   qa-test-plan            qa-test-plan.yaml
   gap-analysis            gap-analysis-worksheet.yaml
+  wireframe-spec          wireframe-spec.yaml
 ```
 
 ### Validate Documents
@@ -205,6 +207,7 @@ Available prompts:
 - `business-requirements-interview` - Gathers business requirements
 - `technical-requirements-interview` - Gathers technical requirements
 - `style-anchors-collection` - Documents code patterns
+- `ux-wireframe-planning` - Detects UI changes and generates wireframe specs
 - `implementation-planner` - Generates implementation plans
 - `implementation-plan-review` - Reviews implementation plans
 - `definition-of-done` - Defines milestone acceptance criteria

@@ -39,6 +39,12 @@ var registry = map[string]Prompt{
 		Category:    "implementation",
 		Description: "Collects and documents exemplar code patterns as style anchors",
 	},
+	"ux-wireframe-planning": {
+		Name:        "ux-wireframe-planning",
+		Step:        6,
+		Category:    "design",
+		Description: "Detects UI/webapp changes and generates wireframe specs and visual wireframes",
+	},
 	"implementation-planner": {
 		Name:        "implementation-planner",
 		Step:        5,

@@ -28,6 +28,7 @@ var registry = map[string]struct {
 	"timeline":               {pattern: "timeline.yaml", validator: ValidateTimeline},
 	"qa-test-plan":           {pattern: "qa-test-plan.yaml", validator: ValidateQATestPlan},
 	"gap-analysis":           {pattern: "gap-analysis-worksheet.yaml", validator: ValidateGapAnalysis},
+	"wireframe-spec":         {pattern: "wireframe-spec.yaml", validator: ValidateWireframeSpec},
 }
 
 func RegisteredTypes() []string {

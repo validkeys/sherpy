@@ -1,0 +1,8 @@
+metadata:
+  project_name: "Bad Project"
+  generated_date: "2025-06-12"
+  source_documents:
+    - "requirements/business-requirements.yaml"
+  has_ui_changes: true
+  detection_summary: "React detected"
+pages: []

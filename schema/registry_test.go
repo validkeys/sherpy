@@ -14,6 +14,7 @@ func TestRegistryListsAllTypes(t *testing.T) {
 		"timeline",
 		"qa-test-plan",
 		"gap-analysis",
+		"wireframe-spec",
 	}
 
 	if len(types) != len(expected) {
@@ -46,6 +47,7 @@ func TestRegistryReturnsFilePattern(t *testing.T) {
 		{"timeline", "timeline.yaml"},
 		{"qa-test-plan", "qa-test-plan.yaml"},
 		{"gap-analysis", "gap-analysis-worksheet.yaml"},
+		{"wireframe-spec", "wireframe-spec.yaml"},
 	}
 
 	for _, tt := range tests {
@@ -79,6 +81,7 @@ func TestRegistryResolveTypeByName(t *testing.T) {
 		{"timeline", true},
 		{"qa-test-plan", true},
 		{"gap-analysis", true},
+		{"wireframe-spec", true},
 		{"unknown", false},
 		{"", false},
 	}
@@ -108,6 +111,7 @@ func TestRegistryResolveTypeByFilename(t *testing.T) {
 		{"timeline.yaml", "timeline", true},
 		{"qa-test-plan.yaml", "qa-test-plan", true},
 		{"gap-analysis-worksheet.yaml", "gap-analysis", true},
+		{"wireframe-spec.yaml", "wireframe-spec", true},
 		{"random.yaml", "", false},
 		{"", "", false},
 	}
