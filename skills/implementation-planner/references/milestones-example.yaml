@@ -36,6 +36,7 @@ overview: |
 meta:
   ordering_strategy: value-first
   ordering_rationale: "Deliver user-visible dashboard early for stakeholder feedback while continuing backend optimization in parallel"
+  target_audience: ai  # Full detail for autonomous AI development
 
 milestones:
   - id: m0

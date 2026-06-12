@@ -32,10 +32,12 @@ technical_requirements: string     # Path to technical requirements (required)
 meta:
   ordering_strategy: enum          # Milestone ordering strategy (required)
   ordering_rationale: string       # Why this strategy chosen (required)
+  target_audience: enum            # Task instruction detail level (optional)
 ```
 
 **Enums:**
 - `ordering_strategy`: `multi-pr` | `single-feature-branch` | `value-first` | `risk-first` | `vertical-slice` | `foundation-first`
+- `target_audience`: `ai` | `human` | `hybrid` (when omitted, behavior matches `ai` audience)
 
 **Strategy Descriptions:**
 - `multi-pr`: Each milestone ships independently as separate PR
@@ -45,9 +47,17 @@ meta:
 - `vertical-slice`: Deliver end-to-end functionality in thin slices
 - `foundation-first`: Build infrastructure/foundations before features
 
+**Target Audience Values:**
+- `ai`: Full prescriptive details with TDD checklists, drift policy, explicit implementation steps
+- `human`: High-level objectives, constraints, and success criteria only
+- `hybrid`: Moderate detail with implementation approach and key guidance
+
 **Validation Rules:**
 - `ordering_rationale`: 20-300 characters, must explain strategy choice
 - Should reference project constraints, team size, or delivery model
+- `target_audience`: Optional field, backward compatible with existing plans
+- If present, must be one of: `ai`, `human`, `hybrid`
+- If omitted, generated task instructions follow the same detail level as `ai` audience (full prescriptive details)
 
 ### Milestones Array
 

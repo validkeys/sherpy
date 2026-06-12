@@ -1,6 +1,6 @@
 ---
 name: sherpy-cli-planner
-description: Orchestrates the full Sherpy planning workflow using the Sherpy CLI. Requires the sherpy CLI to be installed. Replaces the need for 14 individual skill files by loading step-specific instructions on demand via `sherpy prompt`. Detects existing artifacts, shows visual pipeline status, and guides through each step in sequence.
+description: Orchestrates the full Sherpy planning workflow using the Sherpy CLI. Requires the sherpy CLI to be installed. Supports AI, human, and hybrid audience selection for appropriate task detail levels. Replaces the need for 14 individual skill files by loading step-specific instructions on demand via `sherpy prompt`. Detects existing artifacts, shows visual pipeline status, and guides through each step in sequence.
 user-invocable: true
 ---
 
@@ -209,10 +209,29 @@ sherpy prompt -t style-anchors-collection
 ```
 
 **Step 5: Implementation Planner**
+
+Before loading instructions, ask the user:
+
+> "Who is the primary audience for this implementation plan?
+>
+> 1. **AI Agent** — Full prescriptive details for autonomous development
+> 2. **Human Developers** — High-level guidance for experienced teams
+> 3. **Hybrid** — Moderate detail for mixed teams or pair programming
+>
+> (Default: AI Agent)"
+
+Wait for user response. Record as `target_audience`.
+
+Then load instructions:
 ```bash
 # Load instructions
 sherpy prompt -t implementation-planner
+```
 
+When following the implementation-planner instructions, use the selected `target_audience` when generating task files. The prompt will include instructions on how to adjust detail levels based on audience.
+
+After generating files, validate:
+```bash
 # After generating milestones.yaml, validate:
 sherpy validate -t milestones -f {base_directory}/implementation/milestones.yaml --strict
 

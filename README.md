@@ -284,6 +284,47 @@ Per-step (loaded via sherpy prompt -t <type>):
 
 Both approaches produce identical output artifacts.
 
+## Implementation Plan Audiences
+
+Sherpy supports three audience types for implementation plans:
+
+### AI Agent (Full Detail)
+Generated tasks include:
+- Step-by-step numbered implementation instructions
+- Explicit code examples with file paths and line numbers
+- TDD checklists with test-first requirements
+- Detailed constraints ("ONLY use X", "NEVER use Y")
+- Drift policies for autonomous development
+- Exact validation commands with expected outputs
+
+**Best for:** Claude Code, autonomous AI development, learning projects
+
+### Human Developers (High-Level)
+Generated tasks include:
+- Clear objectives and key requirements
+- Style anchor references for patterns
+- High-level constraints and technology choices
+- Success criteria without prescriptive steps
+- General validation guidance
+
+**Best for:** Experienced development teams, senior developers, architecture planning
+
+### Hybrid (Moderate Detail)
+Generated tasks include:
+- Clear objectives with implementation approach
+- Style anchor references
+- Key decision points and guidance
+- Constraints and pattern requirements
+- Validation commands without expected outputs
+
+**Best for:** Mixed teams, pair programming with AI, handoff documentation, junior developers
+
+### Selecting an Audience
+
+When running `/sherpy-flow` or `/sherpy-cli-planner`, you'll be prompted to choose an audience during Step 5 (Implementation Planning). The same planning artifacts (milestones.yaml and task files) are generated, but with instruction detail appropriate for your audience.
+
+You can regenerate plans with a different audience at any time.
+
 ### Convert to Markdown
 
 Convert a YAML document to Markdown:

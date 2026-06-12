@@ -1,6 +1,6 @@
 ---
 name: sherpy-flow
-description: Orchestrates the full Sherpy planning workflow from requirements to QA-ready delivery plan. Detects which artifacts already exist, shows a visual pipeline status, and guides through each skill in sequence — gap analysis, business interview, technical interview, implementation planning, plan review, definition of done, architecture decisions, delivery timeline, QA test plan, and summary generation. Automatically organizes all artifacts into a structured docs/ folder.
+description: Orchestrates the full Sherpy planning workflow from requirements to QA-ready delivery plan. Supports AI, human, and hybrid audience selection for appropriate task detail levels. Detects which artifacts already exist, shows a visual pipeline status, and guides through each skill in sequence — gap analysis, business interview, technical interview, implementation planning, plan review, definition of done, architecture decisions, delivery timeline, QA test plan, and summary generation. Automatically organizes all artifacts into a structured docs/ folder.
 ---
 
 # Sherpy Flow
@@ -187,14 +187,29 @@ When invoking skills, pass `base_directory` as a parameter (or skills will auto-
 **Step 5 — Implementation Planner (`/implementation-planner`)**
 - Requires `business-requirements.yaml`, `technical-requirements.yaml`.
 - **Strongly Recommended**: `style-anchors/index.yaml` from Step 4.
-- **Before running**: If no style anchors exist, STOP and ask:
-  > "⚠️  No style anchors found. The implementation plan will be generated WITHOUT concrete code examples, which significantly increases architectural drift risk.
-  >
-  > Would you like to:
-  > 1. Go back to Step 4 and collect style anchors now (recommended)
-  > 2. Continue without style anchors (not recommended)"
-- If user chooses option 1, return to Step 4.
-- If user chooses option 2, confirm with: "Proceeding without style anchors. Expect higher drift during implementation. Continue? (yes/no)"
+- **Before running**:
+  1. If no style anchors exist, STOP and ask:
+     > "⚠️  No style anchors found. The implementation plan will be generated WITHOUT concrete code examples, which significantly increases architectural drift risk.
+     >
+     > Would you like to:
+     > 1. Go back to Step 4 and collect style anchors now (recommended)
+     > 2. Continue without style anchors (not recommended)"
+     - If user chooses option 1, return to Step 4.
+     - If user chooses option 2, confirm with: "Proceeding without style anchors. Expect higher drift during implementation. Continue? (yes/no)"
+
+  2. Ask audience selection question:
+     > "Who is the primary audience for this implementation plan?
+     >
+     > 1. **AI Agent** — Full prescriptive details for autonomous development
+     > 2. **Human Developers** — High-level guidance for experienced teams
+     > 3. **Hybrid** — Moderate detail for mixed teams or pair programming
+     >
+     > This affects the level of detail in task instructions. AI Agent provides
+     > step-by-step implementation guidance, while Human Developers get high-level
+     > objectives and constraints only."
+
+  3. Wait for user response and pass to implementation-planner skill with the
+     `target_audience` parameter.
 - Generate `milestones.yaml` + `milestone-m*.tasks.yaml`.
 - Style anchors from Step 4 are automatically referenced in task instructions (if collected).
 - After completion, display milestone summary and ask: "Implementation plan generated. Continue to Plan Review?"
