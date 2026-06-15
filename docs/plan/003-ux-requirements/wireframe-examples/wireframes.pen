@@ -27,12 +27,7 @@
     "wf-text-base": {"type": "number", "value": 14},
     "wf-text-lg": {"type": "number", "value": 18},
     "wf-text-xl": {"type": "number", "value": 24},
-    "wf-text-2xl": {"type": "number", "value": 32},
-    "wf-page-width": {"type": "number", "value": 1440},
-    "wf-page-height": {"type": "number", "value": 900},
-    "wf-sidebar-width": {"type": "number", "value": 240},
-    "wf-header-height": {"type": "number", "value": 64},
-    "wf-footer-height": {"type": "number", "value": 48}
+    "wf-text-2xl": {"type": "number", "value": 32}
   },
   "children": [
     {
@@ -41,8 +36,8 @@
       "name": "Page Shell",
       "reusable": true,
       "x": 0, "y": 0,
-      "width": "$wf-page-width",
-      "height": "$wf-page-height",
+      "width": 1440,
+      "height": 900,
       "layout": "vertical",
       "fill": "$wf-page-bg",
       "children": [
@@ -51,7 +46,7 @@
           "type": "frame",
           "name": "Header Slot",
           "width": "fill_container",
-          "height": "$wf-header-height",
+          "height": "fit_content",
           "layout": "horizontal",
           "alignItems": "center",
           "justifyContent": "space_between",
@@ -71,7 +66,7 @@
           "type": "frame",
           "name": "Footer Slot",
           "width": "fill_container",
-          "height": "$wf-footer-height",
+          "height": "fit_content",
           "layout": "horizontal",
           "alignItems": "center",
           "fill": "$wf-surface",
@@ -85,8 +80,8 @@
       "name": "Header Bar",
       "reusable": true,
       "x": 1550, "y": 0,
-      "width": 800,
-      "height": "$wf-header-height",
+      "width": "fill_container(800)",
+      "height": "fit_content",
       "layout": "horizontal",
       "alignItems": "center",
       "justifyContent": "space_between",
@@ -124,8 +119,8 @@
       "name": "Sidebar",
       "reusable": true,
       "x": 1550, "y": 100,
-      "width": "$wf-sidebar-width",
-      "height": 700,
+      "width": 240,
+      "height": "fill_container(700)",
       "layout": "vertical",
       "gap": "$wf-space-xs",
       "fill": "$wf-surface",
@@ -149,8 +144,8 @@
       "name": "Content Area",
       "reusable": true,
       "x": 1850, "y": 100,
-      "width": 800,
-      "height": 700,
+      "width": "fill_container(1200)",
+      "height": "fill_container(700)",
       "layout": "vertical",
       "gap": "$wf-space-lg",
       "fill": "$wf-page-bg",
@@ -183,7 +178,7 @@
       "name": "Card",
       "reusable": true,
       "x": 1550, "y": 250,
-      "width": 400,
+      "width": "fill_container(400)",
       "height": "fit_content",
       "layout": "vertical",
       "gap": "$wf-space-md",
@@ -442,8 +437,8 @@
       "name": "Footer Bar",
       "reusable": true,
       "x": 1550, "y": 850,
-      "width": 800,
-      "height": "$wf-footer-height",
+      "width": "fill_container(800)",
+      "height": "fit_content",
       "layout": "horizontal",
       "alignItems": "center",
       "justifyContent": "space_between",
@@ -466,6 +461,7 @@
       "ref": "wf-page-shell",
       "name": "Dashboard Page",
       "x": 0, "y": 1100,
+      "width": 1440, "height": 900,
       "descendants": {
         "header-slot": {
           "children": [
@@ -516,6 +512,7 @@
               "id": "dash-sidebar",
               "type": "ref",
               "ref": "wf-sidebar",
+              "width": 240,
               "descendants": {
                 "sidebar-section-label": {"content": "MENU"}
               }
@@ -650,6 +647,7 @@
       "ref": "wf-page-shell",
       "name": "Settings Page",
       "x": 1600, "y": 1100,
+      "width": 1440, "height": 900,
       "descendants": {
         "header-slot": {
           "children": [
@@ -690,6 +688,7 @@
               "id": "settings-sidebar",
               "type": "ref",
               "ref": "wf-sidebar",
+              "width": 240,
               "descendants": {
                 "sidebar-section-label": {"content": "SETTINGS"}
               }
