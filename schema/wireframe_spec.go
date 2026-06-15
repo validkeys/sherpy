@@ -64,7 +64,8 @@ type WSWireframe struct {
 	Notes      string `yaml:"notes,omitempty"`
 }
 
-var wsIDPattern = regexp.MustCompile(`^(PAGE|COMP)-(\d+)$`)
+var wsPageIDPattern = regexp.MustCompile(`^PAGE-(\d+)$`)
+var wsCompIDPattern = regexp.MustCompile(`^COMP-(\d+)$`)
 
 var wsValidComponentTypes = map[string]bool{
 	"form":       true,
@@ -153,20 +154,18 @@ func validateWSPages(pages []WSPage, r *ValidationResult) {
 			continue
 		}
 
-		if !wsIDPattern.MatchString(p.ID) {
+		if !wsPageIDPattern.MatchString(p.ID) {
 			r.Errors = append(r.Errors, fmt.Sprintf("pages.%d.id: invalid format %q (expected PAGE-NNN)", i, p.ID))
 			continue
 		}
 
-		matches := wsIDPattern.FindStringSubmatch(p.ID)
-		if matches[1] == "PAGE" {
-			num := 0
-			fmt.Sscanf(matches[2], "%d", &num)
-			if num != nextPageNum {
-				r.Errors = append(r.Errors, fmt.Sprintf("pages.%d.id: page IDs must be sequential (expected PAGE-%03d, got %s)", i, nextPageNum, p.ID))
-			}
-			nextPageNum++
+		matches := wsPageIDPattern.FindStringSubmatch(p.ID)
+		num := 0
+		fmt.Sscanf(matches[1], "%d", &num)
+		if num != nextPageNum {
+			r.Errors = append(r.Errors, fmt.Sprintf("pages.%d.id: page IDs must be sequential (expected PAGE-%03d, got %s)", i, nextPageNum, p.ID))
 		}
+		nextPageNum++
 
 		if seenPageIDs[p.ID] {
 			r.Errors = append(r.Errors, fmt.Sprintf("pages.%d.id %q is duplicated", i, p.ID))
@@ -204,20 +203,18 @@ func validateWSComponents(pageID string, components []WSComponent, r *Validation
 			continue
 		}
 
-		if !wsIDPattern.MatchString(c.ID) {
+		if !wsCompIDPattern.MatchString(c.ID) {
 			r.Errors = append(r.Errors, fmt.Sprintf("%s.components.%d.id: invalid format %q (expected COMP-NNN)", pageID, i, c.ID))
 			continue
 		}
 
-		matches := wsIDPattern.FindStringSubmatch(c.ID)
-		if matches[1] == "COMP" {
-			num := 0
-			fmt.Sscanf(matches[2], "%d", &num)
-			if num != nextCompNum {
-				r.Errors = append(r.Errors, fmt.Sprintf("%s.components.%d.id: component IDs must be sequential (expected COMP-%03d, got %s)", pageID, i, nextCompNum, c.ID))
-			}
-			nextCompNum++
+		matches := wsCompIDPattern.FindStringSubmatch(c.ID)
+		num := 0
+		fmt.Sscanf(matches[1], "%d", &num)
+		if num != nextCompNum {
+			r.Errors = append(r.Errors, fmt.Sprintf("%s.components.%d.id: component IDs must be sequential (expected COMP-%03d, got %s)", pageID, i, nextCompNum, c.ID))
 		}
+		nextCompNum++
 
 		if strings.TrimSpace(c.Name) == "" {
 			r.Errors = append(r.Errors, fmt.Sprintf("%s.components.%d.name is required", pageID, i))

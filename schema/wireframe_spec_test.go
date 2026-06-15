@@ -78,6 +78,85 @@ func TestValidateWireframeSpec_BadIDs(t *testing.T) {
 	}
 }
 
+func TestValidateWireframeSpec_CrossTypeIDs(t *testing.T) {
+	t.Run("COMP ID used as page ID", func(t *testing.T) {
+		data := []byte(`metadata:
+  project_name: "Test"
+  generated_date: "2025-01-01"
+  source_documents:
+    - "req.yaml"
+  has_ui_changes: true
+  detection_summary: "React detected"
+pages:
+  - id: COMP-001
+    name: "Dashboard"
+    route: "/dashboard"
+    description: "Main page"
+wireframes:
+  - page_id: COMP-001
+    pen_file: "ux/wireframes.pen"
+    status: generated
+`)
+		result, err := ValidateWireframeSpec(data, false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Valid() {
+			t.Error("expected validation errors for cross-type page ID")
+		}
+		found := false
+		for _, e := range result.Errors {
+			if contains(e, "expected PAGE-NNN") {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("expected page ID format error, got: %v", result.Errors)
+		}
+	})
+
+	t.Run("PAGE ID used as component ID", func(t *testing.T) {
+		data := []byte(`metadata:
+  project_name: "Test"
+  generated_date: "2025-01-01"
+  source_documents:
+    - "req.yaml"
+  has_ui_changes: true
+  detection_summary: "React detected"
+pages:
+  - id: PAGE-001
+    name: "Dashboard"
+    route: "/dashboard"
+    description: "Main page"
+    components:
+      - id: PAGE-001
+        name: "List"
+        type: list
+        description: "Task list"
+wireframes:
+  - page_id: PAGE-001
+    pen_file: "ux/wireframes.pen"
+    status: generated
+`)
+		result, err := ValidateWireframeSpec(data, false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if result.Valid() {
+			t.Error("expected validation errors for cross-type component ID")
+		}
+		found := false
+		for _, e := range result.Errors {
+			if contains(e, "expected COMP-NNN") {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("expected component ID format error, got: %v", result.Errors)
+		}
+	})
+}
+
 func TestValidateWireframeSpec_EmptyMetadata(t *testing.T) {
 	data := []byte(`metadata:
   project_name: ""

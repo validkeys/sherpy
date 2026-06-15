@@ -28,6 +28,7 @@ func TestTypesCommand(t *testing.T) {
 		"timeline",
 		"qa-test-plan",
 		"gap-analysis",
+		"wireframe-spec",
 	}
 
 	for _, et := range expectedTypes {

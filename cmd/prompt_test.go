@@ -97,6 +97,7 @@ func TestPromptAllTypes(t *testing.T) {
 		"technical-requirements-interview",
 		"style-anchors-collection",
 		"implementation-planner",
+		"ux-wireframe-planning",
 		"implementation-plan-review",
 		"definition-of-done",
 		"architecture-decision-record",
