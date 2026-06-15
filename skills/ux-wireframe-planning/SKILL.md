@@ -99,12 +99,12 @@ pencil_batch_design({
   input: `
     pageShell = I(document, {
       type: "frame", name: "Page Shell", reusable: true,
-      width: "$wf-page-width", height: "$wf-page-height",
+      width: 1440, height: 900,
       layout: "vertical", fill: "$wf-page-bg"
     })
     headerSlot = I(pageShell, {
       type: "frame", name: "Header Slot",
-      width: "fill_container", height: "$wf-header-height",
+      width: "fill_container", height: "fit_content",
       layout: "horizontal", fill: "$wf-surface",
       padding: ["$wf-space-md", "$wf-space-lg"]
     })
@@ -114,7 +114,7 @@ pencil_batch_design({
     })
     footerSlot = I(pageShell, {
       type: "frame", name: "Footer Slot",
-      width: "fill_container", height: "$wf-footer-height", fill: "$wf-surface"
+      width: "fill_container", height: "fit_content", fill: "$wf-surface"
     })
     // ... create all remaining components as top-level children
     // header, sidebar, content-area, card, form-field, button, etc.
@@ -132,7 +132,7 @@ For each page in the wireframe spec, add a page frame to the same `.pen` file:
 2. **No Hardcoded Colors** — All fills/strokes/text use `$wf-*` variables
 3. **No Raw Shapes for Known Components** — Use component instances (`type: "ref"`) referencing in-file components
 4. **Use Component Structure** — Compose pages using `wf-page-shell` and populate its child slots
-5. **Consistent Dimensions** — Use `$wf-page-width` (1440) and `$wf-page-height` (900)
+5. **Consistent Dimensions** — Use literal `1440` for page width and `900` for page height (Pencil silently drops `$wf-*` variable references on width/height properties)
 6. **Label Everything** — Override all descendant labels with actual content names
 7. **State Annotations** — Add `wf-state-badge` where component states are defined
 

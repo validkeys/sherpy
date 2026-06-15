@@ -72,15 +72,17 @@ All visual properties are defined as variables. Wireframes reference these using
 | `wf-text-xl` | `24` | Page title size |
 | `wf-text-2xl` | `32` | Large page title size |
 
-### Sizing Variables
+### Sizing — Literal Values (NOT Variables)
 
-| Variable | Value | Purpose |
-|----------|-------|---------|
-| `wf-page-width` | `1440` | Standard desktop page width |
-| `wf-page-height` | `900` | Standard desktop page height |
-| `wf-sidebar-width` | `240` | Standard sidebar width |
-| `wf-header-height` | `64` | Standard header height |
-| `wf-footer-height` | `48` | Standard footer height |
+Pencil's layout engine silently drops `$wf-*` variable references on `width`/`height` properties. Use literal values instead:
+
+| Dimension | Value | Purpose |
+|-----------|-------|---------|
+| Page width | `1440` | Standard desktop page width |
+| Page height | `900` | Standard desktop page height |
+| Sidebar width | `240` | Standard sidebar width |
+| Header height | `fit_content` | Header slot (content-driven) |
+| Footer height | `fit_content` | Footer slot (content-driven) |
 
 ### Variable Definition (for `pencil_set_variables`)
 
@@ -112,14 +114,11 @@ All visual properties are defined as variables. Wireframes reference these using
   "wf-text-base": {"type": "number", "value": 14},
   "wf-text-lg": {"type": "number", "value": 18},
   "wf-text-xl": {"type": "number", "value": 24},
-  "wf-text-2xl": {"type": "number", "value": 32},
-  "wf-page-width": {"type": "number", "value": 1440},
-  "wf-page-height": {"type": "number", "value": 900},
-  "wf-sidebar-width": {"type": "number", "value": 240},
-  "wf-header-height": {"type": "number", "value": 64},
-  "wf-footer-height": {"type": "number", "value": 48}
+  "wf-text-2xl": {"type": "number", "value": 32}
 }
 ```
+
+> **Do NOT define `wf-page-width`, `wf-page-height`, `wf-sidebar-width`, `wf-header-height`, or `wf-footer-height` as variables.** Pencil silently drops `$wf-*` references on `width`/`height`. Use literal values (`1440`, `900`, `240`) or `fit_content`/`fill_container(N)` instead.
 
 ---
 
@@ -195,8 +194,8 @@ Here is how `wf-page-shell` is defined in the library:
   "type": "frame",
   "name": "Page Shell",
   "reusable": true,
-  "width": "$wf-page-width",
-  "height": "$wf-page-height",
+  "width": 1440,
+  "height": 900,
   "layout": "vertical",
   "fill": "$wf-page-bg",
   "children": [
@@ -205,7 +204,7 @@ Here is how `wf-page-shell` is defined in the library:
       "type": "frame",
       "name": "Header Slot",
       "width": "fill_container",
-      "height": "$wf-header-height",
+      "height": "fit_content",
       "layout": "horizontal",
       "fill": "$wf-surface",
       "slot": ["wf-header"],
@@ -225,7 +224,7 @@ Here is how `wf-page-shell` is defined in the library:
       "type": "frame",
       "name": "Footer Slot",
       "width": "fill_container",
-      "height": "$wf-footer-height",
+      "height": "fit_content",
       "layout": "horizontal",
       "fill": "$wf-surface",
       "slot": ["wf-footer"]
@@ -408,7 +407,7 @@ When composing a page, use the `wf-page-shell` component and populate its child 
 ```
 
 ### Rule 5: Consistent Dimensions
-Always use `$wf-page-width` (1440) and `$wf-page-height` (900) for desktop wireframes. Mobile wireframes (if added later) would use a separate set of variables.
+Always use literal `1440` for page width and `900` for page height. Pencil silently drops `$wf-*` variable references on `width`/`height` properties — use literal numbers (`1440`, `900`, `240`), `fit_content`, or `fill_container(N)` instead. Mobile wireframes (if added later) would use different literal dimensions.
 
 ### Rule 6: Label Everything
 Every component instance must have its label/descendant properties overridden with the actual content name. Generic labels like "Label" or "Button" are only in the library definition — instances must specify what they represent.
