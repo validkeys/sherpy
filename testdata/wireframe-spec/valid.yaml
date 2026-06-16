@@ -1,0 +1,53 @@
+metadata:
+  project_name: "TaskFlow"
+  generated_date: "2025-06-12"
+  source_documents:
+    - "requirements/business-requirements.yaml"
+    - "implementation/milestones.yaml"
+  has_ui_changes: true
+  detection_summary: "React + Next.js detected. Tasks reference .tsx files for dashboard and settings."
+
+pages:
+  - id: PAGE-001
+    name: "Dashboard"
+    route: "/dashboard"
+    description: "Main task overview"
+    source_requirement: "FR-001"
+    components:
+      - id: COMP-001
+        name: "Task List"
+        type: list
+        description: "Sortable list of tasks"
+        states: [empty, loading, error]
+        interactions:
+          - trigger: "click task"
+            action: "Navigate to detail"
+            destination: "PAGE-002"
+      - id: COMP-002
+        name: "Create Button"
+        type: navigation
+        description: "Button to create new task"
+        interactions:
+          - trigger: "click"
+            action: "Open create modal"
+
+  - id: PAGE-002
+    name: "Task Detail"
+    route: "/tasks/:id"
+    description: "Detailed task view"
+    source_requirement: "FR-002"
+    components:
+      - id: COMP-001
+        name: "Task Header"
+        type: detail
+        description: "Title and status"
+
+wireframes:
+  - page_id: PAGE-001
+    pen_file: "ux/wireframes.pen"
+    preview_png: "ux/PAGE-001.png"
+    status: generated
+  - page_id: PAGE-002
+    pen_file: "ux/wireframes.pen"
+    preview_png: "ux/PAGE-002.png"
+    status: generated

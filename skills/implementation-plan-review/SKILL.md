@@ -340,6 +340,32 @@ gaps:
       recommendation: [document explicitly]
 ```
 
+#### Wireframe Coverage (Soft Gate)
+
+If any tasks reference `.tsx`/`.jsx`/`.vue`/`.svelte` files or mention UI components (forms, tables, navigation, modals, pages, layouts):
+
+- [ ] Does `ux/wireframe-spec.yaml` exist?
+- [ ] Does every page with UI tasks have a wireframe entry?
+- [ ] Are all detected components represented in the wireframe spec?
+- [ ] Are user flows documented for key interactions?
+
+**This is a WARN-level gate (not CRIT).** It does NOT block progression.
+
+If wireframes are missing or incomplete, add to the review output:
+
+```yaml
+wireframe_coverage:
+  ui_tasks_detected: [count]
+  wireframe_spec_exists: [true/false]
+  missing_pages:
+    - page: [name]
+      tasks: [task-ids]
+  recommendation: "Consider running Step 6 (UX/Wireframe Planning) before development"
+```
+
+User sees:
+> "WARN-001: [n] UI tasks detected without wireframe coverage. Consider running Step 6 before development. Proceed anyway? (yes/no)"
+
 ### Phase 9: Style Anchor Validation
 
 - [ ] Anchors reference existing files (if repository available)

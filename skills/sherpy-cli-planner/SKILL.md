@@ -42,13 +42,14 @@ Step 2   Business Requirements          → business-requirements.yaml
 Step 3   Technical Requirements         → technical-requirements.yaml
 Step 4   Style Anchors Collection       → style-anchors/index.yaml + *.md
 Step 5   Implementation Planner         → milestones.yaml + milestone-m*.tasks.yaml
-Step 6   Implementation Plan Review     → implementation-plan-review.yaml
-Step 7   Definition of Done             → milestones.yaml (enhanced with acceptance_criteria)
-Step 8   Architecture Decision Records  → adrs/INDEX.md + adrs/ADR-*.md
-Step 9   Delivery Timeline              → timeline.yaml
-Step 10  QA Test Plan                   → qa-test-plan.yaml
-Step 11  Developer Summary              → developer-summary.md
-Step 12  Executive Summary              → executive-summary.md
+Step 6   UX/Wireframe Planning          → wireframe-spec.yaml + wireframes/*.pen (conditional)
+Step 7   Implementation Plan Review     → implementation-plan-review.yaml
+Step 8   Definition of Done             → milestones.yaml (enhanced with acceptance_criteria)
+Step 9   Architecture Decision Records  → adrs/INDEX.md + adrs/ADR-*.md
+Step 10  Delivery Timeline              → timeline.yaml
+Step 11  QA Test Plan                   → qa-test-plan.yaml
+Step 12  Developer Summary              → developer-summary.md
+Step 13  Executive Summary              → executive-summary.md
 ```
 
 All artifacts are automatically organized into:
@@ -58,6 +59,10 @@ All artifacts are automatically organized into:
 ├── implementation/
 │   ├── milestones.yaml (with optional acceptance_criteria)
 │   └── tasks/          (milestone task files)
+├── ux/                 (wireframe spec + Pencil wireframes)
+│   ├── wireframe-spec.yaml
+│   ├── wireframes.pen
+│   └── PAGE-001.png
 ├── delivery/           (timeline, QA test plan)
 ├── architecture/
 │   └── adrs/           (ADRs)
@@ -99,13 +104,14 @@ Check the `base_directory` for existing files in the organized structure:
 | `style-anchors/index.yaml` | `artifacts/style-anchors/` | Step 4 |
 | `milestones.yaml` | `implementation/` | Step 5 |
 | `milestone-m*.tasks.yaml` | `implementation/tasks/` | Step 5 |
-| `implementation-plan-review.yaml` | `artifacts/` | Step 6 |
-| `milestones.yaml` with `acceptance_criteria` | `implementation/` | Step 7 |
-| `adrs/INDEX.md` | `architecture/adrs/` | Step 8 |
-| `timeline.yaml` | `delivery/` | Step 9 |
-| `qa-test-plan.yaml` | `delivery/` | Step 10 |
-| `developer-summary.md` | `summaries/` | Step 11 |
-| `executive-summary.md` | `summaries/` | Step 12 |
+| `wireframe-spec.yaml` | `ux/` | Step 6 |
+| `implementation-plan-review.yaml` | `artifacts/` | Step 7 |
+| `milestones.yaml` with `acceptance_criteria` | `implementation/` | Step 8 |
+| `adrs/INDEX.md` | `architecture/adrs/` | Step 9 |
+| `timeline.yaml` | `delivery/` | Step 10 |
+| `qa-test-plan.yaml` | `delivery/` | Step 11 |
+| `developer-summary.md` | `summaries/` | Step 12 |
+| `executive-summary.md` | `summaries/` | Step 13 |
 
 **Artifact Detection Logic:**
 - Check expected location within `base_directory`
@@ -123,13 +129,14 @@ Display a visual status of the pipeline before doing any work:
  →  Step 3   Technical Requirements        ← resuming here
  ○  Step 4   Style Anchors Collection
  ○  Step 5   Implementation Planner
- ○  Step 6   Implementation Plan Review
- ○  Step 7   Definition of Done
- ○  Step 8   Architecture Decision Records
- ○  Step 9   Delivery Timeline
- ○  Step 10  QA Test Plan
- ○  Step 11  Developer Summary
- ○  Step 12  Executive Summary
+ ○  Step 6   UX/Wireframe Planning
+ ○  Step 7   Implementation Plan Review
+ ○  Step 8   Definition of Done
+ ○  Step 9   Architecture Decision Records
+ ○  Step 10  Delivery Timeline
+ ○  Step 11  QA Test Plan
+ ○  Step 12  Developer Summary
+ ○  Step 13  Executive Summary
 
 Resuming from Step 3. Type "start over" to restart from Step 1,
 or specify a step number to jump to a specific point.
@@ -209,29 +216,10 @@ sherpy prompt -t style-anchors-collection
 ```
 
 **Step 5: Implementation Planner**
-
-Before loading instructions, ask the user:
-
-> "Who is the primary audience for this implementation plan?
->
-> 1. **AI Agent** — Full prescriptive details for autonomous development
-> 2. **Human Developers** — High-level guidance for experienced teams
-> 3. **Hybrid** — Moderate detail for mixed teams or pair programming
->
-> (Default: AI Agent)"
-
-Wait for user response. Record as `target_audience`.
-
-Then load instructions:
 ```bash
 # Load instructions
 sherpy prompt -t implementation-planner
-```
 
-When following the implementation-planner instructions, use the selected `target_audience` when generating task files. The prompt will include instructions on how to adjust detail levels based on audience.
-
-After generating files, validate:
-```bash
 # After generating milestones.yaml, validate:
 sherpy validate -t milestones -f {base_directory}/implementation/milestones.yaml --strict
 
@@ -241,7 +229,16 @@ sherpy validate -t milestone-tasks -f {base_directory}/implementation/tasks/mile
 # ... for each milestone
 ```
 
-**Step 6: Implementation Plan Review**
+**Step 6: UX/Wireframe Planning** (conditional — auto-skips if no UI changes)
+```bash
+# Load instructions
+sherpy prompt -t ux-wireframe-planning
+
+# After generating wireframe-spec.yaml, validate:
+sherpy validate -t wireframe-spec -f {base_directory}/ux/wireframe-spec.yaml --strict
+```
+
+**Step 7: Implementation Plan Review**
 ```bash
 # Load instructions
 sherpy prompt -t implementation-plan-review
@@ -250,7 +247,7 @@ sherpy prompt -t implementation-plan-review
 # No validation needed (produces review document)
 ```
 
-**Step 7: Definition of Done**
+**Step 8: Definition of Done**
 ```bash
 # Load instructions
 sherpy prompt -t definition-of-done
@@ -259,7 +256,7 @@ sherpy prompt -t definition-of-done
 sherpy validate -t milestones -f {base_directory}/implementation/milestones.yaml --strict
 ```
 
-**Step 8: Architecture Decision Records**
+**Step 9: Architecture Decision Records**
 ```bash
 # Load instructions
 sherpy prompt -t architecture-decision-record
@@ -268,7 +265,7 @@ sherpy prompt -t architecture-decision-record
 # No validation needed (produces markdown files)
 ```
 
-**Step 9: Delivery Timeline**
+**Step 10: Delivery Timeline**
 ```bash
 # Load instructions
 sherpy prompt -t delivery-timeline
@@ -277,7 +274,7 @@ sherpy prompt -t delivery-timeline
 sherpy validate -t timeline -f {base_directory}/delivery/timeline.yaml --strict
 ```
 
-**Step 10: QA Test Plan**
+**Step 11: QA Test Plan**
 ```bash
 # Load instructions
 sherpy prompt -t qa-test-plan
@@ -286,7 +283,7 @@ sherpy prompt -t qa-test-plan
 sherpy validate -t qa-test-plan -f {base_directory}/delivery/qa-test-plan.yaml --strict
 ```
 
-**Step 11: Developer Summary**
+**Step 12: Developer Summary**
 ```bash
 # Load instructions
 sherpy prompt -t developer-summary
@@ -295,7 +292,7 @@ sherpy prompt -t developer-summary
 # No validation needed (produces markdown file)
 ```
 
-**Step 12: Executive Summary**
+**Step 13: Executive Summary**
 ```bash
 # Load instructions
 sherpy prompt -t executive-summary

@@ -19,6 +19,7 @@ var converters = map[string]ConverterFunc{
 	"timeline":               ConvertTimeline,
 	"qa-test-plan":           ConvertQATestPlan,
 	"gap-analysis":           ConvertGapAnalysis,
+	"wireframe-spec":         ConvertWireframeSpec,
 }
 
 func ResolveConverter(typeName string) (ConverterFunc, error) {

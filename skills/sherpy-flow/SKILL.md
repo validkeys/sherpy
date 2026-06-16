@@ -25,11 +25,12 @@ Step 2   Business Requirements          → business-requirements.yaml
 Step 3   Technical Requirements         → technical-requirements.yaml
 Step 4   Style Anchors Collection       → style-anchors/index.yaml + *.md
 Step 5   Implementation Planner         → milestones.yaml + milestone-m*.tasks.yaml (with optional acceptance_criteria)
-Step 6   Implementation Plan Review     → implementation-plan-review.yaml
-Step 7   Architecture Decision Records  → adrs/INDEX.md + adrs/ADR-*.md
-Step 8   Delivery Timeline              → timeline.yaml
-Step 9   QA Test Plan                   → qa-test-plan.yaml
-Step 10  Generate Summaries             → developer-summary.md + executive-summary.md
+Step 6   UX/Wireframe Planning          → wireframe-spec.yaml + wireframes/*.pen (conditional: auto-skips if no UI changes)
+Step 7   Implementation Plan Review     → implementation-plan-review.yaml
+Step 8   Architecture Decision Records  → adrs/INDEX.md + adrs/ADR-*.md
+Step 9   Delivery Timeline              → timeline.yaml
+Step 10  QA Test Plan                   → qa-test-plan.yaml
+Step 11  Generate Summaries             → developer-summary.md + executive-summary.md
 ```
 
 All artifacts are automatically organized into:
@@ -39,6 +40,10 @@ All artifacts are automatically organized into:
 ├── implementation/
 │   ├── milestones.yaml (with optional acceptance_criteria)
 │   └── tasks/          (milestone task files)
+├── ux/                 (wireframe spec + Pencil wireframes)
+│   ├── wireframe-spec.yaml
+│   ├── wireframes.pen
+│   └── PAGE-001.png
 ├── delivery/           (timeline, QA test plan)
 ├── architecture/
 │   └── adrs/           (ADRs)
@@ -70,12 +75,13 @@ Check the `base_directory` for existing files in the organized structure:
 | `style-anchors/index.yaml` | `artifacts/style-anchors/` | Step 4 |
 | `milestones.yaml` | `implementation/` | Step 5 |
 | `milestone-m*.tasks.yaml` | `implementation/tasks/` | Step 5 |
-| `implementation-plan-review.yaml` | `artifacts/` | Step 6 |
-| `adrs/INDEX.md` | `architecture/adrs/` | Step 7 |
-| `timeline.yaml` | `delivery/` | Step 8 |
-| `qa-test-plan.yaml` | `delivery/` | Step 9 |
-| `developer-summary.md` | `summaries/` | Step 10 |
-| `executive-summary.md` | `summaries/` | Step 10 |
+| `wireframe-spec.yaml` | `ux/` | Step 6 |
+| `implementation-plan-review.yaml` | `artifacts/` | Step 7 |
+| `adrs/INDEX.md` | `architecture/adrs/` | Step 8 |
+| `timeline.yaml` | `delivery/` | Step 9 |
+| `qa-test-plan.yaml` | `delivery/` | Step 10 |
+| `developer-summary.md` | `summaries/` | Step 11 |
+| `executive-summary.md` | `summaries/` | Step 11 |
 
 **Artifact Detection Logic:**
 - Check expected location within `base_directory`
@@ -94,11 +100,12 @@ Display a visual status of the pipeline before doing any work:
  →  Step 3   Technical Requirements        ← resuming here
  ○  Step 4   Style Anchors Collection
  ○  Step 5   Implementation Planner
- ○  Step 6   Implementation Plan Review
- ○  Step 7   Architecture Decision Records
- ○  Step 8   Delivery Timeline
- ○  Step 9   QA Test Plan
- ○  Step 10  Generate Summaries
+ ○  Step 6   UX/Wireframe Planning
+ ○  Step 7   Implementation Plan Review
+ ○  Step 8   Architecture Decision Records
+ ○  Step 9   Delivery Timeline
+ ○  Step 10  QA Test Plan
+ ○  Step 11  Generate Summaries
 
 Resuming from Step 3. Type "start over" to restart from Step 1,
 or specify a step number to jump to a specific point.
@@ -212,9 +219,16 @@ When invoking skills, pass `base_directory` as a parameter (or skills will auto-
      `target_audience` parameter.
 - Generate `milestones.yaml` + `milestone-m*.tasks.yaml`.
 - Style anchors from Step 4 are automatically referenced in task instructions (if collected).
-- After completion, display milestone summary and ask: "Implementation plan generated. Continue to Plan Review?"
+- After completion, display milestone summary and ask: "Implementation plan generated. Continue to UX/Wireframe Planning?"
 
-**Step 6 — Implementation Plan Review (`/implementation-plan-review`)**
+**Step 6 — UX/Wireframe Planning (`/ux-wireframe-planning`) — CONDITIONAL**
+- Requires `milestones.yaml` + task files + `technical-requirements.yaml`.
+- **Detection:** Scans tech stack and task files for UI/webapp changes (React, .tsx files, components, pages).
+- If NO UI changes: Auto-skip. Generate `wireframe-spec.yaml` with `has_ui_changes: false`. Log skip in pipeline status. No user confirmation needed.
+- If UI changes found: Generate `wireframe-spec.yaml`, create self-contained Pencil wireframe file (`wireframes.pen` with all components + page frames), export PNG previews.
+- After completion (if not skipped), display page/component count and ask: "Wireframes generated. Continue to Plan Review?"
+
+**Step 7 — Implementation Plan Review (`/implementation-plan-review`)**
 - Requires `milestones.yaml` + task files.
 - Run the full review.
 - After `implementation-plan-review.yaml` is generated, display the readiness score and critical issues.
@@ -225,23 +239,23 @@ When invoking skills, pass `base_directory` as a parameter (or skills will auto-
   > 3. Review the issues in detail first"
 - Otherwise ask: "Plan review passed. Continue to Architecture Decision Records?"
 
-**Step 7 — Architecture Decision Records (`/architecture-decision-record`)**
+**Step 8 — Architecture Decision Records (`/architecture-decision-record`)**
 - Requires `technical-requirements.yaml`.
 - Generate `adrs/` directory with all ADR files.
 - After completion, display ADR count and ask: "Architecture decisions recorded. Continue to Delivery Timeline?"
 
-**Step 8 — Delivery Timeline (`/delivery-timeline`)**
+**Step 9 — Delivery Timeline (`/delivery-timeline`)**
 - Requires `milestones.yaml`.
 - Ask the three delivery parameter questions (production deploy date, QA rounds, days per round) as defined in that skill.
 - Generate `timeline.yaml`.
 - After completion, display the workback summary (project start → deploy date) and ask: "Delivery timeline generated. Continue to QA Test Plan?"
 
-**Step 9 — QA Test Plan (`/qa-test-plan`)**
+**Step 10 — QA Test Plan (`/qa-test-plan`)**
 - Requires `business-requirements.yaml` + `technical-requirements.yaml`.
 - Generate `qa-test-plan.yaml`.
 - After completion, display coverage summary and ask: "QA test plan generated. Continue to Generate Summaries?"
 
-**Step 10 — Generate Summaries (`/developer-summary` + `/executive-summary`)**
+**Step 11 — Generate Summaries (`/developer-summary` + `/executive-summary`)**
 - Requires: `business-requirements.yaml`, `technical-requirements.yaml`, `milestones.yaml`, `timeline.yaml`.
 - Run `/developer-summary` first to generate the developer-focused summary.
 - Then run `/executive-summary` to generate the executive/stakeholder summary.

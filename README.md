@@ -7,7 +7,7 @@ A Go CLI tool for validating and converting Sherpy YAML documents to Markdown, p
 Sherpy CLI provides two main tools:
 
 ### `sherpy` - Document Validation & Conversion
-Validates structured YAML documents against predefined schemas and converts them to formatted Markdown. Supports seven document types used in software project planning:
+Validates structured YAML documents against predefined schemas and converts them to formatted Markdown. Supports eight document types used in software project planning:
 
 - **business-requirements** - Business requirements with personas, use cases, and functional requirements
 - **technical-requirements** - Technical specifications, architecture, and implementation details
@@ -16,6 +16,7 @@ Validates structured YAML documents against predefined schemas and converts them
 - **timeline** - Delivery timeline with workback dates and phase breakdowns
 - **qa-test-plan** - QA test suites with test cases and execution steps
 - **gap-analysis** - Gap analysis worksheets with identified gaps and recommendations
+- **wireframe-spec** - UX wireframe specifications with pages, components, and visual wireframes
 
 ### `sherpy-to-jira` - Jira Cloud Sync ✨ NEW
 Automatically syncs Sherpy planning documents to Jira Cloud:
@@ -65,7 +66,7 @@ This script will:
 - Verify the installation
 - Clean up temporary files
 
-**Optional:** If Claude Code is detected, the installer will offer to install the `sherpy-cli-planner` skill, which provides a `/sherpy-cli-planner` command that orchestrates the full 12-step planning workflow using sherpy CLI prompts.
+**Optional:** If Claude Code is detected, the installer will offer to install the `sherpy-cli-planner` skill, which provides a `/sherpy-cli-planner` command that orchestrates the full 13-step planning workflow using sherpy CLI prompts.
 
 **Requirements:**
 - Go 1.26 or later
@@ -152,6 +153,7 @@ Available document types:
   timeline                timeline.yaml
   qa-test-plan            qa-test-plan.yaml
   gap-analysis            gap-analysis-worksheet.yaml
+  wireframe-spec          wireframe-spec.yaml
 ```
 
 ### Validate Documents
@@ -205,6 +207,7 @@ Available prompts:
 - `business-requirements-interview` - Gathers business requirements
 - `technical-requirements-interview` - Gathers technical requirements
 - `style-anchors-collection` - Documents code patterns
+- `ux-wireframe-planning` - Detects UI changes and generates wireframe specs
 - `implementation-planner` - Generates implementation plans
 - `implementation-plan-review` - Reviews implementation plans
 - `definition-of-done` - Defines milestone acceptance criteria
@@ -279,7 +282,7 @@ Per-step (loaded via sherpy prompt -t <type>):
 **Use CLI approach** if:
 - You're running workflows via CLI automation
 - You want to minimize token usage
-- You follow the 12-step workflow sequentially
+- You follow the 13-step workflow sequentially
 - You're integrating with CI/CD or scripts
 
 Both approaches produce identical output artifacts.
@@ -324,6 +327,71 @@ Generated tasks include:
 When running `/sherpy-flow` or `/sherpy-cli-planner`, you'll be prompted to choose an audience during Step 5 (Implementation Planning). The same planning artifacts (milestones.yaml and task files) are generated, but with instruction detail appropriate for your audience.
 
 You can regenerate plans with a different audience at any time.
+
+## UX/Wireframe Planning
+
+Step 6 of the Sherpy pipeline detects whether a project involves frontend/UI work and, when it does, generates a structured wireframe specification plus visual wireframes. For projects with no frontend changes, the step auto-skips after generating a minimal spec with `has_ui_changes: false`.
+
+### How It Works
+
+1. **Detection** — Scans technical requirements (React, Next.js, Vue, etc.) and implementation tasks for UI-related work
+2. **Spec Generation** — Extracts pages, components, states, and user flows into `ux/wireframe-spec.yaml`
+3. **Wireframe Generation** — Creates a self-contained Pencil `.pen` file with a pre-built component library and page wireframes
+
+### Exemplar Template
+
+The wireframe step uses an **exemplar `.pen` file** as the starting point — a template containing a full wireframe component library with design tokens, reusable components, and slot definitions. Instead of building components from scratch, the agent:
+
+1. **Copies** the template to `ux/wireframes.pen` (gets all variables + reusable components in one shot)
+2. **Reads** the component structure via `pencil_batch_get` to discover available components, their IDs, and slots
+3. **Removes** example pages (keeps only the reusable component definitions)
+4. **Adds** project-specific pages as `ref` instances against the discovered components
+
+The exemplar ships with these pre-built components:
+
+| Category | Components |
+|----------|-----------|
+| Layout | `wf-page-shell`, `wf-header`, `wf-sidebar`, `wf-content-area`, `wf-footer` |
+| Content | `wf-card`, `wf-section`, `wf-placeholder-box`, `wf-divider` |
+| Form | `wf-form`, `wf-form-field`, `wf-button`, `wf-checkbox`, `wf-radio`, `wf-dropdown`, `wf-textarea` |
+| Data | `wf-table`, `wf-table-row`, `wf-list-item`, `wf-chart` |
+| Navigation | `wf-nav-item`, `wf-breadcrumb`, `wf-tab` |
+| Annotation | `wf-label`, `wf-state-badge`, `wf-note` |
+
+### Custom Templates
+
+To use your own component library instead of the built-in template, provide a path when the skill runs:
+
+```
+Use exemplar wireframe template?
+  1. Built-in template (default)
+  2. Custom path: [provide path to your .pen file]
+```
+
+Custom templates are useful for teams that want consistent wireframe styling across projects (brand colors, different sidebar widths, custom components).
+
+### Output Files
+
+```
+ux/
+├── wireframe-spec.yaml   # Structured spec (pages, components, flows)
+├── wireframes.pen        # All components + page wireframes (self-contained)
+├── PAGE-001.png          # Exported preview
+├── PAGE-002.png          # Exported preview
+└── ...
+```
+
+### Consistency Rules
+
+The wireframe skill enforces seven consistency rules:
+
+1. **Single file** — All components and pages in one `ux/wireframes.pen` (Pencil doesn't support cross-file refs)
+2. **No hardcoded colors** — All fills/strokes use `$wf-*` variables
+3. **No raw shapes for known components** — Use `ref` instances
+4. **Component structure** — Pages composed from `wf-page-shell` and its slots
+5. **Consistent dimensions** — Literal `1440`x`900` for desktop (not `$wf-*` variable refs, which Pencil silently drops on width/height)
+6. **Label everything** — All component instances have content-specific labels
+7. **State annotations** — State badges where spec defines states
 
 ### Convert to Markdown
 
@@ -457,6 +525,20 @@ sherpy to-markdown -t gap-analysis -f gap-analysis-worksheet.yaml -o gaps.md
 - Gap categories and priorities
 - Recommendations and answers
 - Total gap count consistency
+
+### Wireframe Spec
+
+```bash
+sherpy validate -t wireframe-spec -f ux/wireframe-spec.yaml
+sherpy to-markdown -t wireframe-spec -f ux/wireframe-spec.yaml -o ux/wireframe-spec.md
+```
+
+**Validates:**
+- UI change detection flag (`has_ui_changes`)
+- Sequential page IDs (PAGE-001, PAGE-002, etc.)
+- Component references and cross-type ID validation
+- Conditional validation (pages only required when `has_ui_changes: true`)
+- Metadata and pen file references
 
 ## Development
 

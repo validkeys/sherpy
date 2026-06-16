@@ -1,0 +1,21 @@
+metadata:
+  project_name: "Bad IDs"
+  generated_date: "2025-06-12"
+  source_documents:
+    - "requirements/business-requirements.yaml"
+  has_ui_changes: true
+  detection_summary: "React detected"
+pages:
+  - id: PAGE-003
+    name: "Dashboard"
+    route: "/dashboard"
+    description: "Main page"
+    components:
+      - id: COMP-005
+        name: "List"
+        type: list
+        description: "Task list"
+wireframes:
+  - page_id: PAGE-003
+    pen_file: "ux/wireframes.pen"
+    status: generated

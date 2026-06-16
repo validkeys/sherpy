@@ -52,7 +52,7 @@ For each category below, scan the document and identify gaps. A gap is any of:
 - **Contradictory** — Statements that conflict with each other
 - **Assumed** — Something implied but never explicitly stated
 
-**Gap Categories (evaluate all ten):**
+**Gap Categories (evaluate all eleven):**
 
 1. **Problem & Goals** — Is the core problem clearly defined? Are goals specific and measurable?
 2. **Personas & Users** — Are all user types identified? Are their needs and pain points described?
@@ -64,6 +64,7 @@ For each category below, scan the document and identify gaps. A gap is any of:
 8. **Constraints** — Technical, timeline, budget, regulatory, or team constraints?
 9. **Dependencies & Integrations** — External systems, APIs, third-party services, or team dependencies?
 10. **Risks** — What could go wrong? Are any mitigation strategies needed?
+11. **UI/UX Implications** — Does the project involve user-facing interfaces? Are all screens/pages identified? Are interaction patterns described? Are accessibility requirements stated? Is there a design system or component library? Are responsive/mobile considerations addressed? When gaps are found, add recommendation: "UI work detected — wireframe planning will be triggered after implementation planning (Step 6)."
 
 Skip any category that has **no gaps** — do not include empty sections in the output.
 
@@ -121,7 +122,7 @@ After generating the worksheet, perform the following checks and output a brief 
 
 ### Checks
 
-- [ ] All 10 categories were evaluated (skipped categories had no gaps worth capturing)
+- [ ] All 11 categories were evaluated (skipped categories had no gaps worth capturing)
 - [ ] Every question is specific and answerable by a business analyst
 - [ ] No two questions address the same gap
 - [ ] Critical gaps (scope, personas, core functionality) are listed first within their category
@@ -148,6 +149,7 @@ By Category:
   Constraints:                  [n gaps or "✓ no gaps"]
   Dependencies & Integrations:  [n gaps or "✓ no gaps"]
   Risks:                        [n gaps or "✓ no gaps"]
+  UI/UX Implications:           [n gaps or "✓ no gaps"]
 
 Next step → Complete the worksheet, then run:
   /business-requirements-interview

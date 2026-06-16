@@ -71,7 +71,14 @@ What documentation artifacts are expected from this milestone:
 - README updates if setup/usage changes
 - Architecture diagram updates if structure changes
 
-**5. Exit Checklist**
+**5. Wireframe Requirements** (UI milestones only)
+If this milestone contains tasks that create or modify UI components (`.tsx`, `.jsx`, `.vue` files), add:
+- Wireframe reviewed and approved for all pages in this milestone
+- Component states documented (empty, loading, error, success)
+- User flows validated against wireframes
+Only include this section if `ux/wireframe-spec.yaml` exists and `has_ui_changes` is true.
+
+**6. Exit Checklist**
 A short, concrete checklist used at code review / milestone sign-off. This is the quick reference — summarize the above into yes/no checks.
 
 ### Step 3: Identify Cross-Milestone Gates

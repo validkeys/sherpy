@@ -1,0 +1,7 @@
+metadata:
+  project_name: "CLI Tool"
+  generated_date: "2025-06-12"
+  source_documents:
+    - "requirements/business-requirements.yaml"
+  has_ui_changes: false
+  detection_summary: "No frontend technologies detected. All tasks are Go backend work."
