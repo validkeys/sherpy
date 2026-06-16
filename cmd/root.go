@@ -48,7 +48,7 @@ const MaxFileSize = 10 * 1024 * 1024 // 10MB
 //   - Read-only operations (no writes)
 //   - User filesystem permissions still apply
 //
-// See: FR-8 security review, docs/pr9-remediation/artifacts/security-analysis.md
+// See: FR-8 security review
 func validatePath(path string) error {
 	// Clean the path to normalize it
 	cleaned := filepath.Clean(path)

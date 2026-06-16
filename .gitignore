@@ -41,6 +41,7 @@ coverage.out
 
 # Temp
 .tmp/
+.tmp-docs/
 temp/
 *.tmp
 
