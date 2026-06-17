@@ -22,8 +22,9 @@ help: ## Show this help message
 	@echo 'Available targets:'
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-generate: ## Generate embedded prompt content
+generate: ## Generate embedded content (prompts + specs)
 	$(GOGENERATE) ./prompt/...
+	$(GOGENERATE) ./spec/...
 
 build: generate ## Generate + build the binary
 	$(GOBUILD) -o $(BINARY_NAME) -v .

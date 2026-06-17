@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- New `sherpy describe` command for outputting document specifications to stdout
+- `sherpy describe --list` flag to list all document types with embedded specs
+- `sherpy describe -t <type>` flag to output a specific document specification
+- New `spec` package embedding formal spec.md content via go:generate (7 document types)
 - New `sherpy prompt` command for outputting skill instructions to stdout
 - `sherpy prompt --list` flag to list all available prompts
 - `sherpy prompt -t <type>` flag to output specific prompt content
@@ -19,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build-time filtering of non-pipeline skills
 
 ### Changed
+- Updated Makefile `generate` target to also generate embedded spec content
 - Updated Makefile with `generate` target for go:generate workflow
 - Updated README.md with prompt command usage examples
 - Updated USAGE.md with token efficiency rationale and calculation
@@ -33,7 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 - **Prompt Registry:** 12 pipeline step prompts (gap-analysis through executive-summary)
-- **Build Process:** go:generate embeds skills at build time
+- **Spec Registry:** 7 document type specifications (business-requirements through gap-analysis)
+- **Build Process:** go:generate embeds skills and specs at build time
 - **Security:** Frontmatter stripped at build time (not runtime)
 - **Testing:** 18 new tests across unit and integration layers
 

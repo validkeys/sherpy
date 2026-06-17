@@ -78,6 +78,31 @@ The `prompt` command extracts skill instructions from embedded SKILL.md files an
 - `developer-summary` - Generates developer summaries
 - `executive-summary` - Generates executive summaries
 
+### Describe Document Specifications
+
+Output the formal specification for a document type, so an LLM or developer can see the exact YAML schema, fields, and validation rules a document must conform to:
+
+```bash
+# List document types that have an embedded specification
+sherpy describe --list
+
+# Print the specification for a specific type
+sherpy describe -t business-requirements
+sherpy describe -t milestones
+sherpy describe -t qa-test-plan
+```
+
+The `describe` command prints the embedded `spec.md` for the requested type. Like `prompt`, the content is baked into the binary at build time via `go:generate`, so the binary is self-contained with no filesystem access at runtime.
+
+**Available specifications:**
+- `business-requirements` - Business requirements with personas and use cases
+- `technical-requirements` - Technical specs and architecture
+- `milestones` - Project milestones with dependencies
+- `milestone-tasks` - Detailed task breakdowns
+- `timeline` - Delivery timeline and workback dates
+- `qa-test-plan` - QA test suites and test cases
+- `gap-analysis` - Gap analysis worksheets
+
 ## Document Types
 
 Sherpy supports seven document types:

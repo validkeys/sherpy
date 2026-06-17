@@ -223,6 +223,61 @@ func TestPromptUnknownType(t *testing.T) {
 	}
 }
 
+// TestDescribeListCommand tests the describe --list command
+func TestDescribeListCommand(t *testing.T) {
+	binary := findBinary(t)
+
+	cmd := exec.Command(binary, "describe", "--list")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("describe --list failed: %v\n%s", err, string(output))
+	}
+
+	expected := []string{
+		"business-requirements",
+		"milestones",
+		"qa-test-plan",
+	}
+	for _, name := range expected {
+		if !strings.Contains(string(output), name) {
+			t.Errorf("expected %s in describe list output", name)
+		}
+	}
+}
+
+// TestDescribeOutputsContent tests that describe -t outputs spec content
+func TestDescribeOutputsContent(t *testing.T) {
+	binary := findBinary(t)
+
+	cmd := exec.Command(binary, "describe", "-t", "business-requirements")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("describe -t failed: %v\n%s", err, string(output))
+	}
+
+	if len(output) < 100 {
+		t.Errorf("output suspiciously short (%d bytes)", len(output))
+	}
+	if !strings.Contains(string(output), "# ") {
+		t.Errorf("expected markdown header in describe output")
+	}
+}
+
+// TestDescribeUnknownType tests error handling for unknown document types
+func TestDescribeUnknownType(t *testing.T) {
+	binary := findBinary(t)
+
+	cmd := exec.Command(binary, "describe", "-t", "nonexistent")
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatal("expected error for unknown document type")
+	}
+
+	if !strings.Contains(string(output), "unknown") {
+		t.Errorf("expected 'unknown' in error output, got: %s", string(output))
+	}
+}
+
 // TestBinaryIsFresh verifies that findBinary always builds a fresh binary
 func TestBinaryIsFresh(t *testing.T) {
 	// Get initial binary

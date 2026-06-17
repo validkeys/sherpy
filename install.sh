@@ -450,6 +450,7 @@ main() {
     info "Quick start:"
     echo "  $BINARY_NAME types                    # List document types"
     echo "  $BINARY_NAME prompt --list            # List available prompts"
+    echo "  $BINARY_NAME describe --list          # List document specifications"
     echo "  $BINARY_NAME validate -t <type> -f <file>  # Validate a document"
     echo "  $BINARY_NAME --help                   # Show all commands"
     echo ""

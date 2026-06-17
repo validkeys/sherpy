@@ -37,7 +37,7 @@ When modifying files in `skills/*/SKILL.md`:
    ```bash
    make generate
    ```
-   This runs `go generate ./prompt/...` which executes `gen_prompts.go`
+   This runs `go generate` across the `prompt/` and `spec/` packages (executing `gen_prompts.go` and `gen_specs.go`)
 3. **Verify generation worked:**
    ```bash
    git diff prompt/content_generated.go
@@ -72,11 +72,44 @@ Only **pipeline skill** content is embedded in the binary:
 
 **Orchestrator skills** (sherpy-cli-planner, sherpy-flow, etc.) are NOT embedded as they reference pipeline skills rather than being pipeline steps.
 
+## Working with Specifications
+
+The `sherpy describe` command embeds document specifications (`docs/specifications/*/spec.md`) in the binary at build time. If you modify any spec files or the document-type → spec mapping, you must regenerate the embedded content.
+
+### Updating Specification Files
+
+When modifying files in `docs/specifications/*/spec.md` or the mapping in `spec/gen_specs.go`:
+
+1. **Make your changes** to the spec file or mapping
+2. **Regenerate embedded content:**
+   ```bash
+   make generate
+   ```
+3. **Verify generation worked:**
+   ```bash
+   git diff spec/content_generated.go
+   ```
+4. **Run tests:**
+   ```bash
+   make test
+   ```
+5. **Commit both files:**
+   ```bash
+   git add docs/specifications/your-doc/spec.md
+   git add spec/content_generated.go
+   git commit -m "feat(spec): update your-doc specification"
+   ```
+
+### What Gets Embedded
+
+The spec mapping is explicit in `spec/gen_specs.go` (document types do not always share a directory name with their spec, e.g. `gap-analysis` → `gap-analysis-worksheet/spec.md`). Only document types listed there are embedded. Currently 7 document types have specs; `wireframe-spec` has no `spec.md` and is intentionally excluded.
+
 ### Build Process Details
 
-- `prompt/gen_prompts.go` - Build-time script that reads skills
-- `prompt/content_generated.go` - Generated file with embedded content
-- Frontmatter (---\nname: ...\n---) is stripped during generation
+- `prompt/gen_prompts.go` - Build-time script that reads skills (strips frontmatter)
+- `prompt/content_generated.go` - Generated file with embedded skill content
+- `spec/gen_specs.go` - Build-time script that reads `docs/specifications/`
+- `spec/content_generated.go` - Generated file with embedded spec content
 - Content is embedded using Go's map[string]string
 
 ## Pull Request Guidelines
@@ -95,7 +128,8 @@ Only **pipeline skill** content is embedded in the binary:
    type(scope): description
 
    Types: feat, fix, docs, refactor, test, chore
-   Example: feat(prompt): add new pipeline step
+   Examples: feat(prompt): add new pipeline step
+             feat(spec): add wireframe-spec to describe command
    ```
 
 ## Code Review Process

@@ -217,6 +217,31 @@ Available prompts:
 - `developer-summary` - Generates developer summaries
 - `executive-summary` - Generates executive summaries
 
+### Describe Document Specifications
+
+Output the formal YAML specification for a document type, so an LLM or developer can see the exact schema, fields, and validation rules a document must conform to:
+
+```bash
+# List document types that have an embedded specification
+sherpy describe --list
+
+# Print the specification for a specific type
+sherpy describe -t business-requirements
+sherpy describe -t milestones
+sherpy describe -t qa-test-plan
+```
+
+This command outputs the embedded `spec.md` for the requested type. The spec content is embedded in the binary at build time, so no external files are required.
+
+Available specifications:
+- `business-requirements` - Business requirements with personas and use cases
+- `technical-requirements` - Technical specs and architecture
+- `milestones` - Project milestones with dependencies
+- `milestone-tasks` - Detailed task breakdowns
+- `timeline` - Delivery timeline and workback dates
+- `qa-test-plan` - QA test suites and test cases
+- `gap-analysis` - Gap analysis worksheets
+
 ## Token Efficiency
 
 The `sherpy prompt` command and `sherpy-cli-planner` skill provide a token-efficient alternative to installing all 17 individual planning skills in Claude Code.
