@@ -253,3 +253,133 @@ tasks:
 		}
 	})
 }
+
+func TestMilestoneTasksWithTaskSummaries(t *testing.T) {
+	yaml := `milestone: m1
+name: "Test milestone with summaries"
+generated: "2026-01-01T00:00:00Z"
+task_summaries:
+  m1-001: "Creates the core data model with validation rules."
+  m1-002: "Tests the data model validation logic."
+global_constraints:
+  allowed_patterns: ["use Effect"]
+  forbidden_patterns: ["no async/await"]
+  tdd_required: true
+  max_task_duration_minutes: 120
+  commit_strategy: "commit after each task"
+quality_gates:
+  - stage: pre-commit
+    commands: ["npm run lint"]
+tasks:
+  - id: m1-001
+    name: "Create User model with Schema"
+    description: "Define User data model using Effect Schema.Class with validation for the system"
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create: ["src/models/user.ts"]
+    instructions: "Create the User model following the Schema.Class pattern with full validation rules and type inference"
+  - id: m1-002
+    name: "Add User model unit tests"
+    description: "Comprehensive test coverage for User model validation rules and edge cases"
+    estimate_minutes: 30
+    type: test
+    dependencies: [m1-001]
+    files:
+      create: ["src/models/user.test.ts"]
+    instructions: "Create comprehensive unit tests for the User model covering all validation rules and edge cases with proper assertions"
+`
+	result, err := ValidateMilestoneTasks([]byte(yaml), false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	if !result.Valid() {
+		t.Errorf("milestone with task_summaries should pass validation, got errors:\n%v", result.Errors)
+	}
+}
+
+func TestMilestoneTasksSummariesMismatchedIDs(t *testing.T) {
+	yaml := `milestone: m1
+name: "Test milestone with summaries"
+generated: "2026-01-01T00:00:00Z"
+task_summaries:
+  m1-001: "Creates the core data model with validation rules."
+  m1-999: "This task ID doesn't exist in the tasks array."
+global_constraints:
+  allowed_patterns: ["use Effect"]
+  forbidden_patterns: ["no async/await"]
+  tdd_required: true
+  max_task_duration_minutes: 120
+  commit_strategy: "commit after each task"
+quality_gates:
+  - stage: pre-commit
+    commands: ["npm run lint"]
+tasks:
+  - id: m1-001
+    name: "Create User model with Schema"
+    description: "Define User data model using Effect Schema.Class with validation for the system"
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create: ["src/models/user.ts"]
+    instructions: "Create the User model following the Schema.Class pattern with full validation rules and type inference"
+`
+	result, err := ValidateMilestoneTasks([]byte(yaml), false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if contains(e, "m1-999") && contains(e, "task_summaries") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected error about mismatched task_summaries ID, got: %v", result.Errors)
+	}
+}
+
+func TestMilestoneTasksSummariesTooShort(t *testing.T) {
+	yaml := `milestone: m1
+name: "Test milestone with summaries"
+generated: "2026-01-01T00:00:00Z"
+task_summaries:
+  m1-001: "Too short"
+global_constraints:
+  allowed_patterns: ["use Effect"]
+  forbidden_patterns: ["no async/await"]
+  tdd_required: true
+  max_task_duration_minutes: 120
+  commit_strategy: "commit after each task"
+quality_gates:
+  - stage: pre-commit
+    commands: ["npm run lint"]
+tasks:
+  - id: m1-001
+    name: "Create User model with Schema"
+    description: "Define User data model using Effect Schema.Class with validation for the system"
+    estimate_minutes: 45
+    type: code
+    dependencies: []
+    files:
+      create: ["src/models/user.ts"]
+    instructions: "Create the User model following the Schema.Class pattern with full validation rules and type inference"
+`
+	result, err := ValidateMilestoneTasks([]byte(yaml), false)
+	if err != nil {
+		t.Fatalf("unexpected parse error: %v", err)
+	}
+	found := false
+	for _, e := range result.Errors {
+		if contains(e, "m1-001") && contains(e, "20 characters") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("expected error about short summary, got: %v", result.Errors)
+	}
+}

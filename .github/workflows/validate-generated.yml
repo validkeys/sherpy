@@ -25,9 +25,10 @@ jobs:
 
       - name: Check for uncommitted changes
         run: |
+          STALE=0
           if ! git diff --exit-code prompt/content_generated.go; then
             echo ""
-            echo "❌ ERROR: content_generated.go is stale!"
+            echo "❌ ERROR: prompt/content_generated.go is stale!"
             echo ""
             echo "The embedded prompt content does not match the skill files."
             echo ""
@@ -36,11 +37,27 @@ jobs:
             echo "  2. Commit: git add prompt/content_generated.go"
             echo "  3. Push your changes"
             echo ""
-            echo "This ensures the binary embeds the latest skill content."
+            STALE=1
+          fi
+          if ! git diff --exit-code spec/content_generated.go; then
+            echo ""
+            echo "❌ ERROR: spec/content_generated.go is stale!"
+            echo ""
+            echo "The embedded specification content does not match docs/specifications/."
+            echo ""
+            echo "To fix this:"
+            echo "  1. Run: make generate"
+            echo "  2. Commit: git add spec/content_generated.go"
+            echo "  3. Push your changes"
+            echo ""
+            STALE=1
+          fi
+          if [ "$STALE" -ne 0 ]; then
+            echo "Embedded content is out of sync with its sources."
             exit 1
           fi
 
       - name: Success message
         run: |
           echo "✅ Generated content is up-to-date"
-          echo "Skills and embedded content are in sync"
+          echo "Skills and specs are in sync with embedded content"

@@ -36,7 +36,6 @@ overview: |
 meta:
   ordering_strategy: value-first
   ordering_rationale: "Deliver user-visible dashboard early for stakeholder feedback while continuing backend optimization in parallel"
-  target_audience: ai  # Full detail for autonomous AI development
 
 milestones:
   - id: m0
@@ -84,7 +83,7 @@ milestones:
       - Event type filtering works (login, logout, page_view, etc.)
       - Basic bar chart shows event counts by type
       - Component tests pass with 85%+ coverage
-      - Manual smoke test: see live events as user navigates
+      - "Manual smoke test: see live events as user navigates"
 
     # Optional: Detailed acceptance criteria for rigorous milestone sign-off
     acceptance_criteria:
@@ -146,7 +145,7 @@ milestones:
       - Trend calculations show correct directional indicators
       - Top users list updates every 5 minutes
       - Session duration accurately calculated from events
-      - Load test: 10K events aggregated in <1 second
+      - "Load test: 10K events aggregated in <1 second"
 
   - id: m3
     name: Dashboard UI Polish & Visualization
@@ -195,7 +194,7 @@ milestones:
       - Event type toggles take effect immediately
       - Audit log captures all admin configuration changes
       - Archived data remains queryable for 1 year
-      - Rollback plan tested: can restore archived data if needed
+      - "Rollback plan tested: can restore archived data if needed"
 
   - id: m5
     name: Performance Optimization & Caching
@@ -218,7 +217,7 @@ milestones:
       - All dashboard queries <100ms p95 latency
       - Materialized view refreshes incrementally every 5 minutes
       - Cache invalidation works correctly on new events
-      - Load test: 100 concurrent dashboard viewers without degradation
+      - "Load test: 100 concurrent dashboard viewers without degradation"
       - Performance monitoring shows <200ms page load time
 
   - id: m6

@@ -10,6 +10,7 @@ type MilestoneTasks struct {
 	Milestone         string              `yaml:"milestone"`
 	Name              string              `yaml:"name"`
 	Generated         string              `yaml:"generated"`
+	TaskSummaries     map[string]string   `yaml:"task_summaries,omitempty"`
 	StyleAnchorRefs   []string            `yaml:"style_anchor_refs,omitempty"`
 	GlobalConstraints MTGlobalConstraints `yaml:"global_constraints"`
 	QualityGates      []MTQualityGate     `yaml:"quality_gates"`
@@ -67,6 +68,7 @@ func ValidateMilestoneTasks(data []byte, strict bool) (*ValidationResult, error)
 	result := &ValidationResult{}
 
 	validateMTMetadata(doc, result)
+	validateMTTaskSummaries(doc, result)
 	validateMTGlobalConstraints(doc, result)
 	validateMTQualityGates(doc, result)
 	validateMTTasks(doc, result)
@@ -91,6 +93,31 @@ func validateMTMetadata(doc MilestoneTasks, r *ValidationResult) {
 	}
 	if strings.TrimSpace(doc.Generated) == "" {
 		r.Errors = append(r.Errors, "generated is required")
+	}
+}
+
+func validateMTTaskSummaries(doc MilestoneTasks, r *ValidationResult) {
+	if len(doc.TaskSummaries) == 0 {
+		return // Optional field
+	}
+
+	// Build set of valid task IDs
+	validTaskIDs := map[string]bool{}
+	for _, t := range doc.Tasks {
+		validTaskIDs[t.ID] = true
+	}
+
+	// Validate each summary
+	for taskID, summary := range doc.TaskSummaries {
+		if !validTaskIDs[taskID] {
+			r.Errors = append(r.Errors, fmt.Sprintf("task_summaries contains ID %q which does not exist in tasks array", taskID))
+		}
+		if len(strings.TrimSpace(summary)) < 20 {
+			r.Errors = append(r.Errors, fmt.Sprintf("task_summaries[%s] must be at least 20 characters", taskID))
+		}
+		if len(summary) > 300 {
+			r.Errors = append(r.Errors, fmt.Sprintf("task_summaries[%s] must be at most 300 characters (got %d)", taskID, len(summary)))
+		}
 	}
 }
 

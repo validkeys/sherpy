@@ -10,6 +10,7 @@ import (
 	"github.com/kydavis/sherpy/markdown"
 	"github.com/kydavis/sherpy/prompt"
 	"github.com/kydavis/sherpy/schema"
+	"github.com/kydavis/sherpy/spec"
 	"github.com/spf13/cobra"
 )
 
@@ -114,6 +115,7 @@ func NewRootCmd() *cobra.Command {
 	root.AddCommand(newToMarkdownCmd())
 	root.AddCommand(newTypesCmd())
 	root.AddCommand(newPromptCmd())
+	root.AddCommand(newDescribeCmd())
 
 	return root
 }
@@ -302,6 +304,50 @@ func runPromptList(w io.Writer) error {
 
 func runPrompt(w io.Writer, typeName string) error {
 	content, err := prompt.PromptContent(typeName)
+	if err != nil {
+		return err
+	}
+	fmt.Fprint(w, content)
+	return nil
+}
+
+func newDescribeCmd() *cobra.Command {
+	var (
+		typeName string
+		list     bool
+	)
+
+	cmd := &cobra.Command{
+		Use:   "describe -t <type>",
+		Short: "Output the specification for a document type",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if list {
+				return runDescribeList(cmd.OutOrStdout())
+			}
+			if typeName == "" {
+				return fmt.Errorf("type is required: use -t <type> or --list to show available specifications")
+			}
+			return runDescribe(cmd.OutOrStdout(), typeName)
+		},
+	}
+
+	cmd.Flags().StringVarP(&typeName, "type", "t", "", "document type (required)")
+	cmd.Flags().BoolVar(&list, "list", false, "list available specifications")
+
+	return cmd
+}
+
+func runDescribeList(w io.Writer) error {
+	specs := spec.RegisteredSpecs()
+	fmt.Fprintf(w, "%-25s %s\n", "TYPE", "DESCRIPTION")
+	for _, s := range specs {
+		fmt.Fprintf(w, "%-25s %s\n", s.Name, s.Description)
+	}
+	return nil
+}
+
+func runDescribe(w io.Writer, typeName string) error {
+	content, err := spec.SpecContent(typeName)
 	if err != nil {
 		return err
 	}

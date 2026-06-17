@@ -355,7 +355,7 @@ non_functional_requirements:
     - Onboarding flow allows new users to create first task within 3 minutes
     - Critical workflows (create task, update status) require ≤3 clicks
     - Mobile app supports standard gestures (swipe to archive, pull to refresh)
-    - Keyboard shortcuts available for power users (create task: 'c', search: '/')
+    - "Keyboard shortcuts available for power users (create task: 'c', search: '/')"
 
   reliability:
     - 99.5% uptime SLA (excluding planned maintenance)
@@ -386,7 +386,7 @@ success_criteria:
 
   - criterion: Time savings for status reporting
     metric: Self-reported time spent on status updates and reports per week
-    target: 50% reduction from baseline (Sarah: 6 hours → 3 hours)
+    target: "50% reduction from baseline (Sarah: 6 hours → 3 hours)"
 
   - criterion: Blocker detection speed
     metric: Average time between blocker occurring and being flagged
@@ -415,7 +415,7 @@ constraints:
     - Must integrate with Slack API v2 and GitHub REST API v3
     - Database must support ACID transactions for critical operations
     - Must support up to 100 teams (2500 users) in MVP deployment
-    - API rate limits: 1000 requests per user per hour
+    - "API rate limits: 1000 requests per user per hour"
 
   business:
     - MVP must be shippable within 16 weeks from project kickoff
@@ -460,12 +460,12 @@ timeline:
   phase: MVP / Beta Launch
   duration: 16 weeks
   milestones:
-    - Week 4: Core task management and authentication complete
-    - Week 8: Capacity planning and dependency tracking functional
-    - Week 11: AI features (blocker detection, summaries) in private beta
-    - Week 13: Slack and GitHub integrations tested and deployed
-    - Week 14: Beta launch to 10 pilot teams
-    - Week 16: Public launch with full feature set
+    - "Week 4: Core task management and authentication complete"
+    - "Week 8: Capacity planning and dependency tracking functional"
+    - "Week 11: AI features (blocker detection, summaries) in private beta"
+    - "Week 13: Slack and GitHub integrations tested and deployed"
+    - "Week 14: Beta launch to 10 pilot teams"
+    - "Week 16: Public launch with full feature set"
 
 assumptions:
   - Target customers (50-200 person companies) are willing to pay $50-100/month per team

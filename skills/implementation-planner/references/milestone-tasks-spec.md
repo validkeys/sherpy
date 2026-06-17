@@ -15,6 +15,7 @@
 milestone: string                  # Milestone ID (required, format: m[0-9]+)
 name: string                       # Milestone name (required)
 generated: string                  # ISO 8601 timestamp (required)
+task_summaries: map<string,string> # Task ID to summary mapping (optional)
 ```
 
 **Validation Rules:**
@@ -22,6 +23,52 @@ generated: string                  # ISO 8601 timestamp (required)
 - Must match corresponding milestone ID in `milestones.yaml`
 - `name`: 10-100 characters, should match milestone name from milestones.yaml
 - `generated`: ISO 8601 format (e.g., "2026-04-15T10:30:00Z")
+- `task_summaries`: Optional; if present, all task IDs must exist in tasks array
+
+### Task Summaries Section
+
+```yaml
+task_summaries:
+  m0-001: string                   # Summary for task m0-001 (optional)
+  m0-002: string                   # Summary for task m0-002 (optional)
+  # ... one entry per task
+```
+
+**Purpose:**
+- Provides a scannable overview of all tasks at the top of the document
+- 1-2 sentence plain English description of what each task does and why
+- Helps human developers quickly understand the full milestone scope
+- Complements the detailed `description` and `instructions` in each task
+
+**Validation Rules:**
+- Optional section - can be omitted entirely
+- If present, each key must be a valid task ID that exists in the `tasks` array
+- Each summary must be 20-300 characters
+- Summaries should be plain English, not technical jargon
+- Focus on what/why rather than how
+
+**Best Practices:**
+- Keep summaries concise (1-2 sentences maximum)
+- State the purpose and value, not implementation details
+- Use active voice ("Creates user model", not "User model is created")
+- Mention the relationship to other tasks if relevant
+- Examples:
+  - ✓ "Creates the core User data model with validation rules for all user operations."
+  - ✓ "Tests User model validation covering edge cases and schema encoding/decoding."
+  - ✗ "Task to implement stuff" (too vague)
+  - ✗ "Uses Effect.gen and Schema.Class to create User type with email validation..." (too technical/detailed)
+
+**Example:**
+```yaml
+task_summaries:
+  m1-001: "Defines core User model with email/username/password validation using Effect Schema."
+  m1-002: "Tests User model validation rules covering edge cases and schema encoding/decoding."
+  m1-003: "Implements repository pattern for user CRUD operations encapsulating all database access."
+  m1-004: "Integration tests for repository against real database with transaction isolation."
+  m1-005: "Service layer coordinating user operations with password hashing and business rules."
+```
+
+**Note:** Task summaries are intended for human scanning. They do not replace the detailed `description` or `instructions` fields in each task object. Think of this as a table of contents for the milestone.
 
 ### Style Anchor References Section
 
@@ -295,6 +342,7 @@ instructions: |
 - ✓ `instructions` (detailed, multi-line)
 
 ### Optional Elements
+- `task_summaries` (root-level, scannable overview)
 - `style_anchor_refs` (milestone-level)
 - `style_anchor_refs` (per-task level)
 

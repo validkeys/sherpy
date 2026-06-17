@@ -56,10 +56,10 @@ test_suites:
         type: negative
         priority: medium
         preconditions:
-          - A workflow.yaml contains a task with `type: unknownType`
+          - "A workflow.yaml contains a task with `type: unknownType`"
         steps:
           - Run `sherpy run workflow.yaml`
-        expected_result: CLI reports unrecognised task type with line number; exit code 1
+        expected_result: "CLI reports unrecognised task type with line number; exit code 1"
         requirement_refs: [BR-002]
         tags: [validation, error-handling]
 
@@ -97,11 +97,11 @@ test_suites:
         tags: [execution, parallelism]
 
       - id: tc-exec-003
-        name: Workflow halts when a task fails and `on_failure: stop` is set
+        name: "Workflow halts when a task fails and `on_failure: stop` is set"
         type: negative
         priority: high
         preconditions:
-          - A workflow where task B is configured to fail and `on_failure: stop` is set
+          - "A workflow where task B is configured to fail and `on_failure: stop` is set"
         steps:
           - Run `sherpy run workflow.yaml`
         expected_result: Execution stops after task B fails; downstream tasks C and D do not run; exit code non-zero
@@ -109,11 +109,11 @@ test_suites:
         tags: [error-handling, failure-modes]
 
       - id: tc-exec-004
-        name: Execution continues when a task fails and `on_failure: continue` is set
+        name: "Execution continues when a task fails and `on_failure: continue` is set"
         type: edge
         priority: medium
         preconditions:
-          - A workflow where task B fails and `on_failure: continue` is set
+          - "A workflow where task B fails and `on_failure: continue` is set"
         steps:
           - Run `sherpy run workflow.yaml`
         expected_result: Tasks after B that do not depend on B still execute; summary shows B as failed
