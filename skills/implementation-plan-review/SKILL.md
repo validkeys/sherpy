@@ -53,6 +53,16 @@ Adjust expectations accordingly when reviewing instruction detail level.
   - Hybrid: includes objective, style anchors, implementation approach, validation guidance
 - [ ] **Consistency across tasks** — all tasks follow the same detail level
 
+#### Task Summaries
+
+- [ ] **task_summaries section present** at top of each milestone-m*.tasks.yaml
+- [ ] **All tasks have summaries** (every task ID in tasks array has a corresponding entry)
+- [ ] **Summaries are concise** (20-300 characters, typically 1-2 sentences)
+- [ ] **Plain English** (not technical jargon or implementation details)
+- [ ] **Active voice** ("Creates X", not "X is created")
+- [ ] **Focus on what/why** not how
+- [ ] **Scannable overview** - reading summaries alone gives sense of milestone scope
+
 #### Style Anchors
 
 - [ ] **2-3 style anchors included** per milestone task file

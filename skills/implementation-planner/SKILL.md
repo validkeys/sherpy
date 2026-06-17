@@ -183,7 +183,15 @@ Most projects use only `success_criteria`. Add detailed acceptance criteria when
 
 ### Tasks Structure
 
-Generate `milestone-m*.tasks.yaml` with style anchors, global constraints, quality gates, and a `tasks` array. Each task has: `id` (mN-NNN format), `name`, `description`, `estimate_minutes` (30-150), `type` (code/test/docs/config), `dependencies`, `files` (create/modify/touch_only), `style_anchor_refs`, and detailed `instructions`.
+Generate `milestone-m*.tasks.yaml` with `task_summaries`, style anchors, global constraints, quality gates, and a `tasks` array.
+
+**Required sections:**
+- `task_summaries` (map): Task ID to 1-2 sentence plain English summary. Placed at the top for scannable overview. Each summary should be 20-300 characters, focus on what/why not how, using active voice. Example: `m1-001: "Creates core User model with validation rules for all user operations."`
+- `global_constraints`: Allowed patterns, forbidden patterns, TDD requirements, max task duration, commit strategy
+- `quality_gates`: Pre-task, pre-commit, task-completion, milestone-completion, pre-push stages
+- `tasks`: Array of task objects
+
+**Each task has:** `id` (mN-NNN format), `name`, `description`, `estimate_minutes` (30-150), `type` (code/test/docs/config), `dependencies`, `files` (create/modify/touch_only), `style_anchor_refs`, and detailed `instructions`.
 
 See **[references/milestone-tasks-spec.md](references/milestone-tasks-spec.md)** for the complete document specification with task structure, quality gates, and TDD checklists.
 
@@ -792,6 +800,7 @@ The skill will:
 5. Create dependency-ordered milestone breakdown
 6. For each milestone:
    - Generate detailed task breakdown
+   - Create `task_summaries` map with 1-2 sentence plain English summaries for each task (for human scanning)
    - Select and embed relevant style anchor references based on task type and file patterns
    - Apply task sizing rules
    - Add TDD and quality constraints

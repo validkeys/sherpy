@@ -2,6 +2,17 @@ milestone: m1
 name: "User Authentication Service"
 generated: "2026-04-15T14:30:00Z"
 
+task_summaries:
+  m1-001: "Defines core User model with email/username/password validation using Effect Schema."
+  m1-002: "Tests User model validation rules covering edge cases and schema encoding/decoding."
+  m1-003: "Implements repository pattern for user CRUD operations encapsulating all database access."
+  m1-004: "Integration tests for repository against real database with transaction isolation."
+  m1-005: "Service layer coordinating user operations with password hashing and business rules."
+  m1-006: "Unit tests for service logic with mocked repository dependencies."
+  m1-007: "TRPC API layer with Zod validation exposing user operations to clients."
+  m1-008: "End-to-end tests validating router authentication, authorization, and error handling."
+  m1-009: "API documentation with examples, error codes, and authentication requirements."
+
 style_anchor_refs:
   - SA-001  # Effect.Service with Repository pattern
   - SA-003  # TRPC router with Zod validation
